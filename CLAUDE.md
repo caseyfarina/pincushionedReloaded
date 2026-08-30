@@ -42,6 +42,34 @@ main scene references remain unresolved for this reason.
 Do not "fix" this by re-baking: the sample data is correct and matches the
 original bake. The meshes themselves need to be restored or re-fetched.
 
+## Repository — Git LFS and the ParticlePack exclusion
+
+**Git LFS tracks true binaries** (meshes, textures, audio, archives, DLLs) via
+`.gitattributes`. Unity YAML — `.unity`, `.prefab`, `.asset`, `.mat`, `.meta` —
+is deliberately **left as text** so it stays diffable and mergeable. Don't move
+YAML into LFS; it breaks merges for no size benefit. Line endings are pinned to
+LF, because Unity YAML was churning CRLF between machines.
+
+To resolve merge conflicts on scenes/prefabs, configure UnityYAMLMerge once:
+
+```bash
+git config merge.unityyamlmerge.driver "'<UnityPath>/Tools/UnityYAMLMerge' merge -p %O %B %A %A"
+```
+
+**`Assets/UnityTechnologies/ParticlePack/` is gitignored, not deleted.** It is
+~195 MB of free Unity sample content — 87% of the repo before exclusion — and is
+referenced only by `MidiMixParticleRefs` → `MidiMixDataVisualizer`, which is
+dormant (on no scene object). It remains on the original machine's disk, so
+Unity there is unaffected.
+
+**A fresh clone will not have it.** If you revive `MidiMixDataVisualizer`,
+re-import the Particle Pack from the Unity Asset Store first, or
+`MidiMixParticleRefs` will resolve to nulls. Everything in the live scene is
+unaffected — the scene contains no ParticleSystems at all.
+
+Result: a fresh clone is ~52 MB instead of ~226 MB, and LFS uses ~16 MB of the
+1 GB GitHub Free quota rather than ~190 MB.
+
 ## MIDI package — consumed, not vendored
 
 The MIDI layer is the **`midiFighterForUnity` package**, installed by git URL and
