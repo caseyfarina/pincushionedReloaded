@@ -26,49 +26,26 @@ Packages/manifest.json                   com.caseyfarina.midifighter64 (git URL,
 3DObjectProcessing/                      Python scan2unity pipeline — NOT in the repo
 ```
 
-## Known content gap — source artifact meshes
+## Content recovery — resolved
 
-`Assets/proceduralPincushioning/` and `ScatterData/` were restored from
-`ScatterData.zip`; they were never committed to `pincushionedSpring2026`. The
-**15 source artifact meshes (the Smithsonian scans) are still absent**, along
-with the `3DObjectProcessing/` pipeline that produces them.
+The art assets missing from `pincushionedSpring2026` were recovered from the
+laptop project on 2026-08-30 and are now tracked here:
+`Assets/Artifacts/` (15 Smithsonian scans + materials), `Assets/buildingFloor.fbx`
+(the room shell), `Assets/pincushionedCharacterMeshes/`, and the two referenced
+`Assets/substances/` materials. The scene reports **0 missing prefabs**.
 
-Consequence: every `*_Pinned` prefab resolves its `sampleData` but its
-`MeshFilter.m_Mesh` is null. The **pins still render** — `SurfaceSampleData`
-bakes positions/normals in local space and draws through `Pin.fbx`, which is
-present — but the artifact surfaces underneath do not. 18 of the 39 GUIDs the
-main scene references remain unresolved for this reason.
+`3DObjectProcessing/` holds the pipeline **source only**. Its bulk outputs
+(`raw_scans/`, `unity_assets*/`, `tex_test/`, ~750 MB) are gitignored — they are
+derived data, re-fetchable from the Smithsonian API by the pipeline. The API key
+files that live in that folder are gitignored; **never commit them**.
 
-Do not "fix" this by re-baking: the sample data is correct and matches the
-original bake. The meshes themselves need to be restored or re-fetched.
-
-## Repository — Git LFS and the ParticlePack exclusion
-
-**Git LFS tracks true binaries** (meshes, textures, audio, archives, DLLs) via
-`.gitattributes`. Unity YAML — `.unity`, `.prefab`, `.asset`, `.mat`, `.meta` —
-is deliberately **left as text** so it stays diffable and mergeable. Don't move
-YAML into LFS; it breaks merges for no size benefit. Line endings are pinned to
-LF, because Unity YAML was churning CRLF between machines.
-
-To resolve merge conflicts on scenes/prefabs, configure UnityYAMLMerge once:
-
-```bash
-git config merge.unityyamlmerge.driver "'<UnityPath>/Tools/UnityYAMLMerge' merge -p %O %B %A %A"
-```
-
-**`Assets/UnityTechnologies/ParticlePack/` is gitignored, not deleted.** It is
-~195 MB of free Unity sample content — 87% of the repo before exclusion — and is
-referenced only by `MidiMixParticleRefs` → `MidiMixDataVisualizer`, which is
-dormant (on no scene object). It remains on the original machine's disk, so
-Unity there is unaffected.
-
-**A fresh clone will not have it.** If you revive `MidiMixDataVisualizer`,
-re-import the Particle Pack from the Unity Asset Store first, or
-`MidiMixParticleRefs` will resolve to nulls. Everything in the live scene is
-unaffected — the scene contains no ParticleSystems at all.
-
-Result: a fresh clone is ~52 MB instead of ~226 MB, and LFS uses ~16 MB of the
-1 GB GitHub Free quota rather than ~190 MB.
+**33 GUID references remain unresolved and are not recoverable** — they were
+absent from the laptop too. Almost all are ParticlePack-internal. The one that
+touches live content: the three `*_Pinned 1` duplicate prefabs reference
+`SurfaceSampleData` assets that no longer exist. Only the Allosaurus duplicate is
+used by the scene (13 references); it renders its mesh but no pins. Fix by
+pointing its `sampleData` at the surviving `Allosaurus…LOD0_SampleData`, or
+delete the duplicate.
 
 ## MIDI package — consumed, not vendored
 
