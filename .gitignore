@@ -118,3 +118,23 @@ InitTestScene*.unity*
 # Asset Store if you revive that system.
 /[Aa]ssets/UnityTechnologies/ParticlePack/
 /[Aa]ssets/UnityTechnologies/ParticlePack.meta
+
+# 3DObjectProcessing — API keys, never commit
+3DObjectProcessing/*API_KEY*
+3DObjectProcessing/*ApiKey*
+3DObjectProcessing/*api_key*
+*GEMINI_API_KEY*
+*govDataApiKey*
+.env
+
+# 3DObjectProcessing — derived/downloaded scan data (~750 MB, re-fetchable
+# from the Smithsonian API via the pipeline). Code is tracked; data is not.
+3DObjectProcessing/raw_scans/
+3DObjectProcessing/unity_assets/
+3DObjectProcessing/unity_assets_medium/
+3DObjectProcessing/unity_assets_test/
+3DObjectProcessing/tex_test/
+
+# Transfer archives — never commit
+pincushionedFromLaptop.zip
+*FromLaptop.zip

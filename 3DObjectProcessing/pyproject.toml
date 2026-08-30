@@ -1,0 +1,26 @@
+[project]
+name = "scan2unity"
+version = "0.1.0"
+description = "Batch convert 3D archaeological/art scans to Unity-ready assets"
+requires-python = ">=3.10"
+dependencies = [
+    "pymeshlab>=2023.12",
+    "Pillow>=10.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov",
+]
+
+[project.scripts]
+scan2unity = "src.cli:main"
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
