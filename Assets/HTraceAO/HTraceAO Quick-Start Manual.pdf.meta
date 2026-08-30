@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 49ebcae8c15f681489b9148c9e7da5c9
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 306556
+  packageName: 'HTrace: Ambient Occlusion URP'
+  packageVersion: 1.3.9
+  assetPath: Assets/HTraceAO/HTraceAO Quick-Start Manual.pdf
+  uploadId: 848636

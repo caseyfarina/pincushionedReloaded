@@ -104,3 +104,17 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# ── Project-specific ────────────────────────────────────────────────────
+# Broader than the template's per-file rules
+/[Aa]ssets/Unity.VisualScripting.Generated/
+
+# Unity Pipeline CLI scratch
+/[Ll]ibrary/
+
+# Unity ParticlePack sample content — kept on disk, not tracked.
+# ~195 MB of free Unity sample assets, referenced only by the dormant
+# MidiMixParticleRefs / MidiMixDataVisualizer path. Re-import from the Unity
+# Asset Store if you revive that system.
+/[Aa]ssets/UnityTechnologies/ParticlePack/
+/[Aa]ssets/UnityTechnologies/ParticlePack.meta

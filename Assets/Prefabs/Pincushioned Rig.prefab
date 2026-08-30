@@ -1,0 +1,173 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &4978664647139329532
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7926253484387268361}
+  - component: {fileID: 8349370458405384531}
+  - component: {fileID: 9162339136929704116}
+  - component: {fileID: 2657519511703761932}
+  - component: {fileID: 2914905556300452250}
+  - component: {fileID: 8243878580888444017}
+  - component: {fileID: 545749069299218314}
+  - component: {fileID: 2832766293281127520}
+  - component: {fileID: 8261226997816645590}
+  m_Layer: 0
+  m_Name: Pincushioned Rig
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7926253484387268361
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4978664647139329532}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8349370458405384531
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4978664647139329532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5ccddbdb3f61507409c69d429c0e9529, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MidiFighter64.Samples::MidiFighter64.Samples.FloorCameraController
+  _floorHeight: 8
+  _cameraYOffset: 7.7
+  _floorCount: 8
+  _duration: 0.6
+  _ease: 10
+  _floorVcam: {fileID: 0}
+  _fallbackPriority: 10
+--- !u!114 &9162339136929704116
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4978664647139329532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c213df23df1053e4f901d8b896667369, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MidiFighter64.Samples::MidiFighter64.Samples.MidiFighterInteriorSpawner
+  _spread: 25
+  _groundY: 0
+  _seed: 12345
+  _quantizeRotation: 1
+  _scale: 1
+  _root: {fileID: 0}
+  _reserveNavigationPads: 1
+--- !u!114 &2657519511703761932
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4978664647139329532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36f790038b6558f46b9ae4f667068889, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MidiFighter64.Samples::MidiFighter64.Samples.CloseUpCameraController
+  _distMin: 1.5
+  _distMax: 4.5
+  _heightJitter: 0.4
+  _minRadius: 0.3
+  _seed: 2024
+  _closeUpVcam: {fileID: 0}
+  _priority: 20
+--- !u!114 &2914905556300452250
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4978664647139329532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9204b387b5e9761498afd31f8869e885, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MidiFighter64.Samples::MidiFighter64.Samples.MidiDebugUI
+--- !u!114 &8243878580888444017
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4978664647139329532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 705d4fcbff1e7384b9b8cd994ac7779e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MidiFighter64.Samples::MidiFighter64.Samples.MidiNoteLogger
+--- !u!114 &545749069299218314
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4978664647139329532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f8f05ba42fd451b498b60b3639ce9bc6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PinDensityController
+  minCount: 0
+  maxCount: 2000
+  maxUpdatesPerSecond: 30
+  countDeadband: 8
+--- !u!114 &2832766293281127520
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4978664647139329532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 882584a4c8e546a4fabe9db056f37234, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MidiMixPinDensityDriver
+  channel: 1
+  row: 2
+--- !u!114 &8261226997816645590
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4978664647139329532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 32075beec02a4614fba538d20520fd52, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AudioPinDensityDriver
+  _deviceID: '{0.0.1.00000000}.{2b2da3c9-87f2-4af9-8a70-9cb998e37118}'
+  _band: 1
+  _autoGain: 1
+  _gain: 6
+  _dynamicRange: 24
+  _smoothFall: 1
+  _fallSpeed: 2
+  _floor: 0.15
+  _contrast: 1

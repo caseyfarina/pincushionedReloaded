@@ -1,0 +1,152 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6810006118319040915
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6996490860651363565}
+  - component: {fileID: 3002609724781147445}
+  - component: {fileID: 8769066522803188485}
+  - component: {fileID: 5611690953297797284}
+  m_Layer: 0
+  m_Name: thutmose_iv_and_mother_tiaa_Pinned
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6996490860651363565
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6810006118319040915}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &3002609724781147445
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6810006118319040915}
+  m_Mesh: {fileID: -4374466708985079282, guid: 6f385ed035cdf564886249d71feda2c2, type: 3}
+--- !u!23 &8769066522803188485
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6810006118319040915}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 916e45db2ad93f244a0c6290af1315ff, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &5611690953297797284
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6810006118319040915}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b0d824256278824aa59ed813712b369, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MeshSurfaceScatter
+  sampleData: {fileID: 11400000, guid: 2b0c0434501d76c418fe4272d4fa9878, type: 2}
+  surfaceTransform: {fileID: 0}
+  pinVariants:
+  - mesh: {fileID: 905373941493974904, guid: 3f3e437c41b8c3642941738d7979850e, type: 3}
+    material: {fileID: 2100000, guid: 91b4d386205892a4a9fbcb49754860d5, type: 2}
+    weight: 1
+  - mesh: {fileID: 905373941493974904, guid: 3f3e437c41b8c3642941738d7979850e, type: 3}
+    material: {fileID: 2100000, guid: 81b8e723719a2c64ca2cf0c2ddb9ae72, type: 2}
+    weight: 1
+  - mesh: {fileID: 905373941493974904, guid: 3f3e437c41b8c3642941738d7979850e, type: 3}
+    material: {fileID: 2100000, guid: ea474580e7f8d5f4eb249365a8fb0ae9, type: 2}
+    weight: 1
+  - mesh: {fileID: 905373941493974904, guid: 3f3e437c41b8c3642941738d7979850e, type: 3}
+    material: {fileID: 2100000, guid: cb5613d293a5361458531f263db67569, type: 2}
+    weight: 1
+  - mesh: {fileID: 905373941493974904, guid: 3f3e437c41b8c3642941738d7979850e, type: 3}
+    material: {fileID: 2100000, guid: 2c6d07943893f1341a9dfdfc92799e4d, type: 2}
+    weight: 1
+  - mesh: {fileID: 905373941493974904, guid: 3f3e437c41b8c3642941738d7979850e, type: 3}
+    material: {fileID: 2100000, guid: 1f22f1184f1d1bf4a986db56fd3ca7ae, type: 2}
+    weight: 1
+  scatterCount: 2000
+  seed: 42
+  scaleRange: {x: 0.29592276, y: 0.4932046}
+  normalOffset: 0.009360372
+  randomYawRotation: 1
+  maxTiltAngle: 0
+  density:
+    mode: 0
+    densityTexture: {fileID: 0}
+    uvChannel: 0
+    noiseScale: 5
+    noiseOffset: {x: 0, y: 0, z: 0}
+    noiseOctaves: 3
+    noisePersistence: 0.5
+    attractors: []
+    attractorRadius: 2
+    attractorFalloff: 2
+    attractorFloor: 0.05
+    contrast: 1
+    cutoff: 0
+    invert: 0
+  scaleByDensity: 0
+  rescatter: 0
+  castShadows: 1
+  receiveShadows: 1
+  renderingLayerMask: 1
