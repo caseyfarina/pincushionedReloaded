@@ -13741,6 +13741,92 @@ Transform:
   m_Children: []
   m_Father: {fileID: 732386317}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1106841307
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1106841310}
+  - component: {fileID: 1106841309}
+  - component: {fileID: 1106841308}
+  m_Layer: 0
+  m_Name: Split Screen Rig
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1106841308
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1106841307}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: af9786843be8e794796db7b7cf8fbc7f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Pincushioned.SplitScreen.SplitScreenCameraRig
+  _subdivisions: 3
+  _splitStrategy: 0
+  _layoutSeed: 12345
+  _mainCameraTakesLargestCell: 1
+  _borderThickness: 4
+  _borderColor: {r: 0, g: 0, b: 0, a: 1}
+  _minRadiusFraction: 0.25
+  _maxRadiusFraction: 0.85
+  _maxAngle: 90
+  _enforceAxisSide: 0
+  _minWorldY: 0.5
+  _placementSeed: 2024
+  _repositionThreshold: 2
+  _subCameraPostProcessing: 0
+  _subCameraShadows: 0
+  _subCameraFarClip: 200
+  _subCameraFov: 45
+--- !u!114 &1106841309
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1106841307}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 92ba2029ce2c68b4cb20df0ddd5e169c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Pincushioned.SplitScreen.PointOfInterestFinder
+  _sourceCamera: {fileID: 0}
+  _viewportPoint: {x: 0.5, y: 0.5}
+  _maxDistance: 500
+  _layerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  _useRendererFallback: 1
+  _minRendererSize: 0.05
+  _defaultDistance: 20
+  _updateMode: 0
+  _interval: 1
+  _smoothTime: 0.25
+--- !u!4 &1106841310
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1106841307}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1107382216
 GameObject:
   m_ObjectHideFlags: 0
@@ -26779,3 +26865,4 @@ SceneRoots:
   - {fileID: 1558571059}
   - {fileID: 1168802774}
   - {fileID: 263057020}
+  - {fileID: 1106841310}
