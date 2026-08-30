@@ -49,8 +49,8 @@ namespace Pincushioned.SplitScreen
         [Tooltip("Re-runs the point-of-interest raycast, choosing a new subject.")]
         [SerializeField] PadBinding _reevaluatePoi = new PadBinding { row = 0, col = 0 };
 
-        [Header("MIDI Mix knob → subdivisions")]
-        [Tooltip("Off leaves subdivisions on whatever the Inspector says.")]
+        [Header("MIDI Mix knob → cell count")]
+        [Tooltip("Off leaves the cell count on whatever the Inspector says.")]
         [SerializeField] bool _knobDrivesSubdivisions = false;
 
         [Range(1, 8)] [SerializeField] int _subdivisionChannel = 2;
@@ -102,8 +102,8 @@ namespace Pincushioned.SplitScreen
             if (_rig == null) return;
             if (channel != _subdivisionChannel || row != _subdivisionRow) return;
 
-            _rig.SetSubdivisions(Mathf.RoundToInt(Mathf.Lerp(
-                QuadtreeLayout.MinSubdivisions, QuadtreeLayout.MaxSubdivisions, value)));
+            _rig.SetCellCount(Mathf.RoundToInt(Mathf.Lerp(
+                MosaicLayout.MinCells, MosaicLayout.MaxCells, value)));
         }
 
         /// <summary>Pads this component listens to, for conflict checks.</summary>

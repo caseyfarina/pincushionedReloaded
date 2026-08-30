@@ -21,16 +21,19 @@ namespace Pincushioned.SplitScreen.EditorTools
             var rig = (SplitScreenCameraRig)target;
             var so  = serializedObject;
 
-            int   subdivisions = so.FindProperty("_subdivisions").intValue;
-            int   seed         = so.FindProperty("_layoutSeed").intValue;
-            var   strategy     = (QuadtreeSplitStrategy)so.FindProperty("_splitStrategy").enumValueIndex;
-            float border       = so.FindProperty("_borderThickness").floatValue;
-            Color borderColor  = so.FindProperty("_borderColor").colorValue;
+            int   cellCount   = so.FindProperty("_cellCount").intValue;
+            int   seed        = so.FindProperty("_layoutSeed").intValue;
+            var   mode        = (LayoutMode)so.FindProperty("_layoutMode").enumValueIndex;
+            float minRatio    = so.FindProperty("_minSplitRatio").floatValue;
+            float bias        = so.FindProperty("_squarenessBias").floatValue;
+            float border      = so.FindProperty("_borderThickness").floatValue;
+            Color borderColor = so.FindProperty("_borderColor").colorValue;
 
             EditorGUILayout.Space(10);
             EditorGUILayout.LabelField("Layout preview", EditorStyles.boldLabel);
 
-            QuadtreeLayout.Build(subdivisions, strategy, seed, _preview);
+            // Preview against 16:9 so it matches the box drawn below.
+            MosaicLayout.Build(cellCount, mode, seed, minRatio, bias, 16f / 9f, _preview);
 
             int cells = _preview.Count;
             int subCams = so.FindProperty("_mainCameraTakesLargestCell").boolValue
@@ -88,7 +91,7 @@ namespace Pincushioned.SplitScreen.EditorTools
 
             foreach (var c in cells)
             {
-                Rect r = QuadtreeLayout.Inset(c, bx, by);
+                Rect r = MosaicLayout.Inset(c, bx, by);
                 // Flip Y: viewport is bottom-left, IMGUI is top-left.
                 var draw = new Rect(
                     box.x + r.x * box.width,

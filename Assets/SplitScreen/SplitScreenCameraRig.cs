@@ -24,13 +24,27 @@ namespace Pincushioned.SplitScreen
         // ── layout ───────────────────────────────────────────────────────────
 
         [Header("Layout")]
-        [Tooltip("Number of quadtree split operations. Each splits one cell into " +
-                 "four, so the cell count is 1 + 3N: 2 gives 7 cells, 9 gives 28.")]
-        [Range(QuadtreeLayout.MinSubdivisions, QuadtreeLayout.MaxSubdivisions)]
-        [SerializeField] int _subdivisions = 3;
+        [Tooltip("How the screen is carved up. Random Rectangles cuts existing cells " +
+                 "at random ratios, so sizes vary freely. Quadtree restricts every " +
+                 "edge to a half or a quarter.")]
+        [SerializeField] LayoutMode _layoutMode = LayoutMode.RandomRectangles;
 
-        [Tooltip("Which cell gets split each step.")]
-        [SerializeField] QuadtreeSplitStrategy _splitStrategy = QuadtreeSplitStrategy.AreaWeighted;
+        [Tooltip("Number of rectangles on screen. Exact in Random Rectangles mode; " +
+                 "Quadtree rounds to the nearest 1+3N.")]
+        [Range(MosaicLayout.MinCells, MosaicLayout.MaxCells)]
+        [SerializeField] int _cellCount = 8;
+
+        [Tooltip("How close a cut may land to a cell's edge, as a fraction of that " +
+                 "cell. 0.5 always cuts dead centre; low values allow strongly " +
+                 "uneven rectangles. Random Rectangles only.")]
+        [Range(0.05f, 0.5f)]
+        [SerializeField] float _minSplitRatio = 0.25f;
+
+        [Tooltip("0 picks the cut axis at random. 1 always cuts across the longer " +
+                 "screen-space side, keeping cells closest to square. Random " +
+                 "Rectangles only.")]
+        [Range(0f, 1f)]
+        [SerializeField] float _squarenessBias = 0.75f;
 
         [Tooltip("Seed for the layout. The same seed always rebuilds the same " +
                  "arrangement of cells.")]
@@ -166,7 +180,8 @@ namespace Pincushioned.SplitScreen
         public void Rebuild()
         {
             CaptureMainRect();
-            QuadtreeLayout.Build(_subdivisions, _splitStrategy, _layoutSeed, _cells);
+            MosaicLayout.Build(_cellCount, _layoutMode, _layoutSeed,
+                               _minSplitRatio, _squarenessBias, CurrentAspect, _cells);
             EnsureBackgroundCamera();
             EnsureCameraPool();
             ApplyViewports();
@@ -199,15 +214,21 @@ namespace Pincushioned.SplitScreen
             Rebuild();
         }
 
-        /// <summary>Set the subdivision count and rebuild. Clamped to the legal range.</summary>
-        public void SetSubdivisions(int subdivisions)
+        /// <summary>Display aspect used to judge which side of a cell is longer.</summary>
+        public static float CurrentAspect =>
+            Screen.height > 0 ? (float)Screen.width / Screen.height : 16f / 9f;
+
+        /// <summary>Set the number of rectangles and rebuild. Clamped to the legal range.</summary>
+        public void SetCellCount(int cellCount)
         {
-            int v = Mathf.Clamp(subdivisions,
-                                QuadtreeLayout.MinSubdivisions, QuadtreeLayout.MaxSubdivisions);
-            if (v == _subdivisions) return;
-            _subdivisions = v;
+            int v = Mathf.Clamp(cellCount, MosaicLayout.MinCells, MosaicLayout.MaxCells);
+            if (v == _cellCount) return;
+            _cellCount = v;
             Rebuild();
         }
+
+        /// <summary>Back-compat alias: treats the value as a cell count.</summary>
+        public void SetSubdivisions(int subdivisions) => SetCellCount(subdivisions);
 
         /// <summary>Border thickness in pixels. Applies without a rebuild.</summary>
         public void SetBorderThickness(float pixels)
@@ -319,7 +340,7 @@ namespace Pincushioned.SplitScreen
             int sub = 0;
             for (int i = 0; i < _cells.Count; i++)
             {
-                Rect r = QuadtreeLayout.Inset(_cells[i], bx, by);
+                Rect r = MosaicLayout.Inset(_cells[i], bx, by);
 
                 if (UseMainCamera && i == largest)
                 {
