@@ -180,11 +180,40 @@ namespace Pincushioned.SplitScreen
             PlaceCameras();
         }
 
-        /// <summary>New layout seed, then rebuild. Camera angles are untouched.</summary>
+        /// <summary>New layout seed, then rebuild. The placement seed is untouched,
+        /// so camera angles regenerate from the same distribution.</summary>
         public void RerollLayout()
         {
             _layoutSeed = new System.Random().Next(int.MinValue, int.MaxValue);
             Rebuild();
+        }
+
+        /// <summary>Reroll both the cell arrangement and the camera angles in one
+        /// call — the "everything changes" action, for binding to a single pad.
+        /// Rerolls placement first so Rebuild's placement pass uses the new seed
+        /// and the cameras are not positioned twice.</summary>
+        public void RerollAll()
+        {
+            _placementSeed = new System.Random().Next(int.MinValue, int.MaxValue);
+            _layoutSeed    = new System.Random().Next(int.MinValue, int.MaxValue);
+            Rebuild();
+        }
+
+        /// <summary>Set the subdivision count and rebuild. Clamped to the legal range.</summary>
+        public void SetSubdivisions(int subdivisions)
+        {
+            int v = Mathf.Clamp(subdivisions,
+                                QuadtreeLayout.MinSubdivisions, QuadtreeLayout.MaxSubdivisions);
+            if (v == _subdivisions) return;
+            _subdivisions = v;
+            Rebuild();
+        }
+
+        /// <summary>Border thickness in pixels. Applies without a rebuild.</summary>
+        public void SetBorderThickness(float pixels)
+        {
+            _borderThickness = Mathf.Max(0f, pixels);
+            ApplyViewports();
         }
 
         void CaptureMainRect()

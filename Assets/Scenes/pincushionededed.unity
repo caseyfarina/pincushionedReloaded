@@ -13752,6 +13752,7 @@ GameObject:
   - component: {fileID: 1106841310}
   - component: {fileID: 1106841309}
   - component: {fileID: 1106841308}
+  - component: {fileID: 1106841311}
   m_Layer: 0
   m_Name: Split Screen Rig
   m_TagString: Untagged
@@ -13808,6 +13809,8 @@ MonoBehaviour:
     m_Bits: 4294967295
   _useRendererFallback: 1
   _minRendererSize: 0.05
+  _maxRendererSize: 30
+  _preferRenderers: 1
   _defaultDistance: 20
   _updateMode: 0
   _interval: 1
@@ -13827,6 +13830,33 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1106841311
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1106841307}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 456cfac303d875348bc2050361dc7b8b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Pincushioned.SplitScreen.SplitScreenMidiBinding
+  _rerollAll:
+    row: 8
+    col: 3
+  _rerollLayout:
+    row: 0
+    col: 0
+  _rerollCameras:
+    row: 0
+    col: 0
+  _reevaluatePoi:
+    row: 0
+    col: 0
+  _knobDrivesSubdivisions: 0
+  _subdivisionChannel: 2
+  _subdivisionRow: 2
 --- !u!1 &1107382216
 GameObject:
   m_ObjectHideFlags: 0
@@ -14563,6 +14593,18 @@ PrefabInstance:
     - target: {fileID: 7926253484387268361, guid: a9fcdd39e57f7c344a81f6e5f5a2f6f2, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9162339136929704116, guid: a9fcdd39e57f7c344a81f6e5f5a2f6f2, type: 3}
+      propertyPath: _extraReservedPads.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9162339136929704116, guid: a9fcdd39e57f7c344a81f6e5f5a2f6f2, type: 3}
+      propertyPath: _extraReservedPads.Array.data[0].x
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 9162339136929704116, guid: a9fcdd39e57f7c344a81f6e5f5a2f6f2, type: 3}
+      propertyPath: _extraReservedPads.Array.data[0].y
+      value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

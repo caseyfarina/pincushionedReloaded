@@ -41,6 +41,11 @@ namespace MidiFighter64.Samples
                  "navigation; row 8 cols 1-2 drive the close-up camera.")]
         [SerializeField] bool _reserveNavigationPads = true;
 
+        [Tooltip("Additional pads to ignore, as (row, col) with 1-based values. Add any " +
+                 "pad bound by another system — e.g. the split-screen reroll button — " +
+                 "or pressing it will toggle an interior object as well.")]
+        [SerializeField] Vector2Int[] _extraReservedPads = new Vector2Int[0];
+
         readonly GameObject[] _instances = new GameObject[BUTTON_COUNT];
 
         void Start() => Build();
@@ -117,6 +122,10 @@ namespace MidiFighter64.Samples
                 if (btn.col == 8) return;                    // floor navigation
                 if (btn.row == 8 && btn.col <= 2) return;    // close-up camera
             }
+
+            for (int i = 0; i < _extraReservedPads.Length; i++)
+                if (_extraReservedPads[i].x == btn.row && _extraReservedPads[i].y == btn.col)
+                    return;
 
             int idx = btn.linearIndex;
             if (idx < 0 || idx >= BUTTON_COUNT) return;
