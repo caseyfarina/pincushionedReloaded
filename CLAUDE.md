@@ -1,6 +1,19 @@
-# pincushionedSpring2026
+# pincushioned Reloaded
 
-Unity 6 (6000.3.7f1), URP project.
+Unity 6 (6000.3.7f1), URP. An 8-floor vertical building; each floor holds a
+different isometric scene of pin-scattered museum artifacts, performed live with
+a Midi Fighter 64 and an Akai MIDI Mix.
+
+Repo: `github.com/caseyfarina/pincushionedReloaded`. Successor to
+`pincushionedSpring2026`, which is **not** a working clone — see *Content
+recovery* below. That history is deliberately not carried over.
+
+## State — read this first
+
+Everything below compiles clean with zero console errors, and the scene reports
+zero missing prefabs. **Nothing here has been run with the MIDI hardware or live
+audio connected**, and the split-screen system's cost has never been measured
+under load. Those are the two open risks.
 
 ## Graphics API — MUST USE D3D11
 This project must run under **Direct3D 11**, not D3D12. D3D12 causes unrecoverable GPU device loss (TDR crash) due to conflicts between Unity's D3D12 device and the native D3D11 plugins (Adobe Substance, KlakHap). This is already enforced in `ProjectSettings/ProjectSettings.asset` (`WindowsStandaloneSupport` → D3D11 only). If crashes return, add `-force-d3d11` to Unity Hub → project → Advanced Settings → Additional command line arguments.
@@ -21,9 +34,12 @@ Assets/
   ScatterPrefabs/                        Batch-tool output prefabs (16)
   pinnedMeshes/                          *_Pinned prefabs used by the main scene
   Prefabs/Pincushioned Rig.prefab        All 8 app controllers, Inspector-configured
+  SplitScreen/                           Mosaic split-screen camera system
+  Artifacts/                             15 Smithsonian scans + materials
+  buildingFloor.fbx                      The room shell each floor is built from
   Plugins/Demigiant/DOTween/             DOTween Pro (DLL, no asmdef, globally accessible)
 Packages/manifest.json                   com.caseyfarina.midifighter64 (git URL, pinned tag)
-3DObjectProcessing/                      Python scan2unity pipeline — NOT in the repo
+3DObjectProcessing/                      Python scan2unity pipeline (source only; data gitignored)
 ```
 
 ## Content recovery — resolved
@@ -125,29 +141,72 @@ tune them with the scene open. Defaults:
   created at runtime from Main Camera — which works, but is not authorable.
 - Selecting the component draws a gizmo at every floor stop.
 
-## Key Scripts (Assets/midiSupport/Samples/TestScene/)
+## MIDI mappings — the authoritative table
+
+Rows 1 = top, columns 1 = left. Verified against the live scene, not defaults.
+
+### Midi Fighter 64
+
+| Pad | Action | Owner |
+|---|---|---|
+| **Col 8** (all rows) | Floor navigation. R1 = top floor, R8 = floor 0 | `FloorCameraController` |
+| **R8 C1** | **Hold** for close-up camera; release returns to the floor cam | `CloseUpCameraController` |
+| **R8 C2** | Reposition close-up on a random object in the current room | `CloseUpCameraController` |
+| **R8 C3** | Split-screen: reroll layout **and** camera angles | `SplitScreenMidiBinding` |
+| All other 53 pads | Toggle one interior object on/off | `MidiFighterInteriorSpawner` |
+
+### Akai MIDI Mix
+
+| Control | Action | Owner |
+|---|---|---|
+| **Ch 1, Row 2 knob** | Pin density ceiling, 0-2000 pins | `MidiMixPinDensityDriver` |
+| Ch 2, Row 2 knob | Split-screen cell count 2-32 — **disabled** by default | `SplitScreenMidiBinding` |
+| Mute / Rec-Arm / faders | Routed, nothing bound. **Momentary**, not latching | — |
+
+### Unassigned split-screen actions
+
+Three bindings sit at `R0C0`, which means off: **Reroll Layout**, **Reroll
+Cameras**, **Re-evaluate POI**. Point any at a pad to separate them from the
+combined R8 C3 action.
+
+### Pad conflict rule
+
+`MidiFighterInteriorSpawner` responds to **every** pad that isn't reserved. It
+reserves column 8 and R8 C1-C2 via `Reserve Navigation Pads`, plus an explicit
+`Extra Reserved Pads` list — currently `R8 C3`. **Bind a pad anywhere else and it
+will also toggle an interior object.** `SplitScreenMidiBinding`'s inspector
+detects the clash and offers a one-click fix; it does not happen automatically.
+
+## Key scripts
+
+`Assets/midiSupport/Samples/TestScene/`
 
 | Script | Role |
 |--------|------|
-| `FloorCameraController.cs` | MF64 col-8 -> DOTween vertical camera movement. Floor height, offset, count, duration and easing are all Inspector fields; draws floor-stop gizmos. |
-| `MidiFighterInteriorSpawner.cs` | MF64 cols 1-7 -> toggle interior prefab instances. **Seeded layout** — same seed rebuilds the same arrangement. |
-| `CloseUpCameraController.cs` | MF64 row8 col1 hold -> close-up cam; col2 -> reposition |
-| `MidiDebugUI.cs` | MIDI device status + raw event log overlay |
+| `FloorCameraController.cs` | MF64 col 8 → DOTween vertical move. Floor height, offset, count, duration, easing all Inspector fields; floor-stop gizmos. |
+| `MidiFighterInteriorSpawner.cs` | Pad → toggle interior instance. **Seeded layout** — same seed rebuilds the same arrangement. |
+| `CloseUpCameraController.cs` | R8 C1 hold → close-up; C2 → reposition. **Seeded** shot selection. |
+| `MidiDebugUI.cs` | Device status + raw event overlay. The active overlay. |
+
+`Assets/proceduralPincushioning/` — `PinDensityController`,
+`MidiMixPinDensityDriver`, `AudioPinDensityDriver` (see *Audio-reactive pin
+density*), plus the scatter system itself.
+
+`Assets/SplitScreen/` — see *Split-screen mosaic* below.
 
 ### Live vs dormant controls
 
-Everything live sits on the **`Pincushioned Rig`** object in the scene. Both
-controllers are in use: the MF64 drives navigation and interiors, the MIDI Mix
-(Ch 1, Row 2 knob) drives pin density.
+Everything live sits on **`Pincushioned Rig`** or **`Split Screen Rig`** in the
+scene. Both controllers are in use: the MF64 drives navigation, interiors and the
+split-screen reroll; the MIDI Mix drives pin density.
 
 `MidiMixCloner`, `MidiMixDataVisualizer`, and `MidiMixCameraRig` compile but are
-on no scene object — they were already dormant before the package migration and
-were left that way deliberately. To revive one, add it as a component on
-`Pincushioned Rig`. Two warnings: `MidiMixCameraRig.Start()` **disables every
-pre-existing camera in the scene**, so it will take over the view; and these
-three still carry hardcoded `const` art parameters (spread, FOV, the 8-entry
-camera VIEWS table, font sizes) that have not been promoted to Inspector fields
-like the live scripts have.
+on no scene object — dormant since before the package migration, left that way
+deliberately. To revive one, add it as a component on `Pincushioned Rig`. Two
+warnings: `MidiMixCameraRig.Start()` **disables every pre-existing camera in the
+scene**, so it will take over the view; and these three still carry hardcoded
+`const` art parameters (spread, FOV, the 8-entry camera VIEWS table, font sizes)
+that were never promoted to Inspector fields like the live scripts were.
 
 ## Audio-reactive pin density (LASP)
 
@@ -191,12 +250,166 @@ alive through quiet passages; `_contrast` shapes punchiness.
 `AudioPinDensityDriver` is wrapped in a platform `#if`. Assembly-CSharp compiles
 for every target and would otherwise fail to resolve the `Lasp` namespace.
 
+## Split-screen mosaic (`Assets/SplitScreen/`)
+
+Divides the game view into rectangles of varied size, each a camera aimed at a
+shared point of interest. On the **`Split Screen Rig`** object in the scene.
+
+| Script | Role |
+|---|---|
+| `MosaicLayout` | Pure partition math. Entry point for both layout modes. |
+| `QuadtreeLayout` | Strict quadtree, kept as an option; also owns `Inset`. |
+| `PointOfInterestFinder` | Resolves what every camera looks at. |
+| `SplitScreenCameraRig` | Camera pool, placement, viewport rects, borders. |
+| `SplitScreenMidiBinding` | MF64 pads → reroll actions. |
+
+### Layout — guillotine partition, not a quadtree
+
+Default mode **Random Rectangles** cuts an existing rectangle at a random ratio
+and repeats, so N cuts give exactly N+1 cells and sizes vary freely. The strict
+**Quadtree** mode is retained but restricts every edge to a half or quarter,
+which makes sizes repeat.
+
+Two rules keep it from degenerating into slivers, and both matter:
+
+- **Min Split Ratio** clamps cuts away from a cell's edges.
+- **Squareness Bias** prefers cutting the longer axis measured in **screen**
+  space. A 0.5 × 0.5 viewport cell is *not* square on a 16:9 display — it is
+  16:9 — so the aspect has to be folded in or every cell drifts wide.
+- Which cell gets cut is **area-weighted**, so large rectangles break up first.
+  Uniform picking keeps slicing an already-tiny cell and reads as noise.
+
+### Point of interest — renderer bounds first, physics second
+
+**This ordering is deliberate and must not be flipped.** The room shell has a
+collider; the artifacts do **not** (the pinned scans carry only MeshFilter +
+MeshRenderer). Physics-first therefore always wins with the wrong answer — the
+floor slab instead of a sculpture.
+
+Also: `FloorVolume`'s per-floor boxes are **triggers**, excluded via
+`QueryTriggerInteraction.Ignore`, or they would supply an invisible POI floating
+mid-room. A **Max Renderer Size** ceiling keeps structural geometry from becoming
+the subject. And the pins can never be hit at all — they are drawn with
+`Graphics.RenderMeshInstanced` and have no GameObjects.
+
+Update Mode defaults to **Manual**: continuous re-evaluation makes every
+sub-camera chase the main camera and reads as twitchy.
+
+### Camera placement — the 180-degree constraint
+
+Every sub-camera sits on a hemisphere centred on the POI and facing the main
+camera, at a radius strictly under the main camera's distance. So no view is ever
+behind the subject, and none is further out than the master shot. Sampling is an
+even spherical cap, not rejection sampling, which would bias toward the pole.
+
+`Enforce Axis Side` adds the **true** 180-degree rule: all cameras on one side of
+the axis line, so screen direction stays consistent and the subject does not flip
+left-right between cells. Off by default for variety. The hemisphere alone permits
+that flip — the two constraints are not the same thing.
+
+Verified in Play mode at 10 cells: 9 cameras inside the hemisphere, 0 behind the
+perpendicular plane, 0 beyond the master-shot distance.
+
+### Rendering
+
+One URP **base** camera per cell with its own viewport rect. Overlay cameras are
+not usable — they ignore their rect and inherit the base camera's. Borders are
+the gaps left by insetting each rect, over a full-screen background camera
+clearing to the border colour.
+
+Sub-cameras get **no CinemachineBrain**, so the floor and close-up rigs keep
+driving the main camera untouched. The main camera takes the largest cell by
+default and keeps its own framing.
+
+### Performance — the untested risk
+
+**Each cell is a full scene render.** Fragment cost is bounded by cell size, but
+per-camera culling and the post-processing stack are **not** and do not shrink.
+Sub-camera post-processing and shadows are **off by default** for this reason;
+they are the first knobs to reach for. This has never been profiled under load —
+with the pins, 40 lights and shadow-atlas pressure, high cell counts may not be
+viable. Measure before trusting it live.
+
+### Reroll actions
+
+Layout and placement carry **separate seeds**, which is what makes these
+independent:
+
+| Method | Changes | Leaves alone |
+|---|---|---|
+| `ResetCameraPositions()` | camera angles | cell layout |
+| `RerollLayout()` | cell layout | placement seed |
+| `RerollAll()` | both | — |
+
+## Working on this project
+
+### Verifying changes
+
+Drive the **already-open editor** via the global `unity` CLI. Never batch mode
+while the editor holds the project lock.
+
+```bash
+unity command recompile && unity command recompile_status   # CS errors surface here
+unity command get_console_logs                              # or `console` for level filtering
+```
+
+Three traps that cost real time, all confirmed on CLI `1.0.0-beta.3`:
+
+- **Only *required* command params are forwarded.** Args are positional in schema
+  order; optional ones silently do nothing. `create_gameobject "Name"` still makes
+  "New Game Object", and `eval_file <path> 120000` still times out at the 5000 ms
+  default. Read schemas from `unity --json list` → `data.tools[].parameters`.
+- **`recompile` does NOT refresh the AssetDatabase.** Auto Refresh is off here, so
+  new files on disk are never imported — nothing compiles and no `.meta` appears.
+  Use `eval_file` calling `AssetDatabase.Refresh(...)`, or **`write_text_file`,
+  which writes *and* imports** (the right tool for creating scripts).
+- **An unfocused editor does not tick**, so main-thread commands time out even
+  though `unity status` says ready. Foreground the window first.
+
+`eval_file` is effectively capped at 5 s of main-thread time — keep eval scripts
+cheap. For screenshots, `capture_game_view` only renders one camera; use
+`ScreenCapture.CaptureScreenshot` via `eval_file` to get the composited frame.
+
+### Architectural rules
+
+- **No bootstrapping.** `new GameObject(...).AddComponent<T>()` and
+  `[RuntimeInitializeOnLoadMethod]` produce components whose Inspector fields can
+  never be edited or persisted. Anything with artistic parameters belongs in the
+  scene or on a prefab. The old `MidiSceneBootstrapper` was deleted for exactly
+  this reason.
+- **Seed anything random.** Use `System.Random` with a serialized seed, never
+  `UnityEngine.Random` — that is a global shared stream anything else can perturb,
+  so compositions are not reproducible. `MeshSurfaceScatter`,
+  `MidiFighterInteriorSpawner`, `CloseUpCameraController` and the split-screen rig
+  all follow this.
+- **Router events are static.** Every `+=` needs its matching `-=` in `OnDisable`
+  or destroyed objects keep receiving MIDI.
+- **Never commit** `3DObjectProcessing/`'s API key files or its ~750 MB of derived
+  scan data. Both are gitignored.
+
+### Where to pick up
+
+Untested, in priority order:
+
+1. **Hardware pass.** Nothing has run with the MF64, MIDI Mix or live audio
+   connected. Verify the mapping table above, then pin density on Ch 1 Row 2.
+   If a control feels dead, suspect a duplicate MIDI port before the code — the
+   allow-list is `Fighter` / `MIDI Mix`.
+2. **Split-screen profiling.** Raise cell count and watch the frame time.
+3. **POI tuning.** It currently resolves to walls and floors because that is
+   genuinely what the ray hits. To prefer sculptures, put the artifacts on their
+   own layer and filter to it.
+4. `Allosaurus_fragilis_maxilla-150k_Pinned 1` renders without pins — its
+   `SurfaceSampleData` is unrecoverable. Repoint it at the surviving LOD0 asset
+   or delete the duplicate.
+5. The MIDI Mix is nearly unused: 23 knobs, 9 faders, 24 buttons free.
+
 ## Subsystem Docs
 
 Each major subsystem has its own CLAUDE.md with detailed docs:
 - `Packages/com.caseyfarina.midifighter64/CLAUDE.md` — MIDI package API, event flow, grid/note layouts, LED palette, gotchas
 - `Assets/proceduralPincushioning/CLAUDE.md` — GPU scatter system, bake pipeline, render pass
-- `3DObjectProcessing/CLAUDE.md` — Python mesh processing, Smithsonian API, Blender bridge
+- `3DObjectProcessing/CLAUDE.md` — Python mesh processing, Smithsonian API, Blender bridge (source is tracked; its ~750 MB of scan output is gitignored)
 
 ## Conventions
 
