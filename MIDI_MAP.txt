@@ -1,0 +1,152 @@
+===============================================================================
+ pincushioned Reloaded - MIDI CONTROL MAP
+ Read from the live scene. Regenerate after changing any binding.
+===============================================================================
+
+ HARDWARE
+   DJ Tech Tools Midi Fighter 64   8x8 pads, notes 36-99, Channel 3
+   Akai MIDI Mix                   24 knobs, 8+1 faders, 24 buttons
+
+ PLUG IN BOTH CONTROLLERS *BEFORE* LAUNCHING UNITY.
+ Hot-plugging into a running editor locks it up (100% CPU, no recovery).
+ Do not unplug or replug during a set. If a cable is knocked, restart Unity.
+
+
+===============================================================================
+ MIDI FIGHTER 64            row 1 = TOP, col 1 = LEFT
+===============================================================================
+
+          C1     C2     C3     C4     C5     C6     C7     C8
+       +------+------+------+------+------+------+------+------+
+  R1   | int  | int  | int  | int  | int  | int  | int  |FLOOR7|   <- top floor
+       +------+------+------+------+------+------+------+------+
+  R2   | int  | int  | int  | int  | int  | int  | int  |FLOOR6|
+       +------+------+------+------+------+------+------+------+
+  R3   | int  | int  | int  | int  | int  | int  | int  |FLOOR5|
+       +------+------+------+------+------+------+------+------+
+  R4   | int  | int  | int  | int  | int  | int  | int  |FLOOR4|
+       +------+------+------+------+------+------+------+------+
+  R5   | int  | int  | int  | int  | int  | int  | int  |FLOOR3|
+       +------+------+------+------+------+------+------+------+
+  R6   | int  | int  | int  | int  | int  | int  | int  |FLOOR2|
+       +------+------+------+------+------+------+------+------+
+  R7   | int  | int  | int  | int  | int  | int  | int  |FLOOR1|
+       +------+------+------+------+------+------+------+------+
+  R8   | CAM  | POS  |RESET | int  | int  | int  | int  |FLOOR0|   <- ground
+       +------+------+------+------+------+------+------+------+
+         hold   tap    tap                            bottom
+
+ LEGEND
+   FLOOR0-7   Column 8. Jump to that floor. 0.6s eased camera move.
+              Ordered by floor INDEX, so it holds even if rooms differ in size.
+   CAM        R8C1. HOLD for close-up camera inside the current room.
+              Release returns to the floor camera. Momentary, not a toggle.
+   POS        R8C2. Re-place the close-up on a random object in the room.
+              Depth of field refocuses to match. Seeded: same order each run.
+   RESET      R8C3. Split-screen: new cell layout AND new camera angles.
+   int        Toggle one interior object on/off. 53 pads, one object each.
+              Press = on, release = off. Layout is seeded and reproducible.
+
+ NOTE ON PADS
+   Every pad not listed above toggles an interior object. If you bind a new
+   pad to anything, add it to MidiFighterInteriorSpawner > Extra Reserved Pads
+   or it will fire BOTH actions. R8C3 is already reserved.
+
+
+===============================================================================
+ AKAI MIDI MIX
+===============================================================================
+
+              CH1    CH2    CH3    CH4    CH5    CH6    CH7    CH8
+            +------+------+------+------+------+------+------+------+
+  KNOB R1   |  --  |  --  |  --  |  --  |  --  |  --  |  --  |  --  |
+            +------+------+------+------+------+------+------+------+
+  KNOB R2   | PINS |(cell)|  --  |  --  |  --  |  --  |  --  |  --  |
+            +------+------+------+------+------+------+------+------+
+  KNOB R3   |  --  |  --  |  --  |  --  |  --  |  --  |  --  |  --  |
+            +------+------+------+------+------+------+------+------+
+  REC ARM   |  --  |  --  |  --  |  --  |  --  |  --  |  --  |  --  |
+            +------+------+------+------+------+------+------+------+
+  MUTE      |  --  |  --  |  --  |  --  |  --  |  --  |  --  |  --  |
+            +------+------+------+------+------+------+------+------+
+  FADER     |  --  |  --  |  --  |  --  |  --  |  --  |  --  |  --  |
+            +------+------+------+------+------+------+------+------+
+                                                        MASTER  --
+
+ LEGEND
+   PINS     Ch1 Row2. Pin density ceiling, 0 -> 2000 pins per artifact.
+            MULTIPLIES with the live audio envelope: the knob sets how
+            intense it can get, the music drives movement inside that.
+            Knob at zero = no pins regardless of audio.
+   (cell)   Ch2 Row2. Split-screen cell count 2-32.
+            DISABLED. Enable on SplitScreenMidiBinding > Knob Drives
+            Subdivisions if you want it live.
+   --       Routed and receiving, but nothing bound.
+
+ MUTE / REC-ARM are MOMENTARY here, not latching. Press and release both
+ send events with the raw button state. (The package default is latching;
+ it is switched off to match this project's original behaviour.)
+
+
+===============================================================================
+ AUDIO INPUT
+===============================================================================
+
+   Device   Yeti Nano (set explicitly, not "system default")
+   Band     LowPass - kick and bass drive the envelope
+   Target   Pin density, multiplied by the Ch1 Row2 knob
+   Floor    0.15 - pins never fully vanish in quiet passages
+
+   VoiceMeeter VAIO is also available if you would rather capture the
+   played mix than the room.
+
+
+===============================================================================
+ UNASSIGNED - free to bind
+===============================================================================
+
+   MIDI FIGHTER 64   nothing free without displacing an interior toggle
+   MIDI MIX          23 of 24 knobs, all 9 faders, all 24 buttons
+
+   Split-screen actions currently OFF (set row/col 1-8 to enable):
+     Reroll Layout    - new cell arrangement, same camera angles
+     Reroll Cameras   - new camera angles, same arrangement
+     Re-evaluate POI  - pick a new subject for every camera
+                        ^ probably the most useful of the three live
+
+   All three are on SplitScreenMidiBinding, on the Split Screen Rig object.
+
+
+===============================================================================
+ IF A CONTROL SEEMS DEAD
+===============================================================================
+
+   1. DUPLICATE MIDI PORT is the most common cause, and it does not look
+      like a device problem - raw events appear fine while anything
+      press-to-toggle turns on and straight back off.
+      MidiEventManager > Allowed Device Names is set to: Fighter, MIDI Mix
+      Close any MIDI monitor, loopMIDI, or DAW holding the ports.
+
+   2. FIRST EVENT PER SESSION IS OFTEN SWALLOWED (a Minis quirk).
+      Press any pad twice on startup.
+
+   3. CLOSE DAWs. Windows gives WinMM exclusive access to the devices.
+
+   4. MF64 UTILITY must be: Base Channel 3, Type = Notes,
+      Corner Button Bank Change = DISABLED.
+
+   5. USB HUBS cause detection issues. Prefer a direct port. If both
+      devices must share a hub, use a powered USB 3.0 multi-TT hub.
+
+
+===============================================================================
+ ON-SCREEN
+===============================================================================
+
+   MidiDebugUI       Active overlay. Device status + raw event log.
+   MidiStatusDrawer  Package overlay mirroring both controllers live.
+                     PRESENT BUT DISABLED. Tick it on the MIDI Controller
+                     object to use it instead; backtick (`) shows/hides.
+                     Do not run both - they draw over each other.
+
+===============================================================================
