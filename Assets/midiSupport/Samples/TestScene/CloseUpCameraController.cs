@@ -78,7 +78,10 @@ namespace MidiFighter64.Samples
         void Start()
         {
             // Cache after all scene objects are initialised
-            _floorVolumes = Object.FindObjectsByType<FloorVolume>(FindObjectsSortMode.None);
+            // Include inactive: FloorVisibilityController disables off-screen floors,
+            // and a disabled floor is still a valid close-up target once navigated to.
+            _floorVolumes = Object.FindObjectsByType<FloorVolume>(
+                FindObjectsInactive.Include, FindObjectsSortMode.None);
         }
 
         void OnEnable()  => MidiGridRouter.OnGridButton += HandleButton;

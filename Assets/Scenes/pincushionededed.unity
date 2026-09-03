@@ -2761,6 +2761,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: MidiFighter64.Samples::MidiFighter64.Samples.FloorVolume
   floorIndex: 1
   dofVolumeObject: {fileID: 992183306}
+  cameraAnchor: {fileID: 0}
+  cameraHeightOffset: 3.7
 --- !u!65 &212596955
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -5990,6 +5992,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: MidiFighter64.Samples::MidiFighter64.Samples.FloorVolume
   floorIndex: 0
   dofVolumeObject: {fileID: 1690434380}
+  cameraAnchor: {fileID: 0}
+  cameraHeightOffset: 3.7
 --- !u!65 &469843983
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -6264,6 +6268,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: MidiFighter64.Samples::MidiFighter64.Samples.FloorVolume
   floorIndex: 4
   dofVolumeObject: {fileID: 1656964396}
+  cameraAnchor: {fileID: 0}
+  cameraHeightOffset: 3.7
 --- !u!65 &500700362
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -9861,6 +9867,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: MidiFighter64.Samples::MidiFighter64.Samples.FloorVolume
   floorIndex: 2
   dofVolumeObject: {fileID: 1105911850}
+  cameraAnchor: {fileID: 0}
+  cameraHeightOffset: 3.7
 --- !u!65 &732386316
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -13753,6 +13761,7 @@ GameObject:
   - component: {fileID: 1106841309}
   - component: {fileID: 1106841308}
   - component: {fileID: 1106841311}
+  - component: {fileID: 1106841312}
   m_Layer: 0
   m_Name: Split Screen Rig
   m_TagString: Untagged
@@ -13772,8 +13781,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: af9786843be8e794796db7b7cf8fbc7f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Pincushioned.SplitScreen.SplitScreenCameraRig
-  _subdivisions: 3
-  _splitStrategy: 0
+  _layoutMode: 0
+  _cellCount: 8
+  _minSplitRatio: 0.25
+  _squarenessBias: 0.75
   _layoutSeed: 12345
   _mainCameraTakesLargestCell: 1
   _borderThickness: 4
@@ -13857,6 +13868,21 @@ MonoBehaviour:
   _knobDrivesSubdivisions: 0
   _subdivisionChannel: 2
   _subdivisionRow: 2
+--- !u!114 &1106841312
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1106841307}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c0014071c759fd4c9a2a3cf717b99aa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Pincushioned.SplitScreen.SplitScreenFloorSync
+  _reevaluatePoi: 1
+  _rerollCameras: 1
+  _refreshRendererCache: 1
 --- !u!1 &1107382216
 GameObject:
   m_ObjectHideFlags: 0
@@ -14609,8 +14635,32 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4978664647139329532, guid: a9fcdd39e57f7c344a81f6e5f5a2f6f2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1168802776}
   m_SourcePrefab: {fileID: 100100000, guid: a9fcdd39e57f7c344a81f6e5f5a2f6f2, type: 3}
+--- !u!1 &1168802775 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4978664647139329532, guid: a9fcdd39e57f7c344a81f6e5f5a2f6f2, type: 3}
+  m_PrefabInstance: {fileID: 1168802774}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1168802776
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1168802775}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 692e47c2e05733247bb030a33ddff286, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MidiFighter64.Samples::MidiFighter64.Samples.FloorVisibilityController
+  _cullFloors: 1
+  _neighbourRange: 0
+  _keepSourceDuringMove: 1
+  _alwaysActive: 
 --- !u!1 &1169815798
 GameObject:
   m_ObjectHideFlags: 0
@@ -19635,6 +19685,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: MidiFighter64.Samples::MidiFighter64.Samples.FloorVolume
   floorIndex: 6
   dofVolumeObject: {fileID: 277708375}
+  cameraAnchor: {fileID: 0}
+  cameraHeightOffset: 3.7
 --- !u!65 &1544628405
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -20001,6 +20053,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: MidiFighter64.Samples::MidiFighter64.Samples.FloorVolume
   floorIndex: 7
   dofVolumeObject: {fileID: 1906623274}
+  cameraAnchor: {fileID: 0}
+  cameraHeightOffset: 3.7
 --- !u!65 &1558571058
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -21885,6 +21939,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: MidiFighter64.Samples::MidiFighter64.Samples.FloorVolume
   floorIndex: 3
   dofVolumeObject: {fileID: 1985206318}
+  cameraAnchor: {fileID: 0}
+  cameraHeightOffset: 3.7
 --- !u!65 &1774375733
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -24554,6 +24610,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: MidiFighter64.Samples::MidiFighter64.Samples.FloorVolume
   floorIndex: 5
   dofVolumeObject: {fileID: 1533461977}
+  cameraAnchor: {fileID: 0}
+  cameraHeightOffset: 3.7
 --- !u!65 &2007061240
 BoxCollider:
   m_ObjectHideFlags: 0

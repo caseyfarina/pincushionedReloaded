@@ -72,6 +72,13 @@ public class MeshSurfaceScatter : MonoBehaviour
     // Internal state
     // ═════════════════════════════════════════════════════════════════════
     private int _lastScatterCount = -1;
+
+    // Local-space bounds of the placed instances, computed once per Scatter().
+    // RenderBatches transforms this to world space each frame. Without it the
+    // render bounds were a hardcoded 1000-unit cube, which meant Unity could
+    // never frustum-cull a scatter instance — every floor in the building
+    // submitted its pins every frame, visible or not.
+    private Bounds _localBounds = new Bounds(Vector3.zero, Vector3.one);
     private int _lastSeed = -1;
 
     private List<List<Matrix4x4[]>> _variantBatches;
@@ -134,7 +141,7 @@ public class MeshSurfaceScatter : MonoBehaviour
 
         Transform xform = surfaceTransform != null ? surfaceTransform : transform;
         Matrix4x4 localToWorld = xform.localToWorldMatrix;
-        Bounds bounds = new Bounds(xform.position, Vector3.one * 1000f);
+        Bounds bounds = TransformBounds(localToWorld, _localBounds);
 
         for (int v = 0; v < pinVariants.Length; v++)
         {
@@ -279,6 +286,69 @@ public class MeshSurfaceScatter : MonoBehaviour
 
             _variantBatches.Add(batches);
         }
+
+        RecomputeLocalBounds(variantLists);
+    }
+
+    /// <summary>
+    /// Tight local-space bounds around every placed instance, padded by the
+    /// largest pin's reach so a pin straddling the edge is never clipped.
+    /// </summary>
+    private void RecomputeLocalBounds(List<List<Matrix4x4>> variantLists)
+    {
+        bool any = false;
+        var min = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+        var max = new Vector3(float.MinValue, float.MinValue, float.MinValue);
+
+        for (int v = 0; v < variantLists.Count; v++)
+        {
+            var list = variantLists[v];
+            for (int i = 0; i < list.Count; i++)
+            {
+                Vector3 p = list[i].GetColumn(3);   // translation
+                min = Vector3.Min(min, p);
+                max = Vector3.Max(max, p);
+                any = true;
+            }
+        }
+
+        if (!any)
+        {
+            _localBounds = new Bounds(Vector3.zero, Vector3.zero);
+            return;
+        }
+
+        // Pad by the largest pin mesh extent at the largest scale. Instance
+        // positions are pin origins, so without this a tall pin near the edge
+        // would be culled while still on screen.
+        float pinReach = 0f;
+        for (int v = 0; v < pinVariants.Length; v++)
+            if (pinVariants[v].mesh != null)
+                pinReach = Mathf.Max(pinReach, pinVariants[v].mesh.bounds.extents.magnitude);
+
+        float pad = pinReach * Mathf.Max(Mathf.Abs(scaleRange.x), Mathf.Abs(scaleRange.y))
+                  + Mathf.Abs(normalOffset);
+
+        var b = new Bounds((min + max) * 0.5f, max - min);
+        b.Expand(pad * 2f);
+        _localBounds = b;
+    }
+
+    /// <summary>Axis-aligned world bounds of a local bounds under a transform.</summary>
+    private static Bounds TransformBounds(Matrix4x4 m, Bounds local)
+    {
+        Vector3 c = m.MultiplyPoint3x4(local.center);
+        Vector3 e = local.extents;
+        // Sum the absolute contribution of each basis vector — the standard AABB
+        // transform. Cheaper and tighter than transforming all eight corners.
+        Vector3 ax = m.GetColumn(0) * e.x;
+        Vector3 ay = m.GetColumn(1) * e.y;
+        Vector3 az = m.GetColumn(2) * e.z;
+        Vector3 ext = new Vector3(
+            Mathf.Abs(ax.x) + Mathf.Abs(ay.x) + Mathf.Abs(az.x),
+            Mathf.Abs(ax.y) + Mathf.Abs(ay.y) + Mathf.Abs(az.y),
+            Mathf.Abs(ax.z) + Mathf.Abs(ay.z) + Mathf.Abs(az.z));
+        return new Bounds(c, ext * 2f);
     }
 
     // ═════════════════════════════════════════════════════════════════════
