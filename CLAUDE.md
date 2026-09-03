@@ -11,9 +11,12 @@ recovery* below. That history is deliberately not carried over.
 ## State — read this first
 
 Everything below compiles clean with zero console errors, and the scene reports
-zero missing prefabs. **Nothing here has been run with the MIDI hardware or live
-audio connected**, and the split-screen system's cost has never been measured
-under load. Those are the two open risks.
+zero missing prefabs. Performance has been measured and addressed — floor culling
+plus a scatter bounds fix took the frame from 125 ms CPU to 35 ms (see *Floors*).
+
+**Nothing here has been run with the MIDI hardware or live audio connected.**
+That is the remaining open risk. At 35 ms CPU with 8 split-screen cells the frame
+is still CPU-bound on per-camera work, so cell count is the knob to watch.
 
 ## Graphics API — MUST USE D3D11
 This project must run under **Direct3D 11**, not D3D12. D3D12 causes unrecoverable GPU device loss (TDR crash) due to conflicts between Unity's D3D12 device and the native D3D11 plugins (Adobe Substance, KlakHap). This is already enforced in `ProjectSettings/ProjectSettings.asset` (`WindowsStandaloneSupport` → D3D11 only). If crashes return, add `-force-d3d11` to Unity Hub → project → Advanced Settings → Additional command line arguments.
@@ -128,18 +131,67 @@ per-scene overrides are normal Unity prefab behaviour.
 - Both connected via USB; WinMM exclusive access (close DAWs before Play)
 - Use a **powered USB 3.0 multi-TT hub** for both devices simultaneously
 
-## Floor Navigation
+## Floors — unequal sizes and visibility culling
 
-All of these are **Inspector fields on `FloorCameraController`**, not constants —
-tune them with the scene open. Defaults:
+**`FloorVolume` is the source of truth** for where a floor is and how big it is.
+Rooms may differ in height and footprint: resize a floor's trigger collider and
+the camera re-frames automatically, because `CameraPosition` derives from the
+live bounds. For full control (a room needing a different distance or angle, not
+just height) assign `Camera Anchor` and the camera moves there exactly.
 
-- 8 floors (`Floor Count`), each 8 units tall (`Floor Height`), camera at +7.7 (`Camera Y Offset`)
-- MF64 column 8 (rightmost): row 1 (top) = top floor, row 8 (bottom) = floor 0
-- `Ease.InOutCubic`, 0.6s (`Duration`, `Ease`)
-- Camera X, Z, rotation are fixed; only Y is tweened
-- Assign `Floor Vcam` to a scene camera to frame shots directly. Left empty it is
-  created at runtime from Main Camera — which works, but is not authorable.
-- Selecting the component draws a gizmo at every floor stop.
+**Nothing derives a floor position from `index * uniformHeight`.** That
+arithmetic survives only as a fallback in `FloorCameraController` for scenes with
+no FloorVolumes. Floor *order* is by `floorIndex`, never by height, so MF64
+column 8 keeps working however the rooms are sized.
+
+### Visibility culling — measured 3.6x
+
+`FloorVisibilityController` (on `Pincushioned Rig`) enables only the floor you
+are on. Measured with the split-screen rig running:
+
+| | all floors | culled | change |
+|---|---:|---:|---|
+| draw calls | 7,661 | 402 | 19x fewer |
+| triangles | 113.8M | 4.69M | 24x fewer |
+| CPU frame | 125.3 ms | 35.2 ms | **3.6x faster** |
+| GPU frame | 27.2 ms | 3.1 ms | 8.8x faster |
+
+The cost was never geometry sitting in memory — it was 20 scatter instances
+submitting pins and 40 lights fighting for the shadow atlas, for rooms nobody
+could see.
+
+**Why `SetActive` and not additive scene loading.** A whole-GameObject disable
+stops Update, rendering, lights and shadows in one call, costs nothing at steady
+state, and is instant. Async scene loading would put unpredictable hitches inside
+a 0.6 s camera move during a live set, and memory was never the constraint.
+Separate scenes would still be worth it for *authoring* — but load them all
+additively at startup and toggle, rather than loading on demand.
+
+Knobs: `Neighbour Range` (extra floors either side; raise if rooms overlap
+vertically), `Always Active` (floors never disabled), `Keep Source During Move`
+(on — the camera travels through the gap between floors), `Cull Floors` (master
+off switch for A/B testing).
+
+### Scatter render bounds — do not reintroduce a fixed cube
+
+`MeshSurfaceScatter` used to submit a hardcoded **1000-unit bounds cube** while
+the building is 64 units tall, so Unity could **never** frustum-cull a scatter
+instance. It now computes a tight local-space bounds per `Scatter()`, padded by
+the largest pin's reach. This is why draw calls fell further than floor culling
+alone achieved — each split-screen camera can now cull independently.
+
+### Floor change interactions
+
+Two things must react when the floor changes, and both are wired:
+
+- `SplitScreenFloorSync` re-evaluates the POI and re-places the split-screen
+  cameras. **Without it every cell renders black** — the cameras keep aiming at
+  the previous floor's POI, which is now disabled. Looks like the split screen
+  broke; the cause is stale aim.
+- `CloseUpCameraController` caches FloorVolumes **including inactive**, since a
+  disabled floor is still a valid navigation target.
+
+Anything new that looks up floors must use `FindObjectsInactive.Include`.
 
 ## MIDI mappings — the authoritative table
 
@@ -186,6 +238,8 @@ detects the clash and offers a one-click fix; it does not happen automatically.
 | `FloorCameraController.cs` | MF64 col 8 → DOTween vertical move. Floor height, offset, count, duration, easing all Inspector fields; floor-stop gizmos. |
 | `MidiFighterInteriorSpawner.cs` | Pad → toggle interior instance. **Seeded layout** — same seed rebuilds the same arrangement. |
 | `CloseUpCameraController.cs` | R8 C1 hold → close-up; C2 → reposition. **Seeded** shot selection. |
+| `FloorVolume.cs` | Source of truth for a floor's bounds and camera framing. Supports unequal rooms. |
+| `FloorVisibilityController.cs` | Enables only the visible floor — the 3.6x win. |
 | `MidiDebugUI.cs` | Device status + raw event overlay. The active overlay. |
 
 `Assets/proceduralPincushioning/` — `PinDensityController`,
