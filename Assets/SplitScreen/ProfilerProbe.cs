@@ -1,4 +1,3 @@
-#if UNITY_EDITOR
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
@@ -19,8 +18,8 @@ namespace Pincushioned.Diagnostics
     /// That reads as "this costs nothing" when it actually means "this never
     /// attached", so unresolved metrics are listed explicitly instead.
     ///
-    /// Editor-only: it exists to answer "where is the frame going", and the answer
-    /// in the editor is not the answer in a build.
+    /// Runs in players too — deliberately, because the answer in the editor is not
+    /// the answer in a build. In a player the report goes to the player log.
     /// </summary>
     public class ProfilerProbe : MonoBehaviour
     {
@@ -29,7 +28,17 @@ namespace Pincushioned.Diagnostics
         [SerializeField] int _sampleFrames = 120;
 
         [Tooltip("Start a new sampling window as soon as one finishes.")]
-        [SerializeField] bool _loop = false;
+        [SerializeField] bool _loop = true;
+
+        [Tooltip("Write each report to the console / player log. In a build this is " +
+                 "the only way to read it.")]
+        [SerializeField] bool _logReport = true;
+
+        [Tooltip("Skip this many frames before the first window, so startup hitches " +
+                 "and shader warmup do not pollute the average.")]
+        [SerializeField] int _warmupFrames = 180;
+
+        int _warmup;
 
         [Tooltip("Metric names to sample. Anything that fails to resolve is reported " +
                  "as unresolved rather than silently reading zero.")]
@@ -121,11 +130,13 @@ namespace Pincushioned.Diagnostics
 
         void Update()
         {
+            if (_warmup < _warmupFrames) { _warmup++; _frames = 0; return; }
             if (!Sampling) return;
             if (++_frames < _sampleFrames) return;
 
             Report   = BuildReport();
             Sampling = false;
+            if (_logReport) Debug.Log(Report);
             if (_loop) Begin();
         }
 
@@ -162,4 +173,3 @@ namespace Pincushioned.Diagnostics
         }
     }
 }
-#endif

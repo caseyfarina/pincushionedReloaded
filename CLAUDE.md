@@ -14,9 +14,17 @@ Everything below compiles clean with zero console errors, and the scene reports
 zero missing prefabs. Performance has been measured and addressed — floor culling
 plus a scatter bounds fix took the frame from 125 ms CPU to 35 ms (see *Floors*).
 
+**Performance is fine.** Measured in a player build with 8 split-screen cells,
+all shadows on, one floor active: **9.17 ms CPU / 6.55 ms GPU — about 109 fps.**
+
+**Never trust editor frame times on this project.** The same scene measures
+47.51 ms in the editor — 5.2x slower — because two open Scene views re-render
+everything, and the editor loop inflates even the PlayerLoop marker (19.03 ms in
+editor vs 8.55 ms in build). Use `ProfilerProbe` in a build before concluding
+anything is slow.
+
 **Nothing here has been run with the MIDI hardware or live audio connected.**
-That is the remaining open risk. At 35 ms CPU with 8 split-screen cells the frame
-is still CPU-bound on per-camera work, so cell count is the knob to watch.
+That is the one remaining open risk.
 
 ## Graphics API — MUST USE D3D11
 This project must run under **Direct3D 11**, not D3D12. D3D12 causes unrecoverable GPU device loss (TDR crash) due to conflicts between Unity's D3D12 device and the native D3D11 plugins (Adobe Substance, KlakHap). This is already enforced in `ProjectSettings/ProjectSettings.asset` (`WindowsStandaloneSupport` → D3D11 only). If crashes return, add `-force-d3d11` to Unity Hub → project → Advanced Settings → Additional command line arguments.
@@ -375,14 +383,20 @@ Sub-cameras get **no CinemachineBrain**, so the floor and close-up rigs keep
 driving the main camera untouched. The main camera takes the largest cell by
 default and keeps its own framing.
 
-### Performance — the untested risk
+### Performance — measured
 
-**Each cell is a full scene render.** Fragment cost is bounded by cell size, but
-per-camera culling and the post-processing stack are **not** and do not shrink.
-Sub-camera post-processing and shadows are **off by default** for this reason;
-they are the first knobs to reach for. This has never been profiled under load —
-with the pins, 40 lights and shadow-atlas pressure, high cell counts may not be
-viable. Measure before trusting it live.
+**Each cell is a full scene render**, and per-camera culling does not shrink with
+cell size. Sub-camera post-processing and shadows are off by default for that
+reason.
+
+Measured in a **build** at 8 cells, one floor active: **9.17 ms CPU, 6.55 ms GPU,
+~109 fps**, 401 draw calls, 5.8M triangles. Scripts are 1.19 ms; shadows 0.58 ms.
+There is comfortable headroom — raise the cell count deliberately and re-measure
+rather than assuming a ceiling.
+
+The same scene reads 47.51 ms in the **editor**. That number is meaningless: two
+open Scene views re-render the scene, and the editor inflates even PlayerLoop
+(19.03 ms editor vs 8.55 ms build). Always measure in a build.
 
 ### Reroll actions
 
