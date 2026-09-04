@@ -32,9 +32,10 @@
        +------+------+------+------+------+------+------+------+
   R7   | int  | int  | int  | int  | int  | int  | int  |FLOOR1|
        +------+------+------+------+------+------+------+------+
-  R8   | CAM  | POS  |RESET | int  | int  | int  | int  |FLOOR0|   <- ground
+  R8   | CAM  | POS  |RESET |SPLIT | WIDE |TIGHT | int  |FLOOR0|   <- ground
        +------+------+------+------+------+------+------+------+
-         hold   tap    tap                            bottom
+         hold   tap    tap   TOGGLE  tap    tap           bottom
+                             (LED)
 
  LEGEND
    FLOOR0-7   Column 8. Jump to that floor. 0.6s eased camera move.
@@ -44,6 +45,18 @@
    POS        R8C2. Re-place the close-up on a random object in the room.
               Depth of field refocuses to match. Seeded: same order each run.
    RESET      R8C3. Split-screen: new cell layout AND new camera angles.
+   SPLIT      R8C4. TOGGLE the split screen on/off. The arrangement is
+              remembered - switching back on returns the identical layout
+              and camera angles.
+              *** THIS PAD'S LED SHOWS THE STATE ***
+                 lit blue  = split screen ON
+                 dim grey  = split screen OFF
+   WIDE       R8C5. Reconfigure with a random cell count 4-9. Busier.
+              Flashes pink on press.
+   TIGHT      R8C6. Reconfigure with a random cell count 2-5. Calmer.
+              Flashes pink on press.
+              Both also reroll the layout and the camera angles, and both
+              work while the split screen is hidden - switch it on to reveal.
    int        Toggle one interior object on/off. 53 pads, one object each.
               Press = on, release = off. Layout is seeded and reproducible.
 
@@ -106,6 +119,7 @@
 ===============================================================================
 
    MIDI FIGHTER 64   nothing free without displacing an interior toggle
+                     (R8C1-C6 and all of column 8 are now reserved)
    MIDI MIX          23 of 24 knobs, all 9 faders, all 24 buttons
 
    Split-screen actions currently OFF (set row/col 1-8 to enable):

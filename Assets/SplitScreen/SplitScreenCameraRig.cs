@@ -23,6 +23,13 @@ namespace Pincushioned.SplitScreen
     {
         // ── layout ───────────────────────────────────────────────────────────
 
+        [Header("State")]
+        [Tooltip("Whether the split screen is showing. Toggling this does NOT disable " +
+                 "the component — the MIDI binding must keep listening so it can be " +
+                 "toggled back on. Layout and placement seeds are untouched, so " +
+                 "switching off and on again returns the identical arrangement.")]
+        [SerializeField] bool _active = true;
+
         [Header("Layout")]
         [Tooltip("How the screen is carved up. Random Rectangles cuts existing cells " +
                  "at random ratios, so sizes vary freely. Quadtree restricts every " +
@@ -145,7 +152,7 @@ namespace Pincushioned.SplitScreen
         void OnEnable()
         {
             if (_poi != null) _poi.OnPointChanged += HandlePoiChanged;
-            Rebuild();
+            if (_active) Rebuild();
         }
 
         void OnDisable()
@@ -156,6 +163,7 @@ namespace Pincushioned.SplitScreen
 
         void LateUpdate()
         {
+            if (!_active) return;
             if (_poi == null || !_poi.HasPoint) return;
 
             // Aim is cheap, so it tracks every frame. Position is not, so it only
@@ -176,9 +184,51 @@ namespace Pincushioned.SplitScreen
 
         // ── build ────────────────────────────────────────────────────────────
 
+        /// <summary>Is the split screen currently showing?</summary>
+        public bool IsActive => _active;
+
+        /// <summary>
+        /// Show or hide the split screen. Off restores the main camera to full
+        /// screen and tears down the sub-cameras; on rebuilds from the unchanged
+        /// seeds, so the previous arrangement comes back exactly as it was.
+        /// The component stays enabled either way.
+        /// </summary>
+        public void SetActive(bool on)
+        {
+            if (_active == on && Application.isPlaying) return;
+            _active = on;
+
+            if (on) Rebuild();
+            else    Teardown();
+        }
+
+        /// <summary>Flip the split screen on or off.</summary>
+        public void ToggleActive() => SetActive(!_active);
+
+        /// <summary>
+        /// Pick a new cell count at random within the given inclusive range and
+        /// reroll both layout and camera angles. Applies immediately when the rig
+        /// is showing; when hidden it still updates state, so switching on later
+        /// reveals the new arrangement.
+        /// </summary>
+        public void RandomizeCells(int minCells, int maxCells)
+        {
+            int lo = Mathf.Clamp(Mathf.Min(minCells, maxCells), MosaicLayout.MinCells, MosaicLayout.MaxCells);
+            int hi = Mathf.Clamp(Mathf.Max(minCells, maxCells), MosaicLayout.MinCells, MosaicLayout.MaxCells);
+
+            var rng = new System.Random();
+            _cellCount     = rng.Next(lo, hi + 1);   // Next's upper bound is exclusive
+            _layoutSeed    = rng.Next(int.MinValue, int.MaxValue);
+            _placementSeed = rng.Next(int.MinValue, int.MaxValue);
+
+            if (_active) Rebuild();
+        }
+
         /// <summary>Rebuild the layout, the camera pool, and the placement.</summary>
         public void Rebuild()
         {
+            if (!_active) return;
+
             CaptureMainRect();
             MosaicLayout.Build(_cellCount, _layoutMode, _layoutSeed,
                                _minSplitRatio, _squarenessBias, CurrentAspect, _cells);

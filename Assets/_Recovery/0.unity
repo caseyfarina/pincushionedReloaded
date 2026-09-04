@@ -12121,6 +12121,71 @@ Transform:
   - {fileID: 1092656972}
   m_Father: {fileID: 750039434}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &976329356
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 976329358}
+  - component: {fileID: 976329357}
+  m_Layer: 0
+  m_Name: ~ProfilerProbe
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &976329357
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 976329356}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c2d42e64fd93624ea4813d905027805, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Pincushioned.Diagnostics.ProfilerProbe
+  _sampleFrames: 120
+  _loop: 1
+  _logReport: 1
+  _warmupFrames: 180
+  _metrics:
+  - Main Thread
+  - Render Thread
+  - CPU Total Frame Time
+  - GPU Frame Time
+  - PlayerLoop
+  - BehaviourUpdate
+  - Camera.Render
+  - RenderPipelineManager.DoRenderLoop_Internal
+  - Shadows.Draw
+  - Culling
+  - Draw Calls Count
+  - SetPass Calls Count
+  - Batches Count
+  - Triangles Count
+  - Shadow Casters Count
+  - GC Allocated In Frame
+--- !u!4 &976329358
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 976329356}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &979324737
 GameObject:
   m_ObjectHideFlags: 0
@@ -13781,7 +13846,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: af9786843be8e794796db7b7cf8fbc7f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Pincushioned.SplitScreen.SplitScreenCameraRig
-  _active: 1
   _layoutMode: 0
   _cellCount: 8
   _minSplitRatio: 0.25
@@ -13866,23 +13930,6 @@ MonoBehaviour:
   _reevaluatePoi:
     row: 0
     col: 0
-  _toggleSplitScreen:
-    row: 8
-    col: 4
-  _randomizeWide:
-    row: 8
-    col: 5
-  _randomizeTight:
-    row: 8
-    col: 6
-  _wideRange: {x: 4, y: 9}
-  _tightRange: {x: 2, y: 5}
-  _driveToggleLed: 1
-  _ledOn: 37
-  _ledOff: 1
-  _flashReconfigureLeds: 1
-  _ledFlash: 56
-  _flashSeconds: 0.12
   _knobDrivesSubdivisions: 0
   _subdivisionChannel: 2
   _subdivisionRow: 2
@@ -14640,7 +14687,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9162339136929704116, guid: a9fcdd39e57f7c344a81f6e5f5a2f6f2, type: 3}
       propertyPath: _extraReservedPads.Array.size
-      value: 4
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 9162339136929704116, guid: a9fcdd39e57f7c344a81f6e5f5a2f6f2, type: 3}
       propertyPath: _extraReservedPads.Array.data[0].x
@@ -14649,30 +14696,6 @@ PrefabInstance:
     - target: {fileID: 9162339136929704116, guid: a9fcdd39e57f7c344a81f6e5f5a2f6f2, type: 3}
       propertyPath: _extraReservedPads.Array.data[0].y
       value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 9162339136929704116, guid: a9fcdd39e57f7c344a81f6e5f5a2f6f2, type: 3}
-      propertyPath: _extraReservedPads.Array.data[1].x
-      value: 8
-      objectReference: {fileID: 0}
-    - target: {fileID: 9162339136929704116, guid: a9fcdd39e57f7c344a81f6e5f5a2f6f2, type: 3}
-      propertyPath: _extraReservedPads.Array.data[1].y
-      value: 4
-      objectReference: {fileID: 0}
-    - target: {fileID: 9162339136929704116, guid: a9fcdd39e57f7c344a81f6e5f5a2f6f2, type: 3}
-      propertyPath: _extraReservedPads.Array.data[2].x
-      value: 8
-      objectReference: {fileID: 0}
-    - target: {fileID: 9162339136929704116, guid: a9fcdd39e57f7c344a81f6e5f5a2f6f2, type: 3}
-      propertyPath: _extraReservedPads.Array.data[2].y
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 9162339136929704116, guid: a9fcdd39e57f7c344a81f6e5f5a2f6f2, type: 3}
-      propertyPath: _extraReservedPads.Array.data[3].x
-      value: 8
-      objectReference: {fileID: 0}
-    - target: {fileID: 9162339136929704116, guid: a9fcdd39e57f7c344a81f6e5f5a2f6f2, type: 3}
-      propertyPath: _extraReservedPads.Array.data[3].y
-      value: 6
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -27008,3 +27031,4 @@ SceneRoots:
   - {fileID: 1168802774}
   - {fileID: 263057020}
   - {fileID: 1106841310}
+  - {fileID: 976329358}

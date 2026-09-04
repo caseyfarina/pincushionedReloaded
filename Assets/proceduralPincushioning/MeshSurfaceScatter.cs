@@ -16,6 +16,19 @@ using System.Collections.Generic;
 /// Unity 6.3 URP compatible (Render Graph + Compatibility Mode).
 /// </summary>
 [ExecuteAlways]
+/// <summary>How pin size is decided.</summary>
+public enum PinScaleMode
+{
+    /// <summary>Pin size is a fraction of the pinned model's bounding-sphere
+    /// radius, normalised by each pin mesh's own size. Scale-invariant: the same
+    /// settings read identically on models of wildly different size.</summary>
+    RelativeToModel = 0,
+
+    /// <summary>Raw multipliers on the pin mesh. Legacy; every model needs its own
+    /// hand-tuned numbers.</summary>
+    Absolute = 1,
+}
+
 public class MeshSurfaceScatter : MonoBehaviour
 {
     // ── Precomputed Data ────────────────────────────────────────────────
@@ -39,6 +52,17 @@ public class MeshSurfaceScatter : MonoBehaviour
     [SerializeField] private int seed = 42;
 
     [Header("Pin Transform")]
+    [Tooltip("Relative (default) sizes pins as a fraction of the pinned model's " +
+             "bounding-sphere radius, so a pin looks the same on a small skull and a " +
+             "huge sarcophagus with no retuning. Absolute uses Scale Range as raw " +
+             "multipliers - the legacy behaviour, which needed per-model hand-tuning.")]
+    [SerializeField] private PinScaleMode scaleMode = PinScaleMode.RelativeToModel;
+
+    [Tooltip("Pin size as a fraction of the model's bounding-sphere radius. " +
+             "0.03-0.08 means every pin is 3%-8% of the object's radius.")]
+    [SerializeField] private Vector2 relativeScaleRange = new Vector2(0.03f, 0.08f);
+
+    [Tooltip("Raw scale multipliers. Used only in Absolute mode.")]
     [SerializeField] private Vector2 scaleRange = new Vector2(0.8f, 1.2f);
 
     [Tooltip("Offset along surface normal.")]
@@ -72,6 +96,11 @@ public class MeshSurfaceScatter : MonoBehaviour
     // Internal state
     // ═════════════════════════════════════════════════════════════════════
     private int _lastScatterCount = -1;
+
+    // Per-variant multiplier turning "fraction of the model's radius" into a scale
+    // for that specific pin mesh. Recomputed each Scatter(); pin meshes differ in
+    // size, so a single global factor would make some variants wrong.
+    private float[] _variantUnitScale;
 
     // Local-space bounds of the placed instances, computed once per Scatter().
     // RenderBatches transforms this to world space each frame. Without it the
@@ -181,6 +210,7 @@ public class MeshSurfaceScatter : MonoBehaviour
             return;
 
         _lastScatterCount = scatterCount;
+        RecomputeVariantUnitScales();
         _lastSeed = seed;
 
         int poolSize = sampleData.sampleCount;
@@ -291,6 +321,84 @@ public class MeshSurfaceScatter : MonoBehaviour
     }
 
     /// <summary>
+    /// Radius of the pinned model's bounding sphere, in the surface's local space.
+    /// Taken from the baked sample data's source mesh when available so it matches
+    /// exactly what was sampled; falls back to the MeshFilter, then to the spread
+    /// of the baked sample positions themselves.
+    /// </summary>
+    public float ModelRadius
+    {
+        get
+        {
+            if (sampleData != null && sampleData.sourceMesh != null)
+                return sampleData.sourceMesh.bounds.extents.magnitude;
+
+            var mf = GetComponent<MeshFilter>();
+            if (mf != null && mf.sharedMesh != null)
+                return mf.sharedMesh.bounds.extents.magnitude;
+
+            // Last resort: derive it from the baked samples.
+            if (sampleData != null && sampleData.positions != null && sampleData.positions.Length > 0)
+            {
+                var min = sampleData.positions[0];
+                var max = min;
+                for (int i = 1; i < sampleData.positions.Length; i++)
+                {
+                    min = Vector3.Min(min, sampleData.positions[i]);
+                    max = Vector3.Max(max, sampleData.positions[i]);
+                }
+                return ((max - min) * 0.5f).magnitude;
+            }
+            return 1f;
+        }
+    }
+
+    /// <summary>
+    /// Build the per-variant multipliers that turn "fraction of the model's radius"
+    /// into a scale for each pin mesh.
+    ///
+    /// Pin meshes are authored at arbitrary sizes, so the fraction has to be divided
+    /// by each mesh's own radius. Without that, two variants asked for the same
+    /// fraction would come out visibly different sizes.
+    /// </summary>
+    private void RecomputeVariantUnitScales()
+    {
+        if (pinVariants == null) { _variantUnitScale = null; return; }
+
+        if (_variantUnitScale == null || _variantUnitScale.Length != pinVariants.Length)
+            _variantUnitScale = new float[pinVariants.Length];
+
+        float modelRadius = ModelRadius;
+
+        for (int v = 0; v < pinVariants.Length; v++)
+        {
+            var mesh = pinVariants[v].mesh;
+            float pinRadius = mesh != null ? mesh.bounds.extents.magnitude : 0f;
+
+            // A degenerate pin mesh would divide by ~zero and produce astronomically
+            // large instances, so fall back to an unscaled multiplier instead.
+            _variantUnitScale[v] = pinRadius > 1e-6f ? modelRadius / pinRadius : 1f;
+        }
+    }
+
+    /// <summary>Largest scale any instance can reach, for bounds padding.</summary>
+    private float MaxEffectiveScale
+    {
+        get
+        {
+            if (scaleMode == PinScaleMode.Absolute)
+                return Mathf.Max(Mathf.Abs(scaleRange.x), Mathf.Abs(scaleRange.y));
+
+            float frac = Mathf.Max(Mathf.Abs(relativeScaleRange.x), Mathf.Abs(relativeScaleRange.y));
+            float unit = 1f;
+            if (_variantUnitScale != null)
+                for (int i = 0; i < _variantUnitScale.Length; i++)
+                    unit = Mathf.Max(unit, _variantUnitScale[i]);
+            return frac * unit;
+        }
+    }
+
+    /// <summary>
     /// Tight local-space bounds around every placed instance, padded by the
     /// largest pin's reach so a pin straddling the edge is never clipped.
     /// </summary>
@@ -326,8 +434,7 @@ public class MeshSurfaceScatter : MonoBehaviour
             if (pinVariants[v].mesh != null)
                 pinReach = Mathf.Max(pinReach, pinVariants[v].mesh.bounds.extents.magnitude);
 
-        float pad = pinReach * Mathf.Max(Mathf.Abs(scaleRange.x), Mathf.Abs(scaleRange.y))
-                  + Mathf.Abs(normalOffset);
+        float pad = pinReach * MaxEffectiveScale + Mathf.Abs(normalOffset);
 
         var b = new Bounds((min + max) * 0.5f, max - min);
         b.Expand(pad * 2f);
@@ -385,9 +492,17 @@ public class MeshSurfaceScatter : MonoBehaviour
             rot *= Quaternion.AngleAxis((float)(rng.NextDouble() * maxTiltAngle), tiltAxis);
         }
 
-        float baseScale    = Mathf.Lerp(scaleRange.x, scaleRange.y, (float)rng.NextDouble());
-        float densityScale = Mathf.Lerp(scaleRange.x, scaleRange.y, densityWeight);
+        Vector2 range = scaleMode == PinScaleMode.RelativeToModel ? relativeScaleRange : scaleRange;
+
+        float baseScale    = Mathf.Lerp(range.x, range.y, (float)rng.NextDouble());
+        float densityScale = Mathf.Lerp(range.x, range.y, densityWeight);
         float finalScale   = Mathf.Lerp(baseScale, densityScale, scaleByDensity);
+
+        // In relative mode the value so far is a fraction of the model's radius;
+        // convert it to a multiplier for THIS pin mesh.
+        if (scaleMode == PinScaleMode.RelativeToModel &&
+            _variantUnitScale != null && variantIdx < _variantUnitScale.Length)
+            finalScale *= _variantUnitScale[variantIdx];
 
         variantLists[variantIdx].Add(Matrix4x4.TRS(localPos, rot, Vector3.one * finalScale));
     }
