@@ -138,3 +138,6 @@ InitTestScene*.unity*
 # Transfer archives — never commit
 pincushionedFromLaptop.zip
 *FromLaptop.zip
+
+# Unity crash-recovery scene backups
+/[Aa]ssets/_Recovery/

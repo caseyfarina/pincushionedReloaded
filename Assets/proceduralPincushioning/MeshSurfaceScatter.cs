@@ -58,9 +58,15 @@ public class MeshSurfaceScatter : MonoBehaviour
              "multipliers - the legacy behaviour, which needed per-model hand-tuning.")]
     [SerializeField] private PinScaleMode scaleMode = PinScaleMode.RelativeToModel;
 
-    [Tooltip("Pin size as a fraction of the model's bounding-sphere radius. " +
-             "0.03-0.08 means every pin is 3%-8% of the object's radius.")]
-    [SerializeField] private Vector2 relativeScaleRange = new Vector2(0.03f, 0.08f);
+    [Tooltip("Pin size as a fraction of the model's bounding-sphere radius.")]
+    [SerializeField] private Vector2 relativeScaleRange = new Vector2(0.03f, 0.20f);
+
+    [Tooltip("Shapes the random size draw. 1 = uniform (sizes evenly spread). " +
+             "Higher values ease out toward the MINIMUM: most pins sit near the " +
+             "small end and only a few reach maximum, which reads as a field of " +
+             "fine pins with occasional long ones rather than an even mass.")]
+    [Range(1f, 8f)]
+    [SerializeField] private float scaleBias = 3f;
 
     [Tooltip("Raw scale multipliers. Used only in Absolute mode.")]
     [SerializeField] private Vector2 scaleRange = new Vector2(0.8f, 1.2f);
@@ -494,7 +500,10 @@ public class MeshSurfaceScatter : MonoBehaviour
 
         Vector2 range = scaleMode == PinScaleMode.RelativeToModel ? relativeScaleRange : scaleRange;
 
-        float baseScale    = Mathf.Lerp(range.x, range.y, (float)rng.NextDouble());
+        // Ease-out: raising a uniform 0-1 draw to a power >1 pushes the mass toward
+        // zero, so most pins land near the minimum and few reach the maximum.
+        float t            = Mathf.Pow((float)rng.NextDouble(), Mathf.Max(1f, scaleBias));
+        float baseScale    = Mathf.Lerp(range.x, range.y, t);
         float densityScale = Mathf.Lerp(range.x, range.y, densityWeight);
         float finalScale   = Mathf.Lerp(baseScale, densityScale, scaleByDensity);
 
@@ -534,6 +543,64 @@ public class MeshSurfaceScatter : MonoBehaviour
     public void SetNormalOffset(float v)    { normalOffset = v; Scatter(); }
     public void SetMaxTiltAngle(float v)    { maxTiltAngle = Mathf.Clamp(v, 0f, 45f); Scatter(); }
     public void SetScaleByDensity(float v)  { scaleByDensity = Mathf.Clamp01(v); Scatter(); }
+    /// <summary>The baked sample data this instance scatters over. Null means it
+    /// cannot place anything at all.</summary>
+    public SurfaceSampleData SampleData => sampleData;
+
+    /// <summary>
+    /// Health check on the pin variants. A variant with no mesh places nothing; one
+    /// with no material renders magenta, which is the usual explanation for a model
+    /// that looks wrong rather than empty.
+    /// </summary>
+    public (int total, int missingMesh, int missingMaterial) PinVariantSummary
+    {
+        get
+        {
+            if (pinVariants == null) return (0, 0, 0);
+            int mm = 0, mt = 0;
+            for (int i = 0; i < pinVariants.Length; i++)
+            {
+                if (pinVariants[i].mesh == null) mm++;
+                if (pinVariants[i].material == null) mt++;
+            }
+            return (pinVariants.Length, mm, mt);
+        }
+    }
+
+    public void SetScaleMode(PinScaleMode m)          { scaleMode = m; Scatter(); }
+    public void SetScaleBias(float b)                 { scaleBias = Mathf.Max(1f, b); Scatter(); }
+    public void SetRelativeScaleRange(Vector2 r)      { relativeScaleRange = r; Scatter(); }
+    public void SetAbsoluteScaleRange(Vector2 r)      { scaleRange = r; Scatter(); }
+
+    /// <summary>
+    /// Min/max pin size in the surface's own units, after mode and normalisation.
+    /// This is the number to compare across models — the raw scale field is not
+    /// comparable between Relative and Absolute mode, nor between pin meshes of
+    /// different authored size.
+    /// </summary>
+    public Vector2 EffectiveWorldPinSize
+    {
+        get
+        {
+            if (_variantUnitScale == null || _variantUnitScale.Length != (pinVariants?.Length ?? 0))
+                RecomputeVariantUnitScales();
+
+            float pinReach = 0f;
+            if (pinVariants != null)
+                for (int v = 0; v < pinVariants.Length; v++)
+                    if (pinVariants[v].mesh != null)
+                        pinReach = Mathf.Max(pinReach, pinVariants[v].mesh.bounds.extents.magnitude);
+
+            float unit = 1f;
+            if (scaleMode == PinScaleMode.RelativeToModel && _variantUnitScale != null)
+                for (int i = 0; i < _variantUnitScale.Length; i++)
+                    unit = Mathf.Max(unit, _variantUnitScale[i]);
+
+            Vector2 range = scaleMode == PinScaleMode.RelativeToModel ? relativeScaleRange : scaleRange;
+            return new Vector2(range.x * unit * pinReach, range.y * unit * pinReach);
+        }
+    }
+
     public void SetScaleMin(float v)        { scaleRange.x = v; Scatter(); }
     public void SetScaleMax(float v)        { scaleRange.y = v; Scatter(); }
     public ScatterDensity Density           => density;

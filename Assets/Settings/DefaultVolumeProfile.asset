@@ -342,6 +342,9 @@ MonoBehaviour:
   skyOcclusionIntensityMultiplier:
     m_OverrideState: 1
     m_Value: 1
+  worldOffset:
+    m_OverrideState: 1
+    m_Value: {x: 0, y: 0, z: 0}
 --- !u!114 &-1216621516061285780
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -374,6 +377,9 @@ MonoBehaviour:
     m_OverrideState: 1
     m_Value: {r: 1, g: 1, b: 1, a: 1}
   highQualityFiltering:
+    m_OverrideState: 1
+    m_Value: 0
+  filter:
     m_OverrideState: 1
     m_Value: 0
   downscale:
@@ -462,8 +468,7 @@ MonoBehaviour:
   - {fileID: -6288072647309666549}
   - {fileID: 7518938298396184218}
   - {fileID: -1410297666881709256}
-  - {fileID: -7750755424749557576}
-  - {fileID: -5139089513906902183}
+  - {fileID: 2762038054702639605}
 --- !u!114 &853819529557874667
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -774,6 +779,153 @@ MonoBehaviour:
   contribution:
     m_OverrideState: 1
     m_Value: 0
+--- !u!114 &2762038054702639605
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 374cf1a1ce1f4aadaf356dc22a113a88, type: 3}
+  m_Name: HTraceAOVolume
+  m_EditorClassIdentifier: HTraceAO::HTraceAO.Scripts.Infrastructure.URP.HTraceAOVolume
+  active: 1
+  Enable:
+    m_OverrideState: 1
+    m_Value: 1
+  AmbientOcclusionMode:
+    m_OverrideState: 1
+    m_Value: 1
+  HBuffer:
+    m_OverrideState: 1
+    m_Value: 0
+  Intensity:
+    m_OverrideState: 1
+    m_Value: 2.22
+  DebugModeSSAO:
+    m_OverrideState: 1
+    m_Value: 0
+  Thickness:
+    m_OverrideState: 1
+    m_Value: 0
+  Radius:
+    m_OverrideState: 1
+    m_Value: 2
+  DirectLightingOcclusion:
+    m_OverrideState: 1
+    m_Value: 0
+  DebugModeGTAO:
+    m_OverrideState: 1
+    m_Value: 0
+  FullResolution:
+    m_OverrideState: 1
+    m_Value: 1
+  GTAOThickness:
+    m_OverrideState: 1
+    m_Value: 0.34
+  GTAOWorldSpaceRadius:
+    m_OverrideState: 1
+    m_Value: 0.59
+  GTAOSliceCount:
+    m_OverrideState: 1
+    m_Value: 2
+  GTAOStepCount:
+    m_OverrideState: 1
+    m_Value: 16
+  GTAOVisibilityBitmasks:
+    m_OverrideState: 1
+    m_Value: 0
+  GTAOFalloff:
+    m_OverrideState: 1
+    m_Value: 1
+  GTAOCheckerboarding:
+    m_OverrideState: 1
+    m_Value: 0
+  GTAOSampleCountTemporal:
+    m_OverrideState: 1
+    m_Value: 8
+  GTAOMotionRejection:
+    m_OverrideState: 1
+    m_Value: 0.75
+  GTAONormalRejectionTemporal:
+    m_OverrideState: 1
+    m_Value: 0
+  GTAORejectionStrengthTemporal:
+    m_OverrideState: 1
+    m_Value: 0.25
+  GTAOReprojectionFilter:
+    m_OverrideState: 1
+    m_Value: 0
+  GTAOPixelRadius:
+    m_OverrideState: 1
+    m_Value: 1
+  GTAOFilterStrength:
+    m_OverrideState: 1
+    m_Value: 0.75
+  GTAONormalRejectionSpatial:
+    m_OverrideState: 1
+    m_Value: 1
+  GTAOUpscalingQuality:
+    m_OverrideState: 1
+    m_Value: 0
+  GTAOUpscalingNormalRejection:
+    m_OverrideState: 1
+    m_Value: 1
+  DebugModeRTAO:
+    m_OverrideState: 1
+    m_Value: 0
+  RTAOWorldSpaceRadius:
+    m_OverrideState: 1
+    m_Value: 1
+  RTAOMaxRayBias:
+    m_OverrideState: 1
+    m_Value: 0.002
+  RTAOLayerMask:
+    m_OverrideState: 1
+    m_Value:
+      serializedVersion: 2
+      m_Bits: 4294967295
+  RTAORayCount:
+    m_OverrideState: 1
+    m_Value: 4
+  RTAOFullResolution:
+    m_OverrideState: 1
+    m_Value: 1
+  RTAOCheckerboarding:
+    m_OverrideState: 1
+    m_Value: 0
+  RTAOSampleCountTemporal:
+    m_OverrideState: 1
+    m_Value: 12
+  RTAOMotionRejection:
+    m_OverrideState: 1
+    m_Value: 0.6
+  RTAONormalRejectionTemporal:
+    m_OverrideState: 1
+    m_Value: 0
+  RTAORejectionStrengthTemporal:
+    m_OverrideState: 1
+    m_Value: 0.25
+  RTAOReprojectionFilter:
+    m_OverrideState: 1
+    m_Value: 0
+  RTAOPixelRadius:
+    m_OverrideState: 1
+    m_Value: 1
+  RTAOFilterStrength:
+    m_OverrideState: 1
+    m_Value: 0.75
+  RTAONormalRejectionSpatial:
+    m_OverrideState: 1
+    m_Value: 1
+  RTAOUpscalingQuality:
+    m_OverrideState: 1
+    m_Value: 0
+  RTAOUpscalingNormalRejection:
+    m_OverrideState: 1
+    m_Value: 1
 --- !u!114 &3959858460715838825
 MonoBehaviour:
   m_ObjectHideFlags: 3
