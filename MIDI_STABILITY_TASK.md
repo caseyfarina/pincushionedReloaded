@@ -176,7 +176,25 @@ frame. Extend it: at connect time, log a warning listing duplicate or virtual
 port names it can see, with a line explaining they raise crash risk. Cheap,
 purely additive, and turns an invisible hazard into a console message.
 
-### 3. Guard this package's own teardown
+### 3. Re-assert LED / output state after a reconnect
+
+This one **is** squarely in this package's scope and is worth doing whether or
+not the upstream fix lands.
+
+`MidiEventManager.Reconnect()` restores *input* subscriptions. Nothing restores
+*output* state. After any device-change reconnect — which already happens today
+on a clean hot-plug that does not crash — the hardware LEDs are stale:
+`MidiFighterOutput` does not re-push, and `MidiFighterButtonRouter`'s toggle
+colours are not re-sent. The result is hardware lights that silently disagree
+with application state, which is worse than dark lights because the surface now
+lies to the performer.
+
+Suggested: raise an event on reconnect (or have `MidiFighterOutput` subscribe to
+`InputSystem.onDeviceChange` itself) and re-push LED state.
+`MidiFighterButtonRouter.PushToggleLEDs()` already exists for exactly this and
+just needs calling. Consumers driving their own LEDs need the same hook.
+
+### 4. Guard this package's own teardown
 
 `DisconnectAllDevices()` only unsubscribes delegates, so it is not the crash site
 — but it should still be defensive, since it runs on the same reload path:
@@ -192,7 +210,7 @@ foreach (var midi in _devices)
 Cannot catch the native abort. Worth doing anyway for hygiene; **do not present
 it as the fix.**
 
-### 4. The true fix is NATIVE, not C#
+### 5. The true fix is NATIVE, not C#
 
 **A C# `try/catch` around the P/Invoke will not work.** The log says
 `terminate called after throwing an instance of 'rt::midi::RtMidiError'` — the
@@ -224,9 +242,46 @@ That is a native build toolchain per shipping platform. Budget accordingly.
 a C API allowing a C++ exception to escape — it is reproducible, and the log
 signature above is precise enough to act on.
 
-Optionally also ask Minis for a port allow-list so ports can be filtered *before*
-opening. That would remove the exposure rather than reduce it, and is a much
-smaller change than rebuilding native code.
+#### Why the upstream fix is worth it: recovery already works
+
+This package already has the second half of the recovery. `MidiEventManager`
+subscribes to `InputSystem.onDeviceChange` and reconnects:
+
+```csharp
+void HandleDeviceChange(InputDevice device, InputDeviceChange change)
+{
+    if (device is not Minis.MidiDevice) return;
+    Reconnect();          // re-subscribes to whatever Minis reopened
+}
+```
+
+So the only thing standing between a port-count change and a full self-heal is
+the native abort:
+
+| Step | Today | With RtMidi catching |
+|---|---|---|
+| `CloseAllPorts()` hits a bad handle | **`terminate()`, process dies** | logs, continues |
+| `OpenAllAvailablePorts()` | never runs | ports reopen |
+| InputSystem device-change fires | never runs | fires |
+| `MidiEventManager.Reconnect()` | never runs | **re-subscribes, MIDI resumes** |
+
+That is the argument for spending the hour: it converts a hard process kill into
+a self-healing hiccup. Nothing else in the chain needs to change for that to work.
+
+#### A smaller, better Minis contribution
+
+`MidiDriver.Update()` responds to any count change by closing **all** ports and
+reopening them. Closing only the port that actually disappeared would:
+
+- shrink the crash surface from "every open handle" to "the one that changed"
+- stop MIDI dropping across every device when one is touched
+
+That is a contained C# change in Minis, no native rebuild, and it makes hot-plug
+seamless rather than merely non-fatal. If only one upstream contribution gets
+made, this is arguably the higher-value one.
+
+A port allow-list in Minis would also help — ports could be filtered *before*
+opening — but it is a larger API change.
 
 ---
 
@@ -239,6 +294,10 @@ smaller change than rebuilding native code.
 - [ ] No change claims to fix the crash from inside this package
 - [ ] No one has shipped a C# try/catch around the P/Invoke believing it fixes
       the crash — it cannot catch a native `terminate()`
+- [ ] LED / output state is re-asserted after a device-change reconnect, so the
+      hardware never disagrees with application state
+- [ ] Any upstream issue filed against Minis proposes closing only the CHANGED
+      port, not just an allow-list
 
 ## Do not
 
