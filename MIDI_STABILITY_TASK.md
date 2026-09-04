@@ -27,6 +27,38 @@ blind. That is the actual scope below.
 
 Observed twice, reliably, on a machine with several virtual MIDI drivers installed.
 
+### This is NOT editor-only — it affects shipped builds
+
+Domain reload is only one path into the failure. `Minis.MidiDriver.Update()` runs
+**every frame, in players as well as the editor**:
+
+```csharp
+public void Update()
+{
+    // Port rescan triggered by port count mismatch
+    if (_ports.Count != _probe.PortCount)
+    {
+        CloseAllPorts();        // disposes EVERY port, including the dead one
+        OpenAllAvailablePorts();
+    }
+    ...
+}
+```
+
+Any change in system port count triggers `CloseAllPorts()`, and one bad close
+kills the process. So the crash can happen **mid-session in a shipped build**.
+
+Consequences that matter for live use:
+
+- Unplugging a controller during a performance can kill the running build.
+- **Plugging one in does it too** — the trigger is a count *change*, either
+  direction.
+- It does not require touching a cable at all. Any other application creating or
+  destroying a virtual MIDI port (a DAW launching, Bome, a MIDI monitor) changes
+  the count and trips the same path.
+
+For a live performance tool this is the most important fact in this document.
+
 ### Editor.log at the moment of death
 
 ```
@@ -120,10 +152,16 @@ duplicate-port warning in `MidiEventManager` is firing for a real reason here.
 
 `CLAUDE.md` and `README.md` should state plainly:
 
-- **Do not unplug a controller while Unity is running.** It leaves a stale handle
-  that kills the editor on the *next* domain reload — so the crash appears
-  unrelated to the unplug, often minutes later. This is the single most
+- **Do not plug or unplug ANY MIDI device while the editor or a build is
+  running** — either direction. The trigger is a port-count change, not the
+  unplug specifically.
+- The crash can land on a later frame or on the next domain reload rather than
+  immediately, so it often looks unrelated to the cable. This is the most
   misleading part of the failure.
+- **This affects shipped builds, not just the editor.** Warn anyone using this
+  for live performance.
+- Other applications creating or destroying virtual MIDI ports will trip it
+  without the user touching anything.
 - Quit Unity cleanly first; `MidiFighterOutput.ClearOnStart` already blanks the
   LEDs on `OnDestroy`, so a clean exit turns the hardware lights off without
   unplugging. Users unplug to kill LEDs at night — say this so they don't.
