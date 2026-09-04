@@ -194,7 +194,7 @@ MonoBehaviour:
   scaleRange: {x: 0.8, y: 1.2}
   normalOffset: 0
   randomYawRotation: 1
-  maxTiltAngle: 0
+  maxTiltAngle: 12
   density:
     mode: 0
     densityTexture: {fileID: 0}
@@ -347,7 +347,7 @@ MonoBehaviour:
   scaleRange: {x: 0.8, y: 1.2}
   normalOffset: 0
   randomYawRotation: 1
-  maxTiltAngle: 0
+  maxTiltAngle: 12
   density:
     mode: 0
     densityTexture: {fileID: 0}
@@ -500,7 +500,7 @@ MonoBehaviour:
   scaleRange: {x: 0.8, y: 1.2}
   normalOffset: 0
   randomYawRotation: 1
-  maxTiltAngle: 0
+  maxTiltAngle: 12
   density:
     mode: 0
     densityTexture: {fileID: 0}
@@ -637,7 +637,7 @@ MonoBehaviour:
   scaleBias: 3
   absoluteScaleRange: {x: 0.8, y: 1.2}
   normalOffset: 0
-  maxTiltAngle: 0
+  maxTiltAngle: 12
 --- !u!4 &289240744
 Transform:
   m_ObjectHideFlags: 0
@@ -747,7 +747,7 @@ MonoBehaviour:
   scaleRange: {x: 0.8, y: 1.2}
   normalOffset: 0
   randomYawRotation: 1
-  maxTiltAngle: 0
+  maxTiltAngle: 12
   density:
     mode: 0
     densityTexture: {fileID: 0}
@@ -900,7 +900,7 @@ MonoBehaviour:
   scaleRange: {x: 0.8, y: 1.2}
   normalOffset: 0
   randomYawRotation: 1
-  maxTiltAngle: 0
+  maxTiltAngle: 12
   density:
     mode: 0
     densityTexture: {fileID: 0}
@@ -1053,7 +1053,7 @@ MonoBehaviour:
   scaleRange: {x: 0.8, y: 1.2}
   normalOffset: 0
   randomYawRotation: 1
-  maxTiltAngle: 0
+  maxTiltAngle: 12
   density:
     mode: 0
     densityTexture: {fileID: 0}
@@ -1289,7 +1289,7 @@ MonoBehaviour:
   scaleRange: {x: 0.8, y: 1.2}
   normalOffset: 0
   randomYawRotation: 1
-  maxTiltAngle: 0
+  maxTiltAngle: 12
   density:
     mode: 0
     densityTexture: {fileID: 0}
@@ -1442,7 +1442,7 @@ MonoBehaviour:
   scaleRange: {x: 0.8, y: 1.2}
   normalOffset: 0
   randomYawRotation: 1
-  maxTiltAngle: 0
+  maxTiltAngle: 12
   density:
     mode: 0
     densityTexture: {fileID: 0}
@@ -1595,7 +1595,7 @@ MonoBehaviour:
   scaleRange: {x: 0.8, y: 1.2}
   normalOffset: 0
   randomYawRotation: 1
-  maxTiltAngle: 0
+  maxTiltAngle: 12
   density:
     mode: 0
     densityTexture: {fileID: 0}
@@ -1748,7 +1748,7 @@ MonoBehaviour:
   scaleRange: {x: 0.8, y: 1.2}
   normalOffset: 0
   randomYawRotation: 1
-  maxTiltAngle: 0
+  maxTiltAngle: 12
   density:
     mode: 0
     densityTexture: {fileID: 0}
@@ -1901,7 +1901,7 @@ MonoBehaviour:
   scaleRange: {x: 0.8, y: 1.2}
   normalOffset: 0
   randomYawRotation: 1
-  maxTiltAngle: 0
+  maxTiltAngle: 12
   density:
     mode: 0
     densityTexture: {fileID: 0}
@@ -2054,7 +2054,7 @@ MonoBehaviour:
   scaleRange: {x: 0.8, y: 1.2}
   normalOffset: 0
   randomYawRotation: 1
-  maxTiltAngle: 0
+  maxTiltAngle: 12
   density:
     mode: 0
     densityTexture: {fileID: 0}
@@ -2207,7 +2207,7 @@ MonoBehaviour:
   scaleRange: {x: 0.8, y: 1.2}
   normalOffset: 0
   randomYawRotation: 1
-  maxTiltAngle: 0
+  maxTiltAngle: 12
   density:
     mode: 0
     densityTexture: {fileID: 0}
@@ -2487,7 +2487,7 @@ MonoBehaviour:
   scaleRange: {x: 0.8, y: 1.2}
   normalOffset: 0
   randomYawRotation: 1
-  maxTiltAngle: 0
+  maxTiltAngle: 12
   density:
     mode: 0
     densityTexture: {fileID: 0}
@@ -2640,7 +2640,7 @@ MonoBehaviour:
   scaleRange: {x: 0.8, y: 1.2}
   normalOffset: 0
   randomYawRotation: 1
-  maxTiltAngle: 0
+  maxTiltAngle: 12
   density:
     mode: 0
     densityTexture: {fileID: 0}
@@ -2793,7 +2793,7 @@ MonoBehaviour:
   scaleRange: {x: 0.8, y: 1.2}
   normalOffset: 0
   randomYawRotation: 1
-  maxTiltAngle: 0
+  maxTiltAngle: 12
   density:
     mode: 0
     densityTexture: {fileID: 0}
@@ -2946,7 +2946,7 @@ MonoBehaviour:
   scaleRange: {x: 0.8, y: 1.2}
   normalOffset: 0
   randomYawRotation: 1
-  maxTiltAngle: 0
+  maxTiltAngle: 12
   density:
     mode: 0
     densityTexture: {fileID: 0}
@@ -3081,7 +3081,7 @@ MonoBehaviour:
   scaleRange: {x: 0.8, y: 1.2}
   normalOffset: 0
   randomYawRotation: 1
-  maxTiltAngle: 0
+  maxTiltAngle: 12
   density:
     mode: 0
     densityTexture: {fileID: 0}
@@ -3283,7 +3283,7 @@ MonoBehaviour:
   scaleRange: {x: 0.8, y: 1.2}
   normalOffset: 0
   randomYawRotation: 1
-  maxTiltAngle: 0
+  maxTiltAngle: 12
   density:
     mode: 0
     densityTexture: {fileID: 0}

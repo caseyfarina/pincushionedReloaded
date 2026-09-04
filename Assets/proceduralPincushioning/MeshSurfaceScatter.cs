@@ -77,7 +77,7 @@ public class MeshSurfaceScatter : MonoBehaviour
     [SerializeField] private bool randomYawRotation = true;
 
     [Range(0f, 45f)]
-    [SerializeField] private float maxTiltAngle = 0f;
+    [SerializeField] private float maxTiltAngle = 12f;
 
     // ── Density ─────────────────────────────────────────────────────────
     [Header("Density")]

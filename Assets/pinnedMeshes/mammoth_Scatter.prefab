@@ -108,10 +108,13 @@ MonoBehaviour:
   pinVariants: []
   scatterCount: 500
   seed: 42
+  scaleMode: 0
+  relativeScaleRange: {x: 0.03, y: 0.2}
+  scaleBias: 3
   scaleRange: {x: 0.8, y: 1.2}
   normalOffset: 0
   randomYawRotation: 1
-  maxTiltAngle: 0
+  maxTiltAngle: 12
   density:
     mode: 0
     densityTexture: {fileID: 0}

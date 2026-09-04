@@ -126,10 +126,13 @@ MonoBehaviour:
     weight: 1
   scatterCount: 2000
   seed: 42
+  scaleMode: 0
+  relativeScaleRange: {x: 0.03, y: 0.2}
+  scaleBias: 3
   scaleRange: {x: 0.09074142, y: 0.1512357}
   normalOffset: 0.0028702538
   randomYawRotation: 1
-  maxTiltAngle: 0
+  maxTiltAngle: 12
   density:
     mode: 0
     densityTexture: {fileID: 0}

@@ -71,7 +71,7 @@ namespace Pincushioned.Debugging
         public float normalOffset = 0f;
 
         [Range(0f, 45f)]
-        public float maxTiltAngle = 0f;
+        public float maxTiltAngle = 12f;
 
         readonly List<MeshSurfaceScatter> _scatters = new List<MeshSurfaceScatter>();
 

@@ -115,6 +115,38 @@ Proximity-based clustering around `Transform[]` references. Each attractor has a
 - **cutoff** (0–1): Weights below this threshold clamp to zero. Acts as a hard exclusion zone.
 - **invert**: Flips the density map. Useful for "scatter everywhere except here" patterns without repainting textures.
 
+## Artistic defaults (established 2026-09-04)
+
+The pin look is defined by four settings that work together. All 19 `*_Pinned`
+prefabs carry these explicitly:
+
+| Setting | Value | Why |
+|---|---|---|
+| `Scale Mode` | `RelativeToModel` | Pin size as a fraction of the model's bounding-sphere radius, normalised per pin mesh. Scale-invariant across models. |
+| `Relative Scale Range` | `0.03` – `0.20` | 3%–20% of model radius. |
+| `Scale Bias` | `3` | Ease-out: most pins near the minimum, few reaching maximum. |
+| `Max Tilt Angle` | `12` | Breaks perfect normal alignment so the field reads hand-placed, not mechanical. |
+
+**With an ease-out bias the MINIMUM dominates the look, not the maximum.** Median
+pin size is roughly `min + (max-min)/2^bias` — at bias 3 over 0.03–0.20 the
+typical pin is about 5% of radius. Tune the min and the bias together; reaching
+for the max does little because few pins get there by design.
+
+**Scale Mode replaced hand-tuned absolute values, and the drift it fixed was
+severe.** The previous per-model absolute values spanned roughly 4,930x
+(0.0016 to 7.73) across models whose radii varied only 1.5x (0.517–0.773) — so
+the spread was never explained by model size, it was accumulated inconsistency.
+Expressed as a fraction of radius the old values ran from 0.1% to 395%. Two
+models (Allosaurus, Stegosaurus) sat at 0.1% and were effectively invisible.
+
+`Absolute` mode is retained for anything deliberately hand-tuned, but new work
+should use `RelativeToModel`.
+
+**Tune in `Assets/Scenes/PinDebug.unity`**, not the main scene. It lays every
+pinned mesh in a grid under one set of controls, which is the only reliable way
+to judge a value that has to work across all of them. It also carries no MIDI
+rig, so recompiling there cannot crash the editor.
+
 ## Inspector Parameters (MeshSurfaceScatter)
 
 ### Precomputed Surface Data
