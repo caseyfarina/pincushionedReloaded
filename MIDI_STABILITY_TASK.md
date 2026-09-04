@@ -154,24 +154,41 @@ foreach (var midi in _devices)
 Cannot catch the native abort. Worth doing anyway for hygiene; **do not present
 it as the fix.**
 
-### 4. Upstream — the only true fix
+### 4. The true fix is NATIVE, not C#
 
-`jp.keijiro.rtmidi` `MidiIn.cs:32` needs the native free wrapped:
+**A C# `try/catch` around the P/Invoke will not work.** The log says
+`terminate called after throwing an instance of 'rt::midi::RtMidiError'` — the
+C++ exception was never caught *inside C++*, so the runtime aborts during
+unwinding and never returns to managed code. There is nothing for a managed
+catch block to catch; the process is already gone.
 
-```csharp
-protected override void FreeDeviceHandle(IntPtr ptr)
-{
-    try { _InFree(ptr); }
-    catch (Exception e) { UnityEngine.Debug.LogWarning($"[RtMidi] free failed: {e.Message}"); }
-}
-```
+This is worth stating explicitly because wrapping `MidiIn.cs:32` looks like the
+obvious fix and is a dead end.
 
-A failed port close should never be fatal. Options: file upstream with Keijiro,
-or vendor a patched rtmidi and pin to it. If vendoring, note it in this package's
-README so consumers understand why the dependency is forked.
+The fault is in RtMidi's **C API wrapper** (`rtmidi_c.cpp` upstream), which is
+supposed to catch `RtMidiError` at the language boundary and return an error
+code. On the port-close path it evidently does not.
+
+Everything is MIT and forkable — RtMidi (Gary Scavone) and `jp.keijiro.rtmidi`
+both — so this is permitted, just not cheap:
+
+1. Fork `github.com/thestk/rtmidi`, catch `RtMidiError` on the close/free path
+   in the C wrapper.
+2. **Rebuild the native binary per platform.** `jp.keijiro.rtmidi` ships
+   prebuilt binaries only (`Runtime/Plugins/{Windows/RtMidi.dll,
+   Linux/libRtMidi.so, macOS/RtMidi.bundle, Android/libRtMidi.so}`) — there is
+   no C++ source in the package to rebuild from.
+3. Fork `jp.keijiro.rtmidi`, swap the binary, repoint the manifest.
+
+That is a native build toolchain per shipping platform. Budget accordingly.
+
+**Cheaper and probably better: file it upstream.** It is a genuine RtMidi bug —
+a C API allowing a C++ exception to escape — it is reproducible, and the log
+signature above is precise enough to act on.
 
 Optionally also ask Minis for a port allow-list so ports can be filtered *before*
-opening — that would eliminate the exposure rather than reduce it.
+opening. That would remove the exposure rather than reduce it, and is a much
+smaller change than rebuilding native code.
 
 ---
 
@@ -182,6 +199,8 @@ opening — that would eliminate the exposure rather than reduce it.
 - [ ] Teardown is exception-guarded (hygiene, not a fix)
 - [ ] README records the upstream rtmidi issue and its status
 - [ ] No change claims to fix the crash from inside this package
+- [ ] No one has shipped a C# try/catch around the P/Invoke believing it fixes
+      the crash — it cannot catch a native `terminate()`
 
 ## Do not
 
@@ -189,3 +208,5 @@ opening — that would eliminate the exposure rather than reduce it.
   downstream of port opening and has no effect on this.
 - Do not add retry loops around device connection; the process is already dead.
 - Do not catch and swallow in a way that hides a genuinely broken MIDI setup.
+- Do not wrap `MidiIn.FreeDeviceHandle` in a managed try/catch and call it fixed.
+  `terminate()` kills the process inside C++; managed code never sees it.
