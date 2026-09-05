@@ -67,7 +67,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 0}
+  - {fileID: 2100000, guid: 156e992f963fa6b47bf844d4b3e15005, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -105,7 +105,25 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MeshSurfaceScatter
   sampleData: {fileID: 11400000, guid: 6b708969f47f29f4da1e33b171a4309d, type: 2}
   surfaceTransform: {fileID: 0}
-  pinVariants: []
+  pinVariants:
+  - mesh: {fileID: 905373941493974904, guid: 3f3e437c41b8c3642941738d7979850e, type: 3}
+    material: {fileID: 2100000, guid: 91b4d386205892a4a9fbcb49754860d5, type: 2}
+    weight: 1
+  - mesh: {fileID: 905373941493974904, guid: 3f3e437c41b8c3642941738d7979850e, type: 3}
+    material: {fileID: 2100000, guid: 81b8e723719a2c64ca2cf0c2ddb9ae72, type: 2}
+    weight: 1
+  - mesh: {fileID: 905373941493974904, guid: 3f3e437c41b8c3642941738d7979850e, type: 3}
+    material: {fileID: 2100000, guid: ea474580e7f8d5f4eb249365a8fb0ae9, type: 2}
+    weight: 1
+  - mesh: {fileID: 905373941493974904, guid: 3f3e437c41b8c3642941738d7979850e, type: 3}
+    material: {fileID: 2100000, guid: cb5613d293a5361458531f263db67569, type: 2}
+    weight: 1
+  - mesh: {fileID: 905373941493974904, guid: 3f3e437c41b8c3642941738d7979850e, type: 3}
+    material: {fileID: 2100000, guid: 2c6d07943893f1341a9dfdfc92799e4d, type: 2}
+    weight: 1
+  - mesh: {fileID: 905373941493974904, guid: 3f3e437c41b8c3642941738d7979850e, type: 3}
+    material: {fileID: 2100000, guid: 1f22f1184f1d1bf4a986db56fd3ca7ae, type: 2}
+    weight: 1
   scatterCount: 500
   seed: 42
   scaleMode: 0
