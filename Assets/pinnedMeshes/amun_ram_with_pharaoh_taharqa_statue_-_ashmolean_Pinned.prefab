@@ -134,18 +134,18 @@ MonoBehaviour:
   randomYawRotation: 1
   maxTiltAngle: 12
   density:
-    mode: 0
+    mode: 2
     densityTexture: {fileID: 0}
     uvChannel: 0
     noiseScale: 5
     noiseOffset: {x: 0, y: 0, z: 0}
-    noiseOctaves: 3
+    noiseOctaves: 2
     noisePersistence: 0.5
     attractors: []
     attractorRadius: 2
     attractorFalloff: 2
     attractorFloor: 0.05
-    contrast: 1
+    contrast: 1.4
     cutoff: 0
     invert: 0
   scaleByDensity: 0
