@@ -120,6 +120,13 @@ Examples:
                      help="Output texture format (default: png)")
     tex.add_argument("--skip-texture-resize", action="store_true",
                      help="Don't resize textures")
+    tex.add_argument("--normal-from-albedo", action="store_true",
+                     help="Derive a normal map from albedo when the source has none "
+                          "(heuristic; prefer a high-to-low bake when possible)")
+    tex.add_argument("--normal-strength", type=float, default=3.0,
+                     help="Slope multiplier for --normal-from-albedo (default: 3.0)")
+    tex.add_argument("--normal-highpass", type=float, default=12.0,
+                     help="High-pass radius px for --normal-from-albedo (default: 12)")
 
     out = parser.add_argument_group("output")
     out.add_argument("--skip-fbx", action="store_true",
@@ -147,6 +154,9 @@ Examples:
         output_dir=args.output,
         skip_fbx=args.skip_fbx,
         skip_texture_resize=args.skip_texture_resize,
+        normal_from_albedo=args.normal_from_albedo,
+        normal_strength=args.normal_strength,
+        normal_highpass=args.normal_highpass,
         quality_threshold=args.quality,
         num_lods=args.lods,
         lod_ratio=args.lod_ratio,

@@ -98,6 +98,10 @@ _BLENDER_SCRIPT = textwrap.dedent("""\
     output_file = argv[1]
     # GLTF role map: {image_index_str: role} passed as JSON arg
     gltf_roles = json.loads(argv[2]) if len(argv) > 2 else {}
+    # Stage 6 (OBJ->FBX) must NOT re-extract: Blender invents placeholder
+    # images for unresolved MTL refs, and on Windows "{stem}_basecolor.png"
+    # collides case-insensitively with the URP "{stem}_BaseColor.png".
+    extract_textures = (argv[3] == "1") if len(argv) > 3 else True
 
     # Clear default scene
     bpy.ops.object.select_all(action='SELECT')
@@ -225,7 +229,7 @@ _BLENDER_SCRIPT = textwrap.dedent("""\
                 print(f"ROLE_NAME: '{img_name}' -> {guessed} (from filename)")
                 img_roles[img_name] = guessed
 
-    for img in bpy.data.images:
+    for img in (bpy.data.images if extract_textures else []):
         if img.name in ('Render Result', 'Viewer Node') or img.size[0] == 0:
             continue
         role = img_roles.get(img.name, 'unknown')
@@ -313,6 +317,7 @@ def convert(
     input_file: str | Path,
     output_file: str | Path,
     timeout: int = 300,
+    extract_textures: bool = True,
 ) -> tuple[bool, dict[str, str]]:
     """
     Run Blender headless to convert between mesh formats.
@@ -339,12 +344,14 @@ def convert(
     cmd = [
         blender_exe, "--background", "--python", script_path,
         "--", input_file, output_file, gltf_roles_json,
+        "1" if extract_textures else "0",
     ]
     logger.info(f"  Blender: {Path(input_file).name} -> {Path(output_file).name}")
 
     try:
         result = subprocess.run(
             cmd, capture_output=True, text=True, timeout=timeout,
+            encoding="utf-8", errors="replace",
         )
         if result.returncode != 0:
             logger.error(f"  Blender stderr (last 500 chars):\n{result.stderr[-500:]}")
@@ -456,6 +463,7 @@ def decimate(
     try:
         result = subprocess.run(
             cmd, capture_output=True, text=True, timeout=timeout,
+            encoding="utf-8", errors="replace",
         )
         if result.returncode != 0:
             logger.error(f"  Blender decimate stderr:\n{result.stderr[-500:]}")

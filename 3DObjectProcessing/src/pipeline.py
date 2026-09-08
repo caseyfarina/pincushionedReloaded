@@ -130,6 +130,24 @@ def process_mesh(
         # Fallback: look for external texture files next to the source
         tex_map = process_textures(input_path, asset_dir, config)
 
+    # Optional: derive a normal map from albedo when the source shipped none.
+    # Deliberately AFTER the real texture paths above, and it only writes when
+    # {stem}_Normal.png is absent, so a genuine normal map is never overwritten.
+    if config.normal_from_albedo:
+        try:
+            from .normal_from_albedo import generate_if_missing
+            made = generate_if_missing(
+                asset_dir, stem,
+                strength=config.normal_strength,
+                highpass_radius=config.normal_highpass,
+            )
+            if made is not None:
+                logger.info(f"  Derived normal map from albedo -> {made.name}")
+                tex_map["Normal"] = made
+                result.stats.setdefault("textures", []).append("Normal(derived)")
+        except Exception as e:
+            logger.warning(f"  Normal-from-albedo failed: {e}")
+
     # ------------------------------------------------------------------
     # Stage 4–6: Decimate + Export (per LOD)
     # ------------------------------------------------------------------
@@ -208,7 +226,20 @@ def process_mesh(
         if not config.skip_fbx and blender_exe:
             fbx_path = asset_dir / f"{stem}{suffix}.fbx"
             logger.info(f"  Stage 6: Converting to FBX -> {fbx_path.name}")
-            ok, _ = blender_convert(blender_exe, obj_path, fbx_path)
+            # Only re-extract when nothing upstream produced textures.
+            #
+            # When Stage 0/3 already wrote maps (tex_map non-empty), Blender's
+            # re-extraction here is destructive: it invents placeholder images
+            # for unresolved MTL refs and writes "{stem}_basecolor.png", which
+            # on Windows collides case-insensitively with the URP
+            # "{stem}_BaseColor.png" and silently replaces the real albedo.
+            #
+            # But PyMeshLab-direct formats (.dae/.obj/.ply) never run Stage 0,
+            # and discover_textures() only looks in the source directory — so
+            # for those, this extraction is the ONLY thing that writes textures.
+            # Skipping it unconditionally would ship those assets untextured.
+            ok, _ = blender_convert(blender_exe, obj_path, fbx_path,
+                                    extract_textures=not tex_map)
             if ok:
                 result.outputs.append(str(fbx_path))
             else:
