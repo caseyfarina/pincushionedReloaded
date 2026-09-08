@@ -235,6 +235,33 @@ no UVs** (Uniform/Noise/Attractor density only), and
 
 ---
 
+## Committing artifacts — once, when settled
+
+`Assets/Artifacts` is tracked (the scene references it by GUID), and `.fbx` and
+`.png` route through Git LFS. **LFS keeps every version of every binary forever**,
+and GitHub Free/Pro includes 10 GB storage and **10 GB bandwidth per month** —
+against which a fresh clone of this repo already pulls ~3 GB.
+
+This pipeline invites exactly the pattern that burns that allowance: re-process,
+re-commit, repeat. One example from 2026-09-05 — the Stage 6 albedo bug forced a
+full reprocess of all 25 Smithsonian models. Committing before *and* after would
+have cost ~1 GB of permanent LFS storage for a single bug.
+
+So:
+
+- **Re-processing runs overwrite in place.** Do not commit intermediate passes.
+- **Commit artifacts once, when the look is settled**, not per iteration.
+- If two people are working the repo at once, agree who commits a re-processing
+  pass — two independent commits of the same re-bake doubles the cost.
+- `unity_assets*/` and `raw_scans/` stay gitignored precisely so iteration is free;
+  only the finished `Assets/Artifacts` copy is versioned.
+
+Baked `SurfaceSampleData` is the one genuinely cheap thing to regenerate (~2.8 s
+for 51 artifacts via the importer), but it is referenced by GUID, so it is
+tracked anyway rather than left to a re-bake that would mint new GUIDs.
+
+---
+
 ## Provenance — tracked, unlike everything else it describes
 
 `3DObjectProcessing/provenance/` is **in git**. `raw_scans/` and
