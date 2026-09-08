@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ae36154885ec71c4c94cdc34e9db462f, type: 3}
+  m_Name: DancePoseBank
+  m_EditorClassIdentifier: Assembly-CSharp::PoseBank
+  poses:
+  - name: Capoeira
+    clip: {fileID: -203655887218126122, guid: 2261c31eeb780da4a897f29825d26646, type: 3}
+    useBlendTimeOverride: 0
+    blendTimeOverride: 0
+    playOverride: 0
+    usePlaybackRateOverride: 0
+    playbackRateOverride: 1
+  - name: HipHop
+    clip: {fileID: -203655887218126122, guid: 8407b60062b6d12479bd67f72079f499, type: 3}
+    useBlendTimeOverride: 0
+    blendTimeOverride: 0
+    playOverride: 0
+    usePlaybackRateOverride: 0
+    playbackRateOverride: 1
+  - name: Rumba
+    clip: {fileID: -203655887218126122, guid: 82e93e4d8c9e2994f924ab52c137e5df, type: 3}
+    useBlendTimeOverride: 0
+    blendTimeOverride: 0
+    playOverride: 0
+    usePlaybackRateOverride: 0
+    playbackRateOverride: 1
+  - name: FaxMachine
+    clip: {fileID: -203655887218126122, guid: 4118134d511221b45908cf664e77e4fb, type: 3}
+    useBlendTimeOverride: 0
+    blendTimeOverride: 0
+    playOverride: 0
+    usePlaybackRateOverride: 0
+    playbackRateOverride: 1

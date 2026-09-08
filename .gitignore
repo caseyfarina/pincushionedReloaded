@@ -141,3 +141,22 @@ pincushionedFromLaptop.zip
 
 # Unity crash-recovery scene backups
 /[Aa]ssets/_Recovery/
+
+# Python build artifacts (3DObjectProcessing pipeline)
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Sketchfab API token, never commit
+*sketchfabToken*
+*SketchfabToken*
+
+# 3DObjectProcessing — every pipeline output variant, not just the three that
+# existed when these rules were written (unity_assets_nhm/ and unity_assets_sf/
+# were 190 MB of untracked derived data that the enumerated rules missed).
+3DObjectProcessing/unity_assets*/
+
+# 3DObjectProcessing — ad-hoc discovery scratch. _sf_download.json holds SIGNED
+# Sketchfab download URLs with token= query parameters; these are credentials and
+# must never reach the remote.
+3DObjectProcessing/_*.json
