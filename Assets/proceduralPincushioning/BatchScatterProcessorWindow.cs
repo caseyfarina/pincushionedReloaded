@@ -371,74 +371,17 @@ public class BatchScatterProcessorWindow : EditorWindow
 
     private SurfaceSampleData BakeSamples(Mesh mesh, string meshName)
     {
-        Vector3[] verts = mesh.vertices;
-        Vector3[] meshNormals = mesh.normals;
-        int[] tris = mesh.triangles;
-        int triCount = tris.Length / 3;
-
-        if (triCount == 0) return null;
-
-        // UV data (may not exist on all meshes)
-        Vector2[] meshUVs = mesh.uv;
-        bool hasUVs = meshUVs != null && meshUVs.Length == verts.Length;
-
-        // Cumulative area table (local space)
-        float[] cumArea = new float[triCount];
-        float running = 0f;
-        for (int i = 0; i < triCount; i++)
-        {
-            Vector3 a = verts[tris[i * 3]];
-            Vector3 b = verts[tris[i * 3 + 1]];
-            Vector3 c = verts[tris[i * 3 + 2]];
-            running += Vector3.Cross(b - a, c - a).magnitude * 0.5f;
-            cumArea[i] = running;
-        }
-        float totalArea = running;
-
-        // Sample
-        Vector3[] positions = new Vector3[poolSize];
-        Vector3[] normals = new Vector3[poolSize];
-        Vector2[] uvs = hasUVs ? new Vector2[poolSize] : null;
-        System.Random rng = new System.Random(bakeSeed);
-
-        for (int s = 0; s < poolSize; s++)
-        {
-            float r = (float)(rng.NextDouble() * totalArea);
-            int triIdx = System.Array.BinarySearch(cumArea, r);
-            if (triIdx < 0) triIdx = ~triIdx;
-            triIdx = Mathf.Clamp(triIdx, 0, triCount - 1);
-
-            int i0 = tris[triIdx * 3];
-            int i1 = tris[triIdx * 3 + 1];
-            int i2 = tris[triIdx * 3 + 2];
-
-            float u = (float)rng.NextDouble();
-            float v = (float)rng.NextDouble();
-            if (u + v > 1f) { u = 1f - u; v = 1f - v; }
-            float w = 1f - u - v;
-
-            positions[s] = verts[i0] * w + verts[i1] * u + verts[i2] * v;
-            normals[s] = (meshNormals[i0] * w + meshNormals[i1] * u + meshNormals[i2] * v).normalized;
-
-            if (hasUVs)
-                uvs[s] = meshUVs[i0] * w + meshUVs[i1] * u + meshUVs[i2] * v;
-        }
-
-        // Create and save ScriptableObject
-        SurfaceSampleData data = ScriptableObject.CreateInstance<SurfaceSampleData>();
-        data.sourceMesh = mesh;
-        data.totalSurfaceArea = totalArea;
-        data.sampleCount = poolSize;
-        data.hasUVs = hasUVs;
-        data.positions = positions;
-        data.normals = normals;
-        data.uvs = uvs ?? new Vector2[0];
-
-        string assetPath = $"{outputFolder}/{meshName}_SampleData.asset";
-        assetPath = AssetDatabase.GenerateUniqueAssetPath(assetPath);
-        AssetDatabase.CreateAsset(data, assetPath);
-
-        return data;
+        // Delegates to the shared baker so this window and ArtifactImportWindow
+        // can never sample differently. Pin scale is judged by comparing
+        // artifacts side by side, so a divergence here would make models
+        // silently incomparable.
+        //
+        // overwrite:false preserves this window's historical behaviour of
+        // generating a unique path (hence the "_SampleData 1" duplicates in
+        // the project). The importer passes true.
+        return SurfaceSampleBaker.Bake(
+            mesh, poolSize, bakeSeed,
+            $"{outputFolder}/{meshName}_SampleData.asset", false);
     }
 
     // ═════════════════════════════════════════════════════════════════════

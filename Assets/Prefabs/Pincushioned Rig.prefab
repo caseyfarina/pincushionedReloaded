@@ -17,6 +17,8 @@ GameObject:
   - component: {fileID: 545749069299218314}
   - component: {fileID: 2832766293281127520}
   - component: {fileID: 8261226997816645590}
+  - component: {fileID: 3673807910594251530}
+  - component: {fileID: 1922015204313373220}
   m_Layer: 0
   m_Name: Pincushioned Rig
   m_TagString: Untagged
@@ -51,11 +53,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5ccddbdb3f61507409c69d429c0e9529, type: 3}
   m_Name: 
   m_EditorClassIdentifier: MidiFighter64.Samples::MidiFighter64.Samples.FloorCameraController
-  _floorHeight: 8
-  _cameraYOffset: 7.7
-  _floorCount: 8
   _duration: 0.6
   _ease: 10
+  _moveAllAxes: 0
+  _floorHeight: 8
+  _cameraYOffset: 7.7
+  _fallbackFloorCount: 8
   _floorVcam: {fileID: 0}
   _fallbackPriority: 10
 --- !u!114 &9162339136929704116
@@ -77,6 +80,7 @@ MonoBehaviour:
   _scale: 1
   _root: {fileID: 0}
   _reserveNavigationPads: 1
+  _extraReservedPads: []
 --- !u!114 &2657519511703761932
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -136,6 +140,11 @@ MonoBehaviour:
   maxCount: 2000
   maxUpdatesPerSecond: 30
   countDeadband: 8
+  rescanInterval: 0.5
+  agitationEnabled: 1
+  driftDirection: {x: 1, y: 0.35, z: 0.7}
+  driftSpeed: 2
+  driftEpsilon: 0.01
 --- !u!114 &2832766293281127520
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -157,7 +166,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4978664647139329532}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 32075beec02a4614fba538d20520fd52, type: 3}
   m_Name: 
@@ -171,3 +180,40 @@ MonoBehaviour:
   _fallSpeed: 2
   _floor: 0.15
   _contrast: 1
+--- !u!114 &3673807910594251530
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4978664647139329532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f65ffcc4cb208be40879e086fb9cf13b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AudioScatterAgitationDriver
+  _deviceID: '{0.0.1.00000000}.{2b2da3c9-87f2-4af9-8a70-9cb998e37118}'
+  _band: 1
+  _autoGain: 1
+  _gain: 6
+  _dynamicRange: 24
+  _gate: 0.08
+  _contrast: 2
+  _smoothFall: 1
+  _fallSpeed: 4
+--- !u!114 &1922015204313373220
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4978664647139329532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da493a183a16d074c9f1e1127889850b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MidiFighterWaveToggle
+  row: 0
+  col: 0
+  behaviour: 0
+  waveOn: 1
