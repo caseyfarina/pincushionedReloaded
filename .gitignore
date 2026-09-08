@@ -160,3 +160,8 @@ __pycache__/
 # Sketchfab download URLs with token= query parameters; these are credentials and
 # must never reach the remote.
 3DObjectProcessing/_*.json
+
+# VFX Graph package samples - re-installable from Package Manager,
+# nothing in this project references them.
+/[Aa]ssets/Samples/
+/[Aa]ssets/Samples.meta

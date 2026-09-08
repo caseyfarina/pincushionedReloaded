@@ -679,9 +679,17 @@ cheap. For screenshots, `capture_game_view` only renders one camera; use
 
 **11 assets are NON-COMMERCIAL.** Every NHM Wien model plus the hippo is
 CC BY-NC. Fine for personal and non-commercial exhibition; if pincushioned is
-ever ticketed, commissioned or sold, all 11 have to come out. Provenance with
-per-model attribution lives in `3DObjectProcessing/raw_scans/nhmwien/_provenance.json`
-and `raw_scans/_provenance_sketchfab.json`.
+ever ticketed, commissioned or sold, all 11 have to come out.
+
+**Provenance lives in `3DObjectProcessing/provenance/` and is tracked in git**,
+unlike the scans it describes. `provenance/ATTRIBUTION.md` is the ready-to-use
+credits list. **Any new download that requires attribution must be recorded
+there** — see `provenance/README.md`. An artifact with no record should be
+treated as unusable until its licence is established.
+
+**The 15 recovered originals have no provenance.** They arrived pre-processed
+from the laptop; their licensing has never been established, and that is worth
+resolving before any public showing.
 
 The Smithsonian set is uniformly CC0 and carries no such restriction — but it has
 essentially no articulated skeletons, which is exactly why the NHM Wien set was

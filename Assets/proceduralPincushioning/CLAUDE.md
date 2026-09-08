@@ -204,6 +204,138 @@ ScatterDensity Density { get; }        // Access density config; call ForceResca
 
 Results report includes UV availability per mesh. Meshes without UVs can still use Noise and Attractor density modes.
 
+### Two things the batch processor does NOT do
+
+**It does not create a surface material.** `CreatePrefab` assigns
+`Surface Material` only if you set it in the window; otherwise the prefab's
+`MeshRenderer` has a null material and the model renders untextured grey or
+magenta. Every artifact needs a URP/Lit material built from its
+`_BaseColor`/`_Normal`/`_MetallicSmoothness`/`_Occlusion` maps and assigned by
+hand. This is the single most common reason a freshly baked artifact "looks
+broken".
+
+**Its output is `_Scatter`, not `_Pinned`.** The scenes consume
+`Assets/pinnedMeshes/{name}_Pinned.prefab`. Producing one means copying the
+`_Scatter` asset, raising `scatterCount` to 2000, and assigning the 6 pin
+variants — `Editor/BatchPinVariantAssigner.cs` automates that last part. The
+artistic fields need no changes: `MeshSurfaceScatter`'s **defaults already are**
+the house look (`RelativeToModel`, 0.03-0.20, bias 3, tilt 12), so a prefab
+created by this tool inherits it automatically.
+
+Baking is fast — 25 meshes at a 20,000-sample pool took **2.8 s** total, well
+inside the Unity CLI's 5 s main-thread budget. The bake is not the slow part of
+an import; the FBX/texture AssetDatabase import is.
+
+### Driving the batch processor headlessly
+
+`BakeSamples` and `CreatePrefab` are private instance methods on the
+`EditorWindow`. To run a batch from the CLI without opening the window, create
+the window with `ScriptableObject.CreateInstance` and invoke them by reflection
+(`BindingFlags.NonPublic | BindingFlags.Instance`). That reuses the real
+sampling math instead of reimplementing it — important, because the bake must
+stay identical across all artifacts for pin scale to be comparable.
+
+## Artifact Importer (Tools > Scatter > Import Processed Artifacts)
+
+`Editor/ArtifactImportWindow.cs`. Takes a scan2unity output folder and produces
+finished, pinnable artifacts — copy into `Assets/Artifacts/`, fix import
+settings, build the URP material, bake, and emit `{stem}_Pinned.prefab` with pin
+variants and the house look applied. Every step is a separate toggle, so it also
+works as a repair tool (re-run with only "Build materials" to rebuild them all).
+
+Two implementation notes worth keeping:
+
+**Configure the component on the SAVED prefab asset, not on a temporary scene
+GameObject.** Building a GameObject, setting `sampleData` via `SerializedObject`,
+then `SaveAsPrefabAsset` looks correct and mostly works — but the object
+reference to a freshly baked `SurfaceSampleData` gets dropped, because the
+`SaveAndReimport()` calls made while fixing import settings disturb the
+AssetDatabase enough to discard the pending value. The result is a `_Pinned`
+prefab whose `sampleData` is null while every value-type field looks right.
+Save first, then edit the persisted asset.
+
+**`SurfaceSampleBaker` updates an existing asset in place** (`CopySerialized`)
+rather than delete-and-recreate, so the asset's GUID survives and every existing
+reference to it keeps working.
+
+## SurfaceSampleBaker
+
+`SurfaceSampleBaker.Bake(mesh, poolSize, seed, assetPath, overwrite)` holds the
+area-weighted sampling math. **Both** `BatchScatterProcessorWindow` and
+`ArtifactImportWindow` call it, and that is deliberate: pin scale is judged by
+comparing artifacts side by side, so two code paths that sampled differently
+would make models silently incomparable.
+
+`overwrite: false` reproduces the batch window's historical behaviour of calling
+`AssetDatabase.GenerateUniqueAssetPath` — which is how the `_SampleData 1`
+duplicates in this project appeared. The importer passes `true`.
+
+**It lives outside `Editor/`** (in `Assets/proceduralPincushioning/`, guarded by
+`#if UNITY_EDITOR`) because `BatchScatterProcessorWindow` is itself outside
+`Editor/` and therefore compiles into `Assembly-CSharp`, which cannot reference
+`Assembly-CSharp-Editor`. Moving the baker into `Editor/` breaks the build.
+
+## Selection is stable under count changes
+
+Both selection paths build their randomness from a **fresh `System.Random(seed)`**
+and consume draws in a fixed order, so the first N picks are identical whether you
+ask for N or N+500. With the density field held still, **changing the count adds
+or removes pins from a stable ordering rather than reshuffling** — existing pins
+do not move.
+
+This is what makes the two performance controls independent: the MIDI knob can
+sweep density without disturbing a composition the audio wave produced.
+
+Verified by capture on the Giant Moa with a frozen `noiseOffset`: 400 pins to 900
+and back to 400 returns a **pixel-identical frame** (max diff 0), and at 900,
+**92.5%** of the 400-frame's pin pixels are still pins — the remainder is the new
+pins occluding old ones, not old ones moving.
+
+## All `*_Pinned` prefabs are DensityMode.Noise (2026-09-07)
+
+Switched from Uniform so the audio wave has something to act on: `noiseOffset` is
+never read in Uniform mode. Settings are `noiseScale 5`, `octaves 2`,
+`contrast 1.4`.
+
+**This changes the look, not just the behaviour** — noise-weighted selection makes
+pins **cluster** rather than spread evenly. If the clustering reads wrong, lower
+`contrast` toward 1.0 to flatten it rather than reverting to Uniform, which would
+disable the wave entirely. See the audio agitation section in the root CLAUDE.md.
+
+## PinDebug gotchas
+
+**`PinDebugRig.RebuildGrid()` early-returns when `prefabs` is empty.** It does
+*not* self-populate from `Assets/pinnedMeshes`, despite what its tooltip says —
+that logic is `PinDebugSceneBuilder.LoadPinnedPrefabs()`, behind the inspector
+button. Clearing the list and calling `RebuildGrid()` yields an empty scene.
+
+**`PinDebugRig.BuildProblemReport()`** is the fastest way to validate a batch:
+it names every model with no pin variants, a missing pin mesh or material, or no
+sample data.
+
+**To see pins from the CLI, enter Play mode.** This is the only reliable way.
+`unity command editor_play`, wait a few seconds, then `unity command screenshot`.
+A single frame is enough -- `Scatter()` runs on the first `Update()` and
+`Render()` follows. Edit-mode captures show the models bare even with the
+editor window focused, so an empty-looking grid is a capture artefact, not a
+broken scatter.
+
+**Two CLI status traps found 2026-09-07.** `runtime_status.IsPlaying` is
+unreliable -- it reported `true` with `FrameCount` climbing well after play mode
+had exited, because the player loop ticks in edit mode too. Use
+`editor_status.playMode` instead, which correctly reads `stopped`. And
+`editor_stop` / setting `EditorApplication.isPlaying = false` cannot take effect
+while the editor is unfocused, because the change needs a frame to process --
+foreground the Unity window (PowerShell `SetForegroundWindow`) and frames start
+advancing.
+
+**Pins do not render while the editor is unfocused.** Rendering happens through
+`Graphics.RenderMeshInstanced` inside `[ExecuteAlways] Update()`, and an
+unfocused Unity editor does not tick. CLI-captured screenshots of `PinDebug`
+therefore show bare models with no pins — a capture artifact, not a fault. An
+off-screen `camera.Render()` from an `eval` misses them for the same reason:
+instanced submissions are per-frame.
+
 ## Requirements and Constraints
 
 - **Unity 6.3+ with URP.**
