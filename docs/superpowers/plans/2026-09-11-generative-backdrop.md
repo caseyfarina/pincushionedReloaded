@@ -26,6 +26,8 @@
 
 ## Task Ownership
 
+**VFX Graph is verified working in this project** (2026-09-11, confirmed by hands-on work with the Learning Templates samples), so the D3D11 / compute-shader risk the spec flags is closed and there is no smoke-test task.
+
 Every task is tagged. **[AGENT]** tasks are fully executable by a coding agent. **[YOU]** tasks are node-graph authoring in the Unity GUI, which no agent can do — each ships a node-by-node recipe and is followed by an agent-runnable acceptance check.
 
 | Task | Owner | Phase |
@@ -84,56 +86,6 @@ Assets/proceduralBackdrop/
 # PHASE 1 — THE INSTRUMENT
 
 Deliverable: a backdrop that distributes, animates, and responds to all four functions, playable from the keyboard with no MF64 attached.
-
----
-
-### Task 0: D3D11 + VFX Graph smoke test — **[YOU]**, then [AGENT] check
-
-**Why first:** VFX Graph has never rendered at scale in this project, and the project is hard-locked to D3D11 for native plugin reasons (Adobe Substance, KlakHap). D3D11 supports the compute shaders VFX Graph requires, so this should work — but discovering otherwise after building the whole system would waste the entire plan. This is a five-minute check that de-risks everything below.
-
-**Files:**
-- Create: `Assets/proceduralBackdrop/` (folder)
-- Create: `Assets/proceduralBackdrop/BackdropSmoke.unity`
-
-- [ ] **Step 1: [YOU] Confirm the editor is on D3D11**
-
-In Unity: `Edit > Project Settings > Player > Other Settings > Rendering`. Confirm **Auto Graphics API for Windows is OFF** and the Graphics APIs list contains **Direct3D11 only**. Do not change it — just confirm.
-
-- [ ] **Step 2: [YOU] Build a throwaway VFX**
-
-- `File > New Scene > Basic (URP)`, save as `Assets/proceduralBackdrop/BackdropSmoke.unity`.
-- `Assets/proceduralBackdrop/` right-click > `Create > Visual Effects > Visual Effect Graph`, name it `Smoke.vfx`.
-- Open it. Delete the default **Output Particle Quad** context and replace it with **Output Particle Mesh** (right-click canvas > `Create Node` > search "Output Particle Mesh", then drag from the Update context's flow output into it).
-- On the mesh output, set **Mesh** to Unity's built-in `Cube`.
-- On the **Initialize Particle** context set **Capacity** to `1000`.
-- On **Spawn**, replace `Constant Spawn Rate` with a **Single Burst** of `1000`.
-- In Initialize, add a **Set Position (Sphere)** block, radius `20`.
-- Drag `Smoke.vfx` into the scene. Save the scene.
-
-- [ ] **Step 3: [YOU] Enter Play mode and confirm**
-
-Press Play. You should see 1000 cubes in a sphere. Note whether the frame is stable and the console is clean.
-
-- [ ] **Step 4: [AGENT] Verify from the CLI**
-
-```bash
-unity command recompile_status
-unity command get_console_logs
-```
-
-Expected: `failed: false`, and no console entries containing `VFX`, `compute`, `D3D`, or `Kernel`. Any error mentioning compute shader support or graphics API is a **stop condition** — report it and halt the plan rather than continuing.
-
-- [ ] **Step 5: [AGENT] Commit the folder, delete the throwaway**
-
-```bash
-cd "F:/Unity Projects 2026/pincushioned_Reloaded"
-git add Assets/proceduralBackdrop
-git commit -m "Add backdrop folder and D3D11 VFX Graph smoke test"
-```
-
-Leave `Smoke.vfx` and `BackdropSmoke.unity` in place for now — Task 3 uses the scene as a workbench and Task 13 replaces it.
-
----
 
 ### Task 1: Core assembly, `BackdropParameters`, test harness — **[AGENT]**
 
@@ -455,6 +407,7 @@ git commit -m "Add BackdropParameters and the backdrop core test assembly"
 **Files:**
 - Create: `Assets/proceduralBackdrop/BackdropShading.shadergraph`
 - Create: `Assets/proceduralBackdrop/BackdropShading.mat`
+- Create: `Assets/proceduralBackdrop/BackdropSmoke.unity` (workbench; Task 13 replaces it)
 
 **Interfaces:**
 - Consumes: nothing.
@@ -524,13 +477,15 @@ For Toon and Fresnel Toon, also feed the branch result into **Base Color**; for 
 
 - [ ] **Step 7: Verify on a plain mesh before touching VFX**
 
-Drag `BackdropShading.mat` onto a plain cube in `BackdropSmoke.unity`. In the material inspector, drag **Toon Steps** and confirm you see banding change. This proves the shader works before VFX adds a second thing that can be broken.
+Create the workbench scene this task and Task 3 both use: `File > New Scene > Basic (URP)`, save as `Assets/proceduralBackdrop/BackdropSmoke.unity`.
+
+Drop a plain cube into it and drag `BackdropShading.mat` onto the cube. In the material inspector, drag **Toon Steps** and confirm you see banding change. This proves the shader works before VFX adds a second thing that can be broken.
 
 - [ ] **Step 8: Commit**
 
 ```bash
 cd "F:/Unity Projects 2026/pincushioned_Reloaded"
-git add Assets/proceduralBackdrop/BackdropShading.shadergraph Assets/proceduralBackdrop/BackdropShading.shadergraph.meta Assets/proceduralBackdrop/BackdropShading.mat Assets/proceduralBackdrop/BackdropShading.mat.meta
+git add Assets/proceduralBackdrop/BackdropShading.shadergraph Assets/proceduralBackdrop/BackdropShading.shadergraph.meta Assets/proceduralBackdrop/BackdropShading.mat Assets/proceduralBackdrop/BackdropShading.mat.meta Assets/proceduralBackdrop/BackdropSmoke.unity Assets/proceduralBackdrop/BackdropSmoke.unity.meta
 git commit -m "Add backdrop shader graph with toon, fresnel toon and lit branches"
 ```
 
@@ -2518,7 +2473,7 @@ git commit -m "Add history ring and the backdrop parameter-space explorer"
 - Create: `Assets/proceduralBackdrop/BackdropExplore.unity`
 - Create: `Assets/proceduralBackdrop/BackdropRanges.asset`
 - Create: `Assets/proceduralBackdrop/BackdropPresetBook.asset`
-- Delete: `Assets/proceduralBackdrop/BackdropSmoke.unity`, `Assets/proceduralBackdrop/Smoke.vfx`
+- Delete: `Assets/proceduralBackdrop/BackdropSmoke.unity` (the workbench, superseded)
 
 - [ ] **Step 1: [AGENT] Create the two assets**
 
@@ -2561,11 +2516,11 @@ Editor frame times on this project are meaningless — the same scene measures 5
 
 If you want the split-screen number, add the `Split Screen Rig` prefab to the scene and measure again at 8 cells.
 
-- [ ] **Step 5: [AGENT] Remove the smoke scaffolding**
+- [ ] **Step 5: [AGENT] Remove the workbench scene**
 
 ```bash
 cd "F:/Unity Projects 2026/pincushioned_Reloaded"
-git rm Assets/proceduralBackdrop/BackdropSmoke.unity Assets/proceduralBackdrop/BackdropSmoke.unity.meta Assets/proceduralBackdrop/Smoke.vfx Assets/proceduralBackdrop/Smoke.vfx.meta
+git rm Assets/proceduralBackdrop/BackdropSmoke.unity Assets/proceduralBackdrop/BackdropSmoke.unity.meta
 unity command recompile && unity command recompile_status
 unity command run_tests --mode EditMode
 unity command test_status
@@ -2589,7 +2544,7 @@ Add a `## Generative backdrop (Assets/proceduralBackdrop/)` section to the proje
 
 ## Self-Review
 
-**Spec coverage.** Every section of the spec maps to a task: placement and domains → Tasks 3, 4; the all-VFX approach and its accepted costs → Tasks 2, 3, plus `ValidateGraph` in Task 4 mitigating the string-name cost; components table → Tasks 1, 4, 5, 7, 8, 9, 10, 11, 12; authored mesh list and the triangle guard → Task 5; distribution model → Task 3 Steps 4–6; C#↔graph interface → Task 3 Step 2 and Task 4; the four functions and shuffled cycling → Task 6; preset exploration with locks, mutate and history → Tasks 9, 10, 12; performance guards → Task 3 Steps 7–8, Task 1's `MaxSpawnCount`, Task 9's ranges; verification → the test tasks and Task 13 Steps 4–5; risk 1 (D3D11/VFX) → Task 0; risk 2 (Shader Graph VFX target) → Task 2 Steps 1 and 7.
+**Spec coverage.** Every section of the spec maps to a task: placement and domains → Tasks 3, 4; the all-VFX approach and its accepted costs → Tasks 2, 3, plus `ValidateGraph` in Task 4 mitigating the string-name cost; components table → Tasks 1, 4, 5, 7, 8, 9, 10, 11, 12; authored mesh list and the triangle guard → Task 5; distribution model → Task 3 Steps 4–6; C#↔graph interface → Task 3 Step 2 and Task 4; the four functions and shuffled cycling → Task 6; preset exploration with locks, mutate and history → Tasks 9, 10, 12; performance guards → Task 3 Steps 7–8, Task 1's `MaxSpawnCount`, Task 9's ranges; verification → the test tasks and Task 13 Steps 4–5; risk 2 (Shader Graph VFX target) → Task 2 Steps 1 and 7. **Spec risk 1 (D3D11 / VFX Graph untested) is closed by evidence** — VFX Graph was exercised in this project on 2026-09-11 — so it has no task.
 
 **Known coverage gap, stated rather than hidden:** the spec's Phase 1 deliverable list does not include a `Backdrop` prefab, and this plan does not create one — the instrument lives on a scene object in `BackdropExplore.unity`. Moving the backdrop into the main scene is explicitly out of scope per the spec's Scope section, and prefabbing it is the first task of that future work.
 

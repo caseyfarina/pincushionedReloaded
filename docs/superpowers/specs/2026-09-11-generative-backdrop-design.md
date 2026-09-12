@@ -247,12 +247,10 @@ focused.
 
 ## Risks
 
-Neither has been exercised in this project.
-
-1. **VFX Graph has never rendered at scale here, and the project is hard-locked
-   to D3D11** for native plugin reasons (Substance, KlakHap). D3D11 supports the
-   compute shaders VFX Graph requires, so this should be fine — but it is
-   untested. **Check it first, not last.**
+1. ~~**VFX Graph has never rendered here, and the project is hard-locked to
+   D3D11**~~ — **CLOSED 2026-09-11.** VFX Graph was exercised against the
+   Learning Templates samples in this project and works. D3D11 supplies the
+   compute shaders it needs. No smoke test required.
 2. **The Shader Graph needs its VFX target enabled** at author time, and a lit
    VFX output under URP has its own quirks. Stand up a one-cube version of the
    shader before building anything around it.
