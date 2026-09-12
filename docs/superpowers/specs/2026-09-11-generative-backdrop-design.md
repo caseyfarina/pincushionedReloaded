@@ -8,6 +8,24 @@ algorithmically distributed array of meshes — towers, walls, architectural
 elements. Four MF64 pads reshape it instantly during a performance. A companion
 exploration scene searches the parameter space for looks worth keeping.
 
+## Phasing
+
+Built in two phases. Phase one ends with a playable backdrop; phase two adds the
+search tool on top and changes nothing about phase one's behaviour.
+
+**Phase 1 — the instrument.** `BackdropParameters`, `BackdropInstrument`,
+`BackdropLibrary` + its scan button, `Backdrop.vfx`, `BackdropShading`,
+`KeyboardBackdropDriver`, `MidiFighterBackdropDriver`. Deliverable: a backdrop
+that distributes, animates, and responds to all four functions, playable from
+the keyboard.
+
+**Phase 2 — the search.** `BackdropRanges`, `BackdropPresetBook`,
+`BackdropRandomizer` + its EditMode tests, `BackdropExplorerDriver`,
+`BackdropExplore.unity`. Deliverable: randomise / mutate / history / save.
+
+The dependency runs one way only: phase two consumes `BackdropParameters` and
+`BackdropInstrument.Apply()`, both defined in phase one.
+
 ## Scope
 
 **In:** a camera-anchored backdrop volume; even lattice distribution with
