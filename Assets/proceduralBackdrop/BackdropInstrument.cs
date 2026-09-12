@@ -30,6 +30,13 @@ public class BackdropInstrument : MonoBehaviour
     public BackdropLibrary Library => library;
     public int MeshIndex => meshIndex;
 
+    /// <summary>
+    /// Bumped by every Apply. Apply is the single write path, so a watcher can
+    /// tell that the state moved without knowing which driver moved it — which
+    /// is how BackdropExplorerDriver records edits made by the pads.
+    /// </summary>
+    public int Revision { get; private set; }
+
     // Exposed-property name IDs. Cached because Apply runs on every pad press
     // and string lookups in VisualEffect are not free.
     private static readonly int IdLayoutSeed      = Shader.PropertyToID("LayoutSeed");
@@ -60,6 +67,16 @@ public class BackdropInstrument : MonoBehaviour
     private void OnEnable()
     {
         if (vfx == null) vfx = GetComponent<VisualEffect>();
+
+        // The likeliest state during authoring, and previously the quietest:
+        // with no asset assigned every Apply write is dropped and ValidateGraph
+        // has no graph to inspect, so nothing at all was reported.
+        if (vfx == null || vfx.visualEffectAsset == null)
+            Debug.LogError(
+                $"[BackdropInstrument] '{name}' has no Visual Effect Asset assigned. " +
+                "No backdrop will render and every parameter write is silently " +
+                "discarded until Backdrop.vfx is dropped into the Visual Effect component.",
+                this);
 
         var missing = ValidateGraph();
         if (missing.Count > 0)
