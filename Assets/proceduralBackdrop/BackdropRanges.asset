@@ -1,0 +1,94 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c6f2fc6a7fb7be42bd4a959e2957e52, type: 3}
+  m_Name: BackdropRanges
+  m_EditorClassIdentifier: Pincushioned.Backdrop.Core::BackdropRanges
+  randomiseDomain: 1
+  spawnCount:
+    locked: 0
+    min: 120
+    max: 600
+  domainSizeX:
+    locked: 0
+    min: 30
+    max: 90
+  domainSizeY:
+    locked: 0
+    min: 15
+    max: 60
+  domainSizeZ:
+    locked: 0
+    min: 30
+    max: 90
+  randomiseSolidFill: 1
+  scaleMin:
+    locked: 0
+    min: 0.2
+    max: 1
+  scaleMax:
+    locked: 0
+    min: 1
+    max: 3.5
+  scaleBiasX:
+    locked: 0
+    min: 0.5
+    max: 2
+  scaleBiasY:
+    locked: 0
+    min: 0.5
+    max: 8
+  scaleBiasZ:
+    locked: 0
+    min: 0.5
+    max: 2
+  offsetJitter:
+    locked: 0
+    min: 0
+    max: 3
+  rotationJitter:
+    locked: 0
+    min: 0
+    max: 180
+  spinRate:
+    locked: 0
+    min: 0
+    max: 45
+  waveAmplitude:
+    locked: 0
+    min: 0
+    max: 3
+  waveFrequency:
+    locked: 0
+    min: 0.02
+    max: 0.6
+  wavePhaseSpread:
+    locked: 0
+    min: 0
+    max: 1
+  randomiseShading: 1
+  flashDecay:
+    locked: 0
+    min: 1.5
+    max: 10
+  flashIntensity:
+    locked: 0
+    min: 2
+    max: 20
+  flashRipple:
+    locked: 0
+    min: 0
+    max: 0.8
+  randomiseEmissionHue: 1
+  emissionSaturation:
+    locked: 0
+    min: 0
+    max: 0.8
