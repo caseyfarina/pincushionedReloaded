@@ -52,7 +52,7 @@ public class BackdropLibraryEditor : Editor
 
                 found.Add(m);
 
-                int tris = m.triangles.Length / 3;
+                long tris = TriangleCount(m);
                 if (tris > lib.triangleWarnThreshold)
                     heavy.Add($"{m.name} ({tris:n0} tris)");
             }
@@ -75,11 +75,24 @@ public class BackdropLibraryEditor : Editor
                 lib);
     }
 
+    /// <summary>
+    /// Counted from the index buffer rather than mesh.triangles: that property
+    /// allocates a fresh int[] per mesh per call, and this runs on every
+    /// inspector repaint, not once per scan.
+    /// </summary>
     private static long TotalTriangles(BackdropLibrary lib)
     {
         long total = 0;
         foreach (var m in lib.meshes)
-            if (m != null) total += m.triangles.Length / 3;
+            if (m != null) total += TriangleCount(m);
         return total;
+    }
+
+    private static long TriangleCount(Mesh m)
+    {
+        long indices = 0;
+        for (int sub = 0; sub < m.subMeshCount; sub++)
+            indices += (long)m.GetIndexCount(sub);
+        return indices / 3;
     }
 }

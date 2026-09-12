@@ -18,14 +18,6 @@ public struct RandomRange
         this.min = min; this.max = max; this.locked = locked;
     }
 
-    /// <summary>Ordered so an inverted min/max authored by hand still samples correctly.</summary>
-    public float Sample(System.Random rng)
-    {
-        float a = Mathf.Min(min, max);
-        float b = Mathf.Max(min, max);
-        return a + (float)rng.NextDouble() * (b - a);
-    }
-
     public float Span => Mathf.Abs(max - min);
 }
 
