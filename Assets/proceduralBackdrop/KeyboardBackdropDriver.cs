@@ -22,6 +22,14 @@ public class KeyboardBackdropDriver : MonoBehaviour
     [Tooltip("Draw a small on-screen legend and live state readout.")]
     [SerializeField] private bool showOverlay = true;
 
+    /// <summary>
+    /// Derived, not typed as 3: a fourth domain shape added to the enum would
+    /// otherwise never be reachable from the D key and nothing would say so.
+    /// Cached because Enum.GetValues allocates and this runs on every press.
+    /// </summary>
+    private static readonly int DomainCount =
+        System.Enum.GetValues(typeof(BackdropDomain)).Length;
+
     private void Reset() => instrument = GetComponent<BackdropInstrument>();
     private void Awake() { if (instrument == null) instrument = GetComponent<BackdropInstrument>(); }
 
@@ -41,7 +49,7 @@ public class KeyboardBackdropDriver : MonoBehaviour
     private void NextDomain()
     {
         var p = instrument.Current;
-        p.domain = (BackdropDomain)(((int)p.domain + 1) % 3);
+        p.domain = (BackdropDomain)(((int)p.domain + 1) % DomainCount);
         instrument.ApplyAndRelayout(p);
     }
 

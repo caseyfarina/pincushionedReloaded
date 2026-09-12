@@ -105,6 +105,12 @@ public class BackdropInstrument : MonoBehaviour
     public void Apply(BackdropParameters p)
     {
         parameters = p.Clamped();
+
+        // Bumped before the graph guard rather than after the writes: the state
+        // moved whether or not there is an asset to push it to, and a watcher
+        // reconciles against the state, not against the graph.
+        Revision++;
+
         if (vfx == null) return;
 
         var c = parameters;
@@ -162,11 +168,20 @@ public class BackdropInstrument : MonoBehaviour
     private ShuffleBag shadingBag;
     private ShuffleBag meshBag;
     private System.Random layoutRng;
+    private bool warnedEmptyLibrary;
+
+    /// <summary>
+    /// Derived, not typed as 3: a fourth shading model added to the enum would
+    /// otherwise be unreachable from the pad and nothing would say so.
+    /// Cached because Enum.GetValues allocates and this runs on every press.
+    /// </summary>
+    private static readonly int ShadingModeCount =
+        System.Enum.GetValues(typeof(BackdropShadingMode)).Length;
 
     private void EnsureCyclers()
     {
         if (layoutRng == null)  layoutRng  = new System.Random(cycleSeed);
-        if (shadingBag == null) shadingBag = new ShuffleBag(3, cycleSeed);
+        if (shadingBag == null) shadingBag = new ShuffleBag(ShadingModeCount, cycleSeed);
 
         int libCount = library != null ? library.Count : 0;
         if (meshBag == null)          meshBag = new ShuffleBag(libCount, cycleSeed + 1);
@@ -204,7 +219,22 @@ public class BackdropInstrument : MonoBehaviour
     {
         EnsureCyclers();
         int next = meshBag.Next();
-        if (next < 0) return;
+        if (next < 0)
+        {
+            // A pad that does nothing mid-set is indistinguishable from broken
+            // hardware, which is the failure the shuffle bag exists to avoid.
+            // Warned once: the alternative is a console flood at pad rate.
+            if (!warnedEmptyLibrary)
+            {
+                warnedEmptyLibrary = true;
+                Debug.LogWarning(
+                    $"[BackdropInstrument] '{name}' has no mesh library " +
+                    "(or an empty one), so the mesh-swap pad does nothing. " +
+                    "Assign a BackdropLibrary and press Scan Folder.",
+                    this);
+            }
+            return;
+        }
         SetMeshIndex(next);
     }
 

@@ -111,6 +111,29 @@ public class BackdropRandomizerTests
     }
 
     [Test]
+    public void Randomize_DrawsANewLayoutSeed_ButMutateHoldsIt()
+    {
+        var r = Ranges();
+        var basis = BackdropParameters.Default;
+
+        // Randomize resamples the space, and the arrangement is part of it:
+        // without a fresh seed two presses landing on the same count and domain
+        // give the identical field, which reads as a dead button.
+        var rng = new System.Random(77);
+        var first = BackdropRandomizer.Randomize(r, basis, rng);
+        var second = BackdropRandomizer.Randomize(r, first, rng);
+
+        Assert.AreNotEqual(basis.layoutSeed, first.layoutSeed);
+        Assert.AreNotEqual(first.layoutSeed, second.layoutSeed);
+
+        // Mutate refines a look in place, so the arrangement is held.
+        for (int seed = 0; seed < 50; seed++)
+            Assert.AreEqual(first.layoutSeed,
+                BackdropRandomizer.Mutate(r, first, 0.9f, new System.Random(seed)).layoutSeed,
+                $"seed {seed}");
+    }
+
+    [Test]
     public void Mutate_AtZeroStrengthReturnsTheBasisUnchanged()
     {
         var r = Ranges();

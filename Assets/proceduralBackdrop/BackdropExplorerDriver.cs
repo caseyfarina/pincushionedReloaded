@@ -13,7 +13,12 @@ using UnityEngine.InputSystem;
 ///   M            mutate current by Mutation Strength
 ///   Left/Right   walk the history ring
 ///   S            save current into the preset book under Save Name
-///   1-9          recall preset 1-9
+///   F1-F9        recall preset 1-9
+///
+/// Recall is on the function keys, not the digits, because
+/// KeyboardBackdropDriver owns 1-4 as the documented performance mapping and
+/// both drivers sit on the same GameObject in the exploration scene — on the
+/// digits, one press would recall a preset and then reroll on top of it.
 /// </summary>
 [RequireComponent(typeof(BackdropInstrument))]
 public class BackdropExplorerDriver : MonoBehaviour
@@ -41,6 +46,14 @@ public class BackdropExplorerDriver : MonoBehaviour
     private HistoryRing<BackdropParameters> history;
     private string lastAction = "-";
 
+    /// <summary>
+    /// The instrument revision this driver has already accounted for. Anything
+    /// higher means someone else wrote — a performance pad, the inspector — and
+    /// that edit has to enter the history or walking back would restore a state
+    /// that silently omits it.
+    /// </summary>
+    private int lastSeenRevision;
+
     private void Reset() => instrument = GetComponent<BackdropInstrument>();
 
     private void Awake()
@@ -49,12 +62,22 @@ public class BackdropExplorerDriver : MonoBehaviour
         rng = new System.Random(searchSeed);
         history = new HistoryRing<BackdropParameters>(historyCapacity);
         history.Push(instrument.Current);
+        lastSeenRevision = instrument.Revision;
     }
 
     private void Update()
     {
         var kb = Keyboard.current;
         if (kb == null || instrument == null) return;
+
+        // Reconcile before reading any key, so an edit made by another driver
+        // last frame is already in the history if this frame walks it.
+        if (instrument.Revision != lastSeenRevision)
+        {
+            history.Push(instrument.Current);
+            lastSeenRevision = instrument.Revision;
+            lastAction = "external edit";
+        }
 
         if (kb.spaceKey.wasPressedThisFrame) DoRandomize();
         if (kb.mKey.wasPressedThisFrame)     DoMutate();
@@ -63,7 +86,7 @@ public class BackdropExplorerDriver : MonoBehaviour
         if (kb.sKey.wasPressedThisFrame)     DoSave();
 
         for (int i = 0; i < 9; i++)
-            if (kb[Key.Digit1 + i].wasPressedThisFrame) DoRecall(i);
+            if (kb[Key.F1 + i].wasPressedThisFrame) DoRecall(i);
     }
 
     private void DoRandomize()
@@ -86,7 +109,10 @@ public class BackdropExplorerDriver : MonoBehaviour
         if (!ok) { lastAction = back ? "at oldest" : "at newest"; return; }
 
         // Applied without pushing, or walking history would itself write history.
+        // The revision is still recorded, or the reconciler above would read this
+        // driver's own ApplyAndRelayout as an external edit and push it anyway.
         instrument.ApplyAndRelayout(p);
+        lastSeenRevision = instrument.Revision;
         lastAction = back ? "back" : "forward";
     }
 
@@ -119,6 +145,7 @@ public class BackdropExplorerDriver : MonoBehaviour
     {
         instrument.ApplyAndRelayout(p);
         history.Push(instrument.Current);   // Current is the clamped version.
+        lastSeenRevision = instrument.Revision;
         lastAction = action;
     }
 
@@ -136,7 +163,7 @@ public class BackdropExplorerDriver : MonoBehaviour
         GUILayout.Label($"bias {p.scaleAxisBias.x:0.0},{p.scaleAxisBias.y:0.0},{p.scaleAxisBias.z:0.0}   spin +/-{p.spinRateRange.y:0}");
         GUILayout.Label($"wave amp {p.waveAmplitude:0.00} freq {p.waveFrequency:0.00} spread {p.wavePhaseSpread:0.00}");
         GUILayout.Label("Space randomize   M mutate   <- -> history");
-        GUILayout.Label($"S save as '{saveName}'   1-9 recall");
+        GUILayout.Label($"S save as '{saveName}'   F1-9 recall");
         GUILayout.EndArea();
     }
 }

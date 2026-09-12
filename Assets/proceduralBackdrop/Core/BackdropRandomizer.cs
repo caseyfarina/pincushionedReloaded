@@ -66,6 +66,7 @@ public static class BackdropRandomizer
         int   shadingRoll  = rng.Next(3);
         bool  solidRoll    = rng.Next(2) == 0;
         float hueRoll      = (float)rng.NextDouble();
+        uint  seedRoll     = unchecked((uint)rng.Next(1, int.MaxValue));
 
         p.spawnCount     = Mathf.RoundToInt(spawn);
         p.domainSize     = new Vector3(sizeX, sizeY, sizeZ);
@@ -80,6 +81,12 @@ public static class BackdropRandomizer
         p.flashDecay     = fDecay;
         p.flashIntensity = fIntensity;
         p.flashRipple    = fRipple;
+
+        // A fresh arrangement is part of resampling the space: without it two
+        // Space presses that land on the same count and domain produce the
+        // identical field, which reads as a dead button. Mutation is the
+        // opposite case — it refines a look, so the layout is held.
+        if (!mutate) p.layoutSeed = seedRoll;
 
         // Discrete parameters are not mutated at low strength — flipping the
         // domain shape is a jump out of the region, not a refinement of it.
