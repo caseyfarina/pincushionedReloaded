@@ -138,6 +138,71 @@ public class BackdropInstrument : MonoBehaviour
         ApplyMesh();
     }
 
+    [Header("Performance functions")]
+    [Tooltip("Seed for the shading and mesh shuffle bags. Same seed replays the same sequence of presses.")]
+    [SerializeField] private int cycleSeed = 20260911;
+
+    private ShuffleBag shadingBag;
+    private ShuffleBag meshBag;
+    private System.Random layoutRng;
+
+    private void EnsureCyclers()
+    {
+        if (layoutRng == null)  layoutRng  = new System.Random(cycleSeed);
+        if (shadingBag == null) shadingBag = new ShuffleBag(3, cycleSeed);
+
+        int libCount = library != null ? library.Count : 0;
+        if (meshBag == null)          meshBag = new ShuffleBag(libCount, cycleSeed + 1);
+        else if (meshBag.Count != libCount) meshBag.Resize(libCount);
+    }
+
+    /// <summary>
+    /// New arrangement. The only function that reinitialises: positions are
+    /// computed in Initialize, so a seed change only reaches newly spawned
+    /// particles. Resets spin phase, wave phase and any in-flight flash, which
+    /// is correct for a deliberate reroll.
+    /// </summary>
+    public void RerollLayout()
+    {
+        EnsureCyclers();
+        var p = parameters;
+        p.layoutSeed = unchecked((uint)layoutRng.Next(1, int.MaxValue));
+        ApplyAndRelayout(p);
+    }
+
+    /// <summary>Next shading model. No reinit — the composition is held.</summary>
+    public void CycleShading()
+    {
+        EnsureCyclers();
+        int next = shadingBag.Next();
+        if (next < 0) return;
+
+        var p = parameters;
+        p.shading = (BackdropShadingMode)next;
+        Apply(p);
+    }
+
+    /// <summary>Next mesh from the library. No reinit — same positions, different object.</summary>
+    public void CycleMesh()
+    {
+        EnsureCyclers();
+        int next = meshBag.Next();
+        if (next < 0) return;
+        SetMeshIndex(next);
+    }
+
+    /// <summary>
+    /// Writes the flash timestamp. One property write and nothing else: the
+    /// graph computes exp(-(t - FlashTime) * FlashDecay) per instance, offset
+    /// by normalised instance ID so the flash ripples across the field. There
+    /// is deliberately no coroutine and no per-frame C# here.
+    /// </summary>
+    public void Flash()
+    {
+        if (vfx == null) return;
+        vfx.SetFloat(IdFlashTime, Time.time);
+    }
+
     private void ApplyMesh()
     {
         if (vfx == null || library == null) return;
