@@ -80,7 +80,7 @@ public class BackdropInstrument : MonoBehaviour
 
         var missing = ValidateGraph();
         if (missing.Count > 0)
-            Debug.LogError(
+            Debug.LogWarning(
                 $"[BackdropInstrument] Backdrop.vfx is missing {missing.Count} exposed " +
                 $"properties this component writes: {string.Join(", ", missing)}. " +
                 "Names are case-sensitive; see the exposed property contract in the plan.",
@@ -115,28 +115,28 @@ public class BackdropInstrument : MonoBehaviour
 
         var c = parameters;
 
-        vfx.SetUInt(IdLayoutSeed, c.layoutSeed);
-        vfx.SetInt(IdSpawnCount, c.spawnCount);
-        vfx.SetInt(IdDomainShape, (int)c.domain);
-        vfx.SetVector3(IdDomainSize, c.domainSize);
-        vfx.SetBool(IdSolidFill, c.solidFill);
+        SetU(IdLayoutSeed, c.layoutSeed);
+        SetI(IdSpawnCount, c.spawnCount);
+        SetI(IdDomainShape, (int)c.domain);
+        SetV3(IdDomainSize, c.domainSize);
+        SetB(IdSolidFill, c.solidFill);
 
-        vfx.SetInt(IdShadingMode, (int)c.shading);
-        vfx.SetFloat(IdFlashDecay, c.flashDecay);
-        vfx.SetFloat(IdFlashRipple, c.flashRipple);
-        vfx.SetVector4(IdEmissionColor, c.emissionColor * c.flashIntensity);
+        SetI(IdShadingMode, (int)c.shading);
+        SetF(IdFlashDecay, c.flashDecay);
+        SetF(IdFlashRipple, c.flashRipple);
+        SetV4(IdEmissionColor, c.emissionColor * c.flashIntensity);
 
-        vfx.SetVector2(IdScaleRange, c.scaleRange);
-        vfx.SetVector3(IdScaleAxisBias, c.scaleAxisBias);
-        vfx.SetVector3(IdOffsetJitter, c.offsetJitter);
-        vfx.SetVector3(IdRotationJitter, c.rotationJitter);
+        SetV2(IdScaleRange, c.scaleRange);
+        SetV3(IdScaleAxisBias, c.scaleAxisBias);
+        SetV3(IdOffsetJitter, c.offsetJitter);
+        SetV3(IdRotationJitter, c.rotationJitter);
 
-        vfx.SetVector2(IdSpinRateRange, c.spinRateRange);
-        vfx.SetVector3(IdSpinAxis, c.spinAxis);
-        vfx.SetVector3(IdWaveAxis, c.waveAxis);
-        vfx.SetFloat(IdWaveAmplitude, c.waveAmplitude);
-        vfx.SetFloat(IdWaveFrequency, c.waveFrequency);
-        vfx.SetFloat(IdWavePhaseSpread, c.wavePhaseSpread);
+        SetV2(IdSpinRateRange, c.spinRateRange);
+        SetV3(IdSpinAxis, c.spinAxis);
+        SetV3(IdWaveAxis, c.waveAxis);
+        SetF(IdWaveAmplitude, c.waveAmplitude);
+        SetF(IdWaveFrequency, c.waveFrequency);
+        SetF(IdWavePhaseSpread, c.wavePhaseSpread);
 
         ApplyMesh();
     }
@@ -247,14 +247,28 @@ public class BackdropInstrument : MonoBehaviour
     public void Flash()
     {
         if (vfx == null) return;
-        vfx.SetFloat(IdFlashTime, Time.time);
+        SetF(IdFlashTime, Time.time);
     }
+
+    // Guarded setters. A VisualEffect logs an error for every write to a property
+    // its graph does not declare, and Apply pushes 21 of them on every knob move -
+    // an unauthored graph would bury the console at frame rate. Skipping the
+    // absent ones is also what lets the graph be built up incrementally: each
+    // property starts working the moment it appears on the Blackboard, and
+    // ValidateGraph still reports the full list of what is missing.
+    private void SetF(int id, float v)          { if (vfx.HasFloat(id))   vfx.SetFloat(id, v); }
+    private void SetI(int id, int v)            { if (vfx.HasInt(id))     vfx.SetInt(id, v); }
+    private void SetU(int id, uint v)           { if (vfx.HasUInt(id))    vfx.SetUInt(id, v); }
+    private void SetB(int id, bool v)           { if (vfx.HasBool(id))    vfx.SetBool(id, v); }
+    private void SetV2(int id, Vector2 v)       { if (vfx.HasVector2(id)) vfx.SetVector2(id, v); }
+    private void SetV3(int id, Vector3 v)       { if (vfx.HasVector3(id)) vfx.SetVector3(id, v); }
+    private void SetV4(int id, Vector4 v)       { if (vfx.HasVector4(id)) vfx.SetVector4(id, v); }
 
     private void ApplyMesh()
     {
         if (vfx == null || library == null) return;
         var mesh = library.Get(meshIndex);
-        if (mesh != null) vfx.SetMesh(IdInstanceMesh, mesh);
+        if (mesh != null && vfx.HasMesh(IdInstanceMesh)) vfx.SetMesh(IdInstanceMesh, mesh);
     }
 
     /// <summary>
