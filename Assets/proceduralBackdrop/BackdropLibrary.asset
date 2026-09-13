@@ -14,4 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BackdropLibrary
   scanFolder: Assets/proceduralBackdrop/Meshes
   triangleWarnThreshold: 3000
-  meshes: []
+  meshes:
+  - {fileID: 6271093427156374420, guid: 93bb9c4620d69554288bffbe28e0153b, type: 3}
+  - {fileID: 6291427681300151356, guid: 93bb9c4620d69554288bffbe28e0153b, type: 3}
