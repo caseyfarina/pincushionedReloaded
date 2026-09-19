@@ -8,10 +8,12 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: BackdropShading
-  m_Shader: {fileID: 4800000, guid: c868a5d6af97fce45ad8d2e03c5ab471, type: 3}
+  m_Shader: {fileID: 4800000, guid: 4771c87c34652bc40b784e0735dd104a, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
+  m_ValidKeywords:
+  - _EMISSION
+  - _OUTLINE_ON
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 1
@@ -22,17 +24,50 @@ Material:
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
-    m_TexEnvs: []
+    m_TexEnvs:
+    - _BaseMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BumpMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DisplacementMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _EmissionMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _Bands: 3
+    - _BumpScale: 1
+    - _DisplacementOffset: 0
+    - _DisplacementStrength: 0.5
+    - _EnableDisplacement: 0
+    - _EnableEmission: 1
+    - _EnableOutline: 1
     - _FresnelPower: 3
     - _Metallic: 0
+    - _OutlineWidth: 2
     - _ShadingMode: 0
+    - _ShadowSmoothness: 0.02
+    - _ShadowThreshold: 0.5
     - _Smoothness: 0.35
+    - _SpecularSize: 0.97
+    - _SpecularStrength: 0.5
     - _ToonSteps: 3
     m_Colors:
     - _BaseColor: {r: 0.75, g: 0.73, b: 0.7, a: 1}
+    - _DisplacementScrollSpeed: {r: 0, g: 0, b: 0, a: 0}
+    - _DisplacementTiling: {r: 1, g: 1, b: 0, a: 0}
     - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}
     - _FresnelColor: {r: 0.2, g: 0.8, b: 1, a: 1}
+    - _OutlineColor: {r: 0, g: 0, b: 0, a: 1}
+    - _ShadowColor: {r: 0.39999998, g: 0.39999998, b: 0.5, a: 1}
+    - _SpecularColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
