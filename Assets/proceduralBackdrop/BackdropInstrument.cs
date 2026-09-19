@@ -1,30 +1,45 @@
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.VFX;
+using UnityEngine.Rendering;
 
 /// <summary>
-/// The single owner of backdrop state and the only thing that writes to
-/// Backdrop.vfx. Input-agnostic: it knows nothing about MIDI or the keyboard,
-/// which is what lets the whole system be built and judged with no MF64
-/// attached. Same split as PinDensityController and PoseInstrument.
+/// The single owner of backdrop state, and the only thing that draws it.
+/// Input-agnostic: it knows nothing about MIDI or the keyboard, which is what
+/// lets the whole system be built and judged with no MF64 attached. Same split
+/// as PinDensityController and PoseInstrument.
 ///
 /// Every write goes through Apply(), so pads, the inspector, presets and the
-/// randomiser can never disagree about what the graph is showing.
+/// randomiser can never disagree about what is on screen.
+///
+/// Renders with Graphics.RenderMeshInstanced rather than a VFX Graph. The
+/// backdrop's motion is a closed-form function of (instanceId, seed, time) with
+/// no state carried between frames, so GPU particle simulation - the one thing
+/// VFX Graph offers that nothing else does - buys nothing here, while costing an
+/// opaque binary asset that cannot be diffed, tested or authored from the CLI.
+/// The lattice math lives in BackdropLattice, where it is unit-tested.
 /// </summary>
 [ExecuteAlways]
-[RequireComponent(typeof(VisualEffect))]
 public class BackdropInstrument : MonoBehaviour
 {
-    [SerializeField] private VisualEffect vfx;
-
     [Tooltip("The live parameter set. Edit here, or drive it from a driver or preset.")]
     [SerializeField] private BackdropParameters parameters = BackdropParameters.Default;
 
     [Tooltip("Mesh set the mesh-swap function cycles through.")]
     [SerializeField] private BackdropLibrary library;
 
-    [Tooltip("Index into the library. -1 leaves whatever mesh the graph was authored with.")]
+    [Tooltip("Index into the library. Out of range falls back to a built-in cube.")]
     [SerializeField] private int meshIndex = 0;
+
+    [Tooltip("Material for every instance. Must have Enable GPU Instancing ticked.")]
+    [SerializeField] private Material material;
+
+    [Tooltip("Off by default: shadow casters were what drove the cost curve in this project's dancer sweep, and a backdrop has no business in the shadow atlas.")]
+    [SerializeField] private ShadowCastingMode shadows = ShadowCastingMode.Off;
+
+    [SerializeField] private bool receiveShadows = false;
+
+    [Header("Performance functions")]
+    [Tooltip("Seed for the shading and mesh shuffle bags. Same seed replays the same sequence of presses.")]
+    [SerializeField] private int cycleSeed = 20260911;
 
     public BackdropParameters Current => parameters;
     public BackdropLibrary Library => library;
@@ -32,177 +47,86 @@ public class BackdropInstrument : MonoBehaviour
 
     /// <summary>
     /// Bumped by every Apply. Apply is the single write path, so a watcher can
-    /// tell that the state moved without knowing which driver moved it — which
-    /// is how BackdropExplorerDriver records edits made by the pads.
+    /// tell the state moved without knowing which driver moved it - which is how
+    /// BackdropExplorerDriver records edits made by the pads.
     /// </summary>
     public int Revision { get; private set; }
 
-    // Exposed-property name IDs. Cached because Apply runs on every pad press
-    // and string lookups in VisualEffect are not free.
-    private static readonly int IdLayoutSeed      = Shader.PropertyToID("LayoutSeed");
-    private static readonly int IdSpawnCount      = Shader.PropertyToID("SpawnCount");
-    private static readonly int IdDomainShape     = Shader.PropertyToID("DomainShape");
-    private static readonly int IdDomainSize      = Shader.PropertyToID("DomainSize");
-    private static readonly int IdSolidFill       = Shader.PropertyToID("SolidFill");
-    private static readonly int IdInstanceMesh    = Shader.PropertyToID("InstanceMesh");
-    private static readonly int IdShadingMode     = Shader.PropertyToID("ShadingMode");
-    private static readonly int IdFlashTime       = Shader.PropertyToID("FlashTime");
-    private static readonly int IdFlashDecay      = Shader.PropertyToID("FlashDecay");
-    private static readonly int IdFlashRipple     = Shader.PropertyToID("FlashRipple");
-    private static readonly int IdScaleRange      = Shader.PropertyToID("ScaleRange");
-    private static readonly int IdScaleAxisBias   = Shader.PropertyToID("ScaleAxisBias");
-    private static readonly int IdOffsetJitter    = Shader.PropertyToID("OffsetJitter");
-    private static readonly int IdRotationJitter  = Shader.PropertyToID("RotationJitter");
-    private static readonly int IdSpinRateRange   = Shader.PropertyToID("SpinRateRange");
-    private static readonly int IdSpinAxis        = Shader.PropertyToID("SpinAxis");
-    private static readonly int IdWaveAxis        = Shader.PropertyToID("WaveAxis");
-    private static readonly int IdWaveAmplitude   = Shader.PropertyToID("WaveAmplitude");
-    private static readonly int IdWaveFrequency   = Shader.PropertyToID("WaveFrequency");
-    private static readonly int IdWavePhaseSpread = Shader.PropertyToID("WavePhaseSpread");
-    private static readonly int IdEmissionColor   = Shader.PropertyToID("EmissionColor");
+    private static readonly int IdFlash = Shader.PropertyToID("_Flash");
 
-    private void Reset()  => vfx = GetComponent<VisualEffect>();
-    private void Awake()  { if (vfx == null) vfx = GetComponent<VisualEffect>(); }
+    private Matrix4x4[] matrices = new Matrix4x4[BackdropParameters.MaxSpawnCount];
+    private float[] flashValues = new float[BackdropParameters.MaxSpawnCount];
+    private MaterialPropertyBlock mpb;
+    private RenderParams rp;
+    private bool rpValid;
+
+    private float flashTime = -1000f;
+    private int liveCount;
+
+    private ShuffleBag shadingBag;
+    private ShuffleBag meshBag;
+    private System.Random layoutRng;
+    private bool warnedNoLibrary;
+    private Mesh fallbackMesh;
 
     private void OnEnable()
     {
-        if (vfx == null) vfx = GetComponent<VisualEffect>();
+        Apply(parameters);
+    }
 
-        // The likeliest state during authoring, and previously the quietest:
-        // with no asset assigned every Apply write is dropped and ValidateGraph
-        // has no graph to inspect, so nothing at all was reported.
-        if (vfx == null || vfx.visualEffectAsset == null)
-            Debug.LogError(
-                $"[BackdropInstrument] '{name}' has no Visual Effect Asset assigned. " +
-                "No backdrop will render and every parameter write is silently " +
-                "discarded until Backdrop.vfx is dropped into the Visual Effect component.",
-                this);
-
-        var missing = ValidateGraph();
-        if (missing.Count > 0)
-            Debug.LogWarning(
-                $"[BackdropInstrument] Backdrop.vfx is missing {missing.Count} exposed " +
-                $"properties this component writes: {string.Join(", ", missing)}. " +
-                "Names are case-sensitive; see the exposed property contract in the plan.",
-                this);
-
-        ApplyAndRelayout(parameters);
+    private void OnDisable()
+    {
+        if (fallbackMesh != null)
+        {
+            if (Application.isPlaying) Destroy(fallbackMesh);
+            else DestroyImmediate(fallbackMesh);
+            fallbackMesh = null;
+        }
     }
 
     // Inspector edits go through the same single write path as everything else.
     private void OnValidate()
     {
-        if (!isActiveAndEnabled || vfx == null) return;
-        Apply(parameters);
+        if (isActiveAndEnabled) Apply(parameters);
     }
 
     /// <summary>
-    /// Pushes every parameter to the graph. Does NOT reinitialise, so the
-    /// existing arrangement, spin phase and wave phase all survive. This is
-    /// what lets shading, mesh and flash be played against a layout that was
-    /// found once and is being held.
+    /// Adopts a parameter set. Cheap - it only stores the clamped values and
+    /// invalidates the render params; the matrices are rebuilt in Update, once
+    /// per frame, however many times Apply was called.
     /// </summary>
     public void Apply(BackdropParameters p)
     {
         parameters = p.Clamped();
-
-        // Bumped before the graph guard rather than after the writes: the state
-        // moved whether or not there is an asset to push it to, and a watcher
-        // reconciles against the state, not against the graph.
+        rpValid = false;
         Revision++;
-
-        if (vfx == null) return;
-
-        var c = parameters;
-
-        SetU(IdLayoutSeed, c.layoutSeed);
-        SetI(IdSpawnCount, c.spawnCount);
-        SetI(IdDomainShape, (int)c.domain);
-        SetV3(IdDomainSize, c.domainSize);
-        SetB(IdSolidFill, c.solidFill);
-
-        SetI(IdShadingMode, (int)c.shading);
-        SetF(IdFlashDecay, c.flashDecay);
-        SetF(IdFlashRipple, c.flashRipple);
-        SetV4(IdEmissionColor, c.emissionColor * c.flashIntensity);
-
-        SetV2(IdScaleRange, c.scaleRange);
-        SetV3(IdScaleAxisBias, c.scaleAxisBias);
-        SetV3(IdOffsetJitter, c.offsetJitter);
-        SetV3(IdRotationJitter, c.rotationJitter);
-
-        SetV2(IdSpinRateRange, c.spinRateRange);
-        SetV3(IdSpinAxis, c.spinAxis);
-        SetV3(IdWaveAxis, c.waveAxis);
-        SetF(IdWaveAmplitude, c.waveAmplitude);
-        SetF(IdWaveFrequency, c.waveFrequency);
-        SetF(IdWavePhaseSpread, c.wavePhaseSpread);
-
-        ApplyMesh();
     }
 
     /// <summary>
-    /// Apply, then re-fire the spawn burst so new positions take effect.
-    /// Positions are computed in Initialize, so a seed or domain change only
-    /// affects newly spawned particles — Reinit is the re-layout. It resets
-    /// spin phase, wave phase and any in-flight flash, which is correct for a
-    /// deliberate reroll and wrong for everything else.
+    /// Kept for source compatibility with the drivers. There is no separate
+    /// re-layout step any more: positions are recomputed from the seed every
+    /// frame, so a new seed takes effect immediately and a parameter change
+    /// never needs a reinit. The distinction only existed because VFX Graph
+    /// computed positions once, in its Initialize context.
     /// </summary>
-    public void ApplyAndRelayout(BackdropParameters p)
-    {
-        Apply(p);
-        if (vfx != null) vfx.Reinit();
-    }
+    public void ApplyAndRelayout(BackdropParameters p) => Apply(p);
 
-    /// <summary>Sets the mesh from the library without disturbing the layout.</summary>
     public void SetMeshIndex(int index)
     {
         meshIndex = index;
-        ApplyMesh();
+        rpValid = false;
     }
 
-    [Header("Performance functions")]
-    [Tooltip("Seed for the shading and mesh shuffle bags. Same seed replays the same sequence of presses.")]
-    [SerializeField] private int cycleSeed = 20260911;
-
-    private ShuffleBag shadingBag;
-    private ShuffleBag meshBag;
-    private System.Random layoutRng;
-    private bool warnedEmptyLibrary;
-
-    /// <summary>
-    /// Derived, not typed as 3: a fourth shading model added to the enum would
-    /// otherwise be unreachable from the pad and nothing would say so.
-    /// Cached because Enum.GetValues allocates and this runs on every press.
-    /// </summary>
-    private static readonly int ShadingModeCount =
-        System.Enum.GetValues(typeof(BackdropShadingMode)).Length;
-
-    private void EnsureCyclers()
-    {
-        if (layoutRng == null)  layoutRng  = new System.Random(cycleSeed);
-        if (shadingBag == null) shadingBag = new ShuffleBag(ShadingModeCount, cycleSeed);
-
-        int libCount = library != null ? library.Count : 0;
-        if (meshBag == null)          meshBag = new ShuffleBag(libCount, cycleSeed + 1);
-        else if (meshBag.Count != libCount) meshBag.Resize(libCount);
-    }
-
-    /// <summary>
-    /// New arrangement. The only function that reinitialises: positions are
-    /// computed in Initialize, so a seed change only reaches newly spawned
-    /// particles. Resets spin phase, wave phase and any in-flight flash, which
-    /// is correct for a deliberate reroll.
-    /// </summary>
+    /// <summary>New arrangement: a fresh layout seed reshuffles every position.</summary>
     public void RerollLayout()
     {
         EnsureCyclers();
         var p = parameters;
         p.layoutSeed = unchecked((uint)layoutRng.Next(1, int.MaxValue));
-        ApplyAndRelayout(p);
+        Apply(p);
     }
 
-    /// <summary>Next shading model. No reinit — the composition is held.</summary>
+    /// <summary>Next shading model. Positions are untouched, so a found composition is held.</summary>
     public void CycleShading()
     {
         EnsureCyclers();
@@ -214,99 +138,132 @@ public class BackdropInstrument : MonoBehaviour
         Apply(p);
     }
 
-    /// <summary>Next mesh from the library. No reinit — same positions, different object.</summary>
+    /// <summary>Next mesh from the library. Same positions, different object.</summary>
     public void CycleMesh()
     {
         EnsureCyclers();
-        int next = meshBag.Next();
-        if (next < 0)
+
+        if (library == null || library.Count == 0)
         {
-            // A pad that does nothing mid-set is indistinguishable from broken
-            // hardware, which is the failure the shuffle bag exists to avoid.
-            // Warned once: the alternative is a console flood at pad rate.
-            if (!warnedEmptyLibrary)
+            if (!warnedNoLibrary)
             {
-                warnedEmptyLibrary = true;
+                warnedNoLibrary = true;
                 Debug.LogWarning(
-                    $"[BackdropInstrument] '{name}' has no mesh library " +
-                    "(or an empty one), so the mesh-swap pad does nothing. " +
-                    "Assign a BackdropLibrary and press Scan Folder.",
-                    this);
+                    $"[BackdropInstrument] '{name}' has no meshes, so the mesh pad does nothing. " +
+                    "Assign a BackdropLibrary and press Scan Folder on it.", this);
             }
             return;
         }
-        SetMeshIndex(next);
+
+        int next = meshBag.Next();
+        if (next >= 0) SetMeshIndex(next);
     }
 
     /// <summary>
-    /// Writes the flash timestamp. One property write and nothing else: the
-    /// graph computes exp(-(t - FlashTime) * FlashDecay) per instance, offset
-    /// by normalised instance ID so the flash ripples across the field. There
-    /// is deliberately no coroutine and no per-frame C# here.
+    /// Starts a flash. A timestamp, not a level: the per-instance decay is
+    /// computed in the frame fill, staggered by instance index so the flash
+    /// ripples across the field rather than blinking flat.
     /// </summary>
-    public void Flash()
+    public void Flash() => flashTime = NowTime;
+
+    private static float NowTime =>
+#if UNITY_EDITOR
+        Application.isPlaying ? Time.time : (float)UnityEditor.EditorApplication.timeSinceStartup;
+#else
+        Time.time;
+#endif
+
+    private void Update()
     {
-        if (vfx == null) return;
-        SetF(IdFlashTime, Time.time);
+        var mesh = ResolveMesh();
+        if (mesh == null || material == null) return;
+
+        liveCount = BackdropLattice.Fill(parameters, NowTime, flashTime, matrices, flashValues);
+        if (liveCount == 0) return;
+
+        if (!rpValid) RebuildRenderParams(mesh);
+
+        if (mpb == null) mpb = new MaterialPropertyBlock();
+        mpb.SetFloatArray(IdFlash, flashValues);
+        rp.matProps = mpb;
+
+        // One instanced draw for the whole field.
+        Graphics.RenderMeshInstanced(rp, mesh, 0, matrices, liveCount);
     }
 
-    // Guarded setters. A VisualEffect logs an error for every write to a property
-    // its graph does not declare, and Apply pushes 21 of them on every knob move -
-    // an unauthored graph would bury the console at frame rate. Skipping the
-    // absent ones is also what lets the graph be built up incrementally: each
-    // property starts working the moment it appears on the Blackboard, and
-    // ValidateGraph still reports the full list of what is missing.
-    private void SetF(int id, float v)          { if (vfx.HasFloat(id))   vfx.SetFloat(id, v); }
-    private void SetI(int id, int v)            { if (vfx.HasInt(id))     vfx.SetInt(id, v); }
-    private void SetU(int id, uint v)           { if (vfx.HasUInt(id))    vfx.SetUInt(id, v); }
-    private void SetB(int id, bool v)           { if (vfx.HasBool(id))    vfx.SetBool(id, v); }
-    private void SetV2(int id, Vector2 v)       { if (vfx.HasVector2(id)) vfx.SetVector2(id, v); }
-    private void SetV3(int id, Vector3 v)       { if (vfx.HasVector3(id)) vfx.SetVector3(id, v); }
-    private void SetV4(int id, Vector4 v)       { if (vfx.HasVector4(id)) vfx.SetVector4(id, v); }
-
-    private void ApplyMesh()
+    private void RebuildRenderParams(Mesh mesh)
     {
-        if (vfx == null || library == null) return;
-        var mesh = library.Get(meshIndex);
-        if (mesh != null && vfx.HasMesh(IdInstanceMesh)) vfx.SetMesh(IdInstanceMesh, mesh);
+        rp = new RenderParams(material)
+        {
+            worldBounds = TransformedBounds(),
+            shadowCastingMode = shadows,
+            receiveShadows = receiveShadows,
+            layer = gameObject.layer,
+            renderingLayerMask = uint.MaxValue,
+        };
+
+        material.SetFloat("_ShadingMode", (int)parameters.shading);
+        material.SetColor("_EmissionColor", parameters.emissionColor);
+        rpValid = true;
     }
 
     /// <summary>
-    /// Names of exposed properties this component writes that the graph does
-    /// not declare. Empty means the C# and the hand-authored graph agree.
-    /// This exists because Backdrop.vfx is built by hand in the GUI and a typo
-    /// in a property name is otherwise a silent no-op — the value is dropped
-    /// and the backdrop simply ignores that parameter forever.
+    /// Tight world bounds for the field. Deliberately not a big fixed cube:
+    /// MeshSurfaceScatter used to submit a hardcoded 1000-unit box, which meant
+    /// Unity could never frustum-cull it and every split-screen camera paid for
+    /// the whole thing.
     /// </summary>
-    public List<string> ValidateGraph()
+    private Bounds TransformedBounds()
     {
-        var missing = new List<string>();
-        if (vfx == null || vfx.visualEffectAsset == null) return missing;
+        var local = BackdropLattice.LocalBounds(parameters);
+        var b = new Bounds(transform.TransformPoint(local.center), Vector3.zero);
+        Vector3 e = local.extents;
+        for (int i = 0; i < 8; i++)
+        {
+            var corner = new Vector3(
+                (i & 1) == 0 ? -e.x : e.x,
+                (i & 2) == 0 ? -e.y : e.y,
+                (i & 4) == 0 ? -e.z : e.z);
+            b.Encapsulate(transform.TransformPoint(local.center + corner));
+        }
+        return b;
+    }
 
-        void Req(bool has, string name) { if (!has) missing.Add(name); }
+    private Mesh ResolveMesh()
+    {
+        var m = library != null ? library.Get(meshIndex) : null;
+        if (m != null) return m;
 
-        Req(vfx.HasUInt(IdLayoutSeed),        "LayoutSeed");
-        Req(vfx.HasInt(IdSpawnCount),         "SpawnCount");
-        Req(vfx.HasInt(IdDomainShape),        "DomainShape");
-        Req(vfx.HasVector3(IdDomainSize),     "DomainSize");
-        Req(vfx.HasBool(IdSolidFill),         "SolidFill");
-        Req(vfx.HasMesh(IdInstanceMesh),      "InstanceMesh");
-        Req(vfx.HasInt(IdShadingMode),        "ShadingMode");
-        Req(vfx.HasFloat(IdFlashTime),        "FlashTime");
-        Req(vfx.HasFloat(IdFlashDecay),       "FlashDecay");
-        Req(vfx.HasFloat(IdFlashRipple),      "FlashRipple");
-        Req(vfx.HasVector2(IdScaleRange),     "ScaleRange");
-        Req(vfx.HasVector3(IdScaleAxisBias),  "ScaleAxisBias");
-        Req(vfx.HasVector3(IdOffsetJitter),   "OffsetJitter");
-        Req(vfx.HasVector3(IdRotationJitter), "RotationJitter");
-        Req(vfx.HasVector2(IdSpinRateRange),  "SpinRateRange");
-        Req(vfx.HasVector3(IdSpinAxis),       "SpinAxis");
-        Req(vfx.HasVector3(IdWaveAxis),       "WaveAxis");
-        Req(vfx.HasFloat(IdWaveAmplitude),    "WaveAmplitude");
-        Req(vfx.HasFloat(IdWaveFrequency),    "WaveFrequency");
-        Req(vfx.HasFloat(IdWavePhaseSpread),  "WavePhaseSpread");
-        Req(vfx.HasVector4(IdEmissionColor),  "EmissionColor");
+        // A built-in cube keeps the backdrop visible while a library is being
+        // set up, so an empty list reads as "not configured yet" rather than as
+        // a broken renderer.
+        if (fallbackMesh == null)
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            fallbackMesh = Instantiate(go.GetComponent<MeshFilter>().sharedMesh);
+            fallbackMesh.name = "BackdropFallbackCube";
+            fallbackMesh.hideFlags = HideFlags.HideAndDontSave;
+            if (Application.isPlaying) Destroy(go); else DestroyImmediate(go);
+        }
+        return fallbackMesh;
+    }
 
-        return missing;
+    private void EnsureCyclers()
+    {
+        if (layoutRng == null) layoutRng = new System.Random(cycleSeed);
+
+        int shadingCount = System.Enum.GetValues(typeof(BackdropShadingMode)).Length;
+        if (shadingBag == null) shadingBag = new ShuffleBag(shadingCount, cycleSeed);
+
+        int libCount = library != null ? library.Count : 0;
+        if (meshBag == null) meshBag = new ShuffleBag(libCount, cycleSeed + 1);
+        else if (meshBag.Count != libCount) meshBag.Resize(libCount);
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        var b = TransformedBounds();
+        Gizmos.color = new Color(0.3f, 0.8f, 1f, 0.35f);
+        Gizmos.DrawWireCube(b.center, b.size);
     }
 }
