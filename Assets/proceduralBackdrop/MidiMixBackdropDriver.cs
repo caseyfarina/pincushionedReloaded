@@ -15,6 +15,21 @@ public enum BackdropParam
     WaveAmplitude, WaveFrequency, WavePhaseSpread,
     FlashDecay, FlashIntensity, FlashRipple,
     EmissionHue, EmissionSaturation, EmissionValue,
+
+    // Derived controls, appended rather than inserted so existing serialized
+    // bindings keep their enum indices.
+    //
+    // Each channel's fader is the headline for that strip and its knobs are the
+    // axes underneath, so the vector concepts need a single magnitude the fader
+    // can ride. These scale the vector the knobs shaped rather than replacing
+    // it, which is what makes "rough out the proportions on the knobs, then
+    // perform the amount on the fader" work.
+    OffsetAmount, RotationAmount,
+
+    // Size variation across the field, as a fraction of the largest instance.
+    // More musical than a raw scale minimum, which is meaningless without
+    // knowing the maximum.
+    ScaleSpread,
 }
 
 public enum MixControlKind { Knob = 0, Fader = 1, MasterFader = 2 }
@@ -261,6 +276,16 @@ public class MidiMixBackdropDriver : MonoBehaviour
             case BackdropParam.FlashDecay:        return p.flashDecay;
             case BackdropParam.FlashIntensity:    return p.flashIntensity;
             case BackdropParam.FlashRipple:       return p.flashRipple;
+
+            // Largest component, not magnitude: it maps 1:1 onto the knob that
+            // set it, so the fader reads as "the biggest axis is this much".
+            case BackdropParam.OffsetAmount:      return MaxComponent(p.offsetJitter);
+            case BackdropParam.RotationAmount:    return MaxComponent(p.rotationJitter);
+
+            case BackdropParam.ScaleSpread:
+                return p.scaleRange.y > 1e-5f
+                    ? Mathf.Clamp01(1f - p.scaleRange.x / p.scaleRange.y)
+                    : 0f;
         }
 
         // Emission is stored as RGB, so the HSV dials have to round-trip.
@@ -306,6 +331,13 @@ public class MidiMixBackdropDriver : MonoBehaviour
             case BackdropParam.FlashDecay:        p.flashDecay = value; return;
             case BackdropParam.FlashIntensity:    p.flashIntensity = value; return;
             case BackdropParam.FlashRipple:       p.flashRipple = value; return;
+
+            case BackdropParam.OffsetAmount:   p.offsetJitter   = Rescale(p.offsetJitter, value);   return;
+            case BackdropParam.RotationAmount: p.rotationJitter = Rescale(p.rotationJitter, value); return;
+
+            case BackdropParam.ScaleSpread:
+                p.scaleRange.x = p.scaleRange.y * (1f - Mathf.Clamp01(value));
+                return;
         }
 
         if (t == BackdropParam.EmissionHue ||
@@ -320,53 +352,111 @@ public class MidiMixBackdropDriver : MonoBehaviour
         }
     }
 
+    private static float MaxComponent(Vector3 v)
+        => Mathf.Max(Mathf.Abs(v.x), Mathf.Max(Mathf.Abs(v.y), Mathf.Abs(v.z)));
+
+    /// <summary>
+    /// Scales a vector so its largest component becomes <paramref name="amount"/>,
+    /// preserving the proportions the knobs set. A vector that is currently zero
+    /// has no proportions to preserve, so it goes uniform - otherwise the fader
+    /// would be dead until someone touched a knob first.
+    /// </summary>
+    private static Vector3 Rescale(Vector3 v, float amount)
+    {
+        float cur = MaxComponent(v);
+        return cur < 1e-5f ? new Vector3(amount, amount, amount) : v * (amount / cur);
+    }
+
     private static MixBinding K(int ch, int row, BackdropParam t, float min, float max)
         => new MixBinding { control = MixControlKind.Knob, channel = ch, row = row, target = t, min = min, max = max };
 
     private static MixBinding F(int ch, BackdropParam t, float min, float max)
         => new MixBinding { control = MixControlKind.Fader, channel = ch, row = 1, target = t, min = min, max = max };
 
+    private static MixBinding M(BackdropParam t, float min, float max)
+        => new MixBinding { control = MixControlKind.MasterFader, channel = 1, row = 1, target = t, min = min, max = max };
+
     /// <summary>
-    /// Row 1 is form, row 2 is per-instance variation, row 3 is look. The faders
-    /// take the axis vectors, which are set-and-leave rather than performed.
-    /// Ranges mirror BackdropRanges, so a knob sweep covers the same space the
-    /// randomiser draws from and a caught knob lands where Space could have.
+    /// One concept per channel strip, because that is how the hardware is built:
+    /// three knobs stacked directly above their fader, read top to bottom as one
+    /// column. The fader is the headline you perform; the knobs above it are the
+    /// axes or shaping of that same idea, set once and left.
+    ///
+    ///   ch | fader             | knob 1      knob 2      knob 3
+    ///   ---|-------------------|-------------------------------------
+    ///    1 | Spawn Count       | Domain X    Domain Y    Domain Z
+    ///    2 | Scale             | Bias X      Bias Y      Bias Z
+    ///    3 | Offset Amount     | Offset X    Offset Y    Offset Z
+    ///    4 | Rotation Amount   | Rot X       Rot Y       Rot Z
+    ///    5 | Spin Rate         | Axis X      Axis Y      Axis Z
+    ///    6 | Wave Amplitude    | Axis X      Axis Y      Axis Z
+    ///    7 | Wave Frequency    | Phase       Flash Decay Flash Ripple
+    ///    8 | Flash Intensity   | Hue         Saturation  Value
+    ///   master: Scale Spread
+    ///
+    /// Channels are ordered by how much a small move changes the image: count
+    /// and size first, disorder next, motion after that, and the look last. A
+    /// left-to-right sweep is roughly coarse-to-fine, so the strips you grab
+    /// mid-performance are the ones nearest your hand.
+    ///
+    /// Ranges mirror BackdropRanges, so a knob sweep covers the same space Space
+    /// draws from and a caught control lands where a randomise could have.
     /// </summary>
     public static List<MixBinding> DefaultBindings() => new List<MixBinding>
     {
-        K(1, 1, BackdropParam.SpawnCount,          0f,    1200f),
-        K(2, 1, BackdropParam.DomainSizeX,         5f,    120f),
-        K(3, 1, BackdropParam.DomainSizeY,         5f,    80f),
-        K(4, 1, BackdropParam.DomainSizeZ,         5f,    120f),
-        K(5, 1, BackdropParam.ScaleMin,            0.05f, 2f),
-        K(6, 1, BackdropParam.ScaleMax,            0.05f, 5f),
-        K(7, 1, BackdropParam.ScaleBiasY,          0.1f,  12f),
-        K(8, 1, BackdropParam.OffsetJitterY,       0f,    6f),
+        // 1 - Field: how many, and how big a volume they occupy.
+        F(1, BackdropParam.SpawnCount,   0f, 1200f),
+        K(1, 1, BackdropParam.DomainSizeX, 5f, 120f),
+        K(1, 2, BackdropParam.DomainSizeY, 5f, 80f),
+        K(1, 3, BackdropParam.DomainSizeZ, 5f, 120f),
 
-        K(1, 2, BackdropParam.ScaleBiasX,          0.1f,  4f),
-        K(2, 2, BackdropParam.ScaleBiasZ,          0.1f,  4f),
-        K(3, 2, BackdropParam.OffsetJitterX,       0f,    6f),
-        K(4, 2, BackdropParam.OffsetJitterZ,       0f,    6f),
-        K(5, 2, BackdropParam.RotationJitterX,     0f,    180f),
-        K(6, 2, BackdropParam.RotationJitterY,     0f,    180f),
-        K(7, 2, BackdropParam.RotationJitterZ,     0f,    180f),
-        K(8, 2, BackdropParam.SpinRateMagnitude,   0f,    90f),
+        // 2 - Scale: overall instance size, then the per-axis stretch. Bias Y is
+        // the tower dial - it is what turns a field of blocks into a skyline.
+        F(2, BackdropParam.ScaleMax,     0.05f, 5f),
+        K(2, 1, BackdropParam.ScaleBiasX, 0.1f, 4f),
+        K(2, 2, BackdropParam.ScaleBiasY, 0.1f, 12f),
+        K(2, 3, BackdropParam.ScaleBiasZ, 0.1f, 4f),
 
-        K(1, 3, BackdropParam.WaveAmplitude,       0f,    5f),
-        K(2, 3, BackdropParam.WaveFrequency,       0f,    1.5f),
-        K(3, 3, BackdropParam.WavePhaseSpread,     0f,    1f),
-        K(4, 3, BackdropParam.FlashDecay,          0.5f,  12f),
-        K(5, 3, BackdropParam.FlashIntensity,      0f,    30f),
-        K(6, 3, BackdropParam.FlashRipple,         0f,    1.5f),
-        K(7, 3, BackdropParam.EmissionHue,         0f,    1f),
-        K(8, 3, BackdropParam.EmissionSaturation,  0f,    1f),
+        // 3 - Offset: how far instances stray off the lattice.
+        F(3, BackdropParam.OffsetAmount, 0f, 6f),
+        K(3, 1, BackdropParam.OffsetJitterX, 0f, 6f),
+        K(3, 2, BackdropParam.OffsetJitterY, 0f, 6f),
+        K(3, 3, BackdropParam.OffsetJitterZ, 0f, 6f),
 
-        F(1, BackdropParam.EmissionValue,  0f, 1f),
-        F(2, BackdropParam.SpinAxisX,     -1f, 1f),
-        F(3, BackdropParam.SpinAxisY,     -1f, 1f),
-        F(4, BackdropParam.SpinAxisZ,     -1f, 1f),
-        F(5, BackdropParam.WaveAxisX,     -1f, 1f),
-        F(6, BackdropParam.WaveAxisY,     -1f, 1f),
-        F(7, BackdropParam.WaveAxisZ,     -1f, 1f),
+        // 4 - Rotation: how far they turn off axis.
+        F(4, BackdropParam.RotationAmount, 0f, 180f),
+        K(4, 1, BackdropParam.RotationJitterX, 0f, 180f),
+        K(4, 2, BackdropParam.RotationJitterY, 0f, 180f),
+        K(4, 3, BackdropParam.RotationJitterZ, 0f, 180f),
+
+        // 5 - Spin: rate on the fader, axis on the knobs.
+        F(5, BackdropParam.SpinRateMagnitude, 0f, 90f),
+        K(5, 1, BackdropParam.SpinAxisX, -1f, 1f),
+        K(5, 2, BackdropParam.SpinAxisY, -1f, 1f),
+        K(5, 3, BackdropParam.SpinAxisZ, -1f, 1f),
+
+        // 6 - Wave: amplitude on the fader, direction on the knobs.
+        F(6, BackdropParam.WaveAmplitude, 0f, 5f),
+        K(6, 1, BackdropParam.WaveAxisX, -1f, 1f),
+        K(6, 2, BackdropParam.WaveAxisY, -1f, 1f),
+        K(6, 3, BackdropParam.WaveAxisZ, -1f, 1f),
+
+        // 7 - Timing: wave rate, how far the wave phase spreads across the field,
+        // and the flash envelope. Everything on this strip shapes time.
+        F(7, BackdropParam.WaveFrequency, 0f, 1.5f),
+        K(7, 1, BackdropParam.WavePhaseSpread, 0f, 1f),
+        K(7, 2, BackdropParam.FlashDecay, 0.5f, 12f),
+        K(7, 3, BackdropParam.FlashRipple, 0f, 1.5f),
+
+        // 8 - Look: flash on the fader so it can be ridden, colour above it.
+        // Pairs with this channel's mute button, which fires the flash.
+        F(8, BackdropParam.FlashIntensity, 0f, 30f),
+        K(8, 1, BackdropParam.EmissionHue, 0f, 1f),
+        K(8, 2, BackdropParam.EmissionSaturation, 0f, 1f),
+        K(8, 3, BackdropParam.EmissionValue, 0f, 1f),
+
+        // Master: size variation across the whole field - the one quality that
+        // is genuinely global rather than belonging to any single strip.
+        M(BackdropParam.ScaleSpread, 0f, 0.95f),
     };
 }

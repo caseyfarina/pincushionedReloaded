@@ -450,192 +450,204 @@ MonoBehaviour:
   takeoverTolerance: 0.02
   muteRowSelectsModes: 1
   bindings:
-  - control: 0
+  - control: 1
     channel: 1
     row: 1
     target: 1
     min: 0
     max: 1200
   - control: 0
-    channel: 2
+    channel: 1
     row: 1
     target: 2
     min: 5
     max: 120
   - control: 0
-    channel: 3
-    row: 1
+    channel: 1
+    row: 2
     target: 3
     min: 5
     max: 80
   - control: 0
-    channel: 4
-    row: 1
+    channel: 1
+    row: 3
     target: 4
     min: 5
     max: 120
-  - control: 0
-    channel: 5
-    row: 1
-    target: 5
-    min: 0.05
-    max: 2
-  - control: 0
-    channel: 6
+  - control: 1
+    channel: 2
     row: 1
     target: 6
     min: 0.05
     max: 5
   - control: 0
-    channel: 7
+    channel: 2
     row: 1
-    target: 8
-    min: 0.1
-    max: 12
-  - control: 0
-    channel: 8
-    row: 1
-    target: 11
-    min: 0
-    max: 6
-  - control: 0
-    channel: 1
-    row: 2
     target: 7
     min: 0.1
     max: 4
   - control: 0
     channel: 2
     row: 2
+    target: 8
+    min: 0.1
+    max: 12
+  - control: 0
+    channel: 2
+    row: 3
     target: 9
     min: 0.1
     max: 4
+  - control: 1
+    channel: 3
+    row: 1
+    target: 32
+    min: 0
+    max: 6
   - control: 0
     channel: 3
-    row: 2
+    row: 1
     target: 10
     min: 0
     max: 6
   - control: 0
-    channel: 4
+    channel: 3
     row: 2
-    target: 12
+    target: 11
     min: 0
     max: 6
   - control: 0
-    channel: 5
-    row: 2
+    channel: 3
+    row: 3
+    target: 12
+    min: 0
+    max: 6
+  - control: 1
+    channel: 4
+    row: 1
+    target: 33
+    min: 0
+    max: 180
+  - control: 0
+    channel: 4
+    row: 1
     target: 13
     min: 0
     max: 180
   - control: 0
-    channel: 6
+    channel: 4
     row: 2
     target: 14
     min: 0
     max: 180
   - control: 0
-    channel: 7
-    row: 2
+    channel: 4
+    row: 3
     target: 15
     min: 0
     max: 180
-  - control: 0
-    channel: 8
-    row: 2
+  - control: 1
+    channel: 5
+    row: 1
     target: 16
     min: 0
     max: 90
   - control: 0
-    channel: 1
+    channel: 5
+    row: 1
+    target: 17
+    min: -1
+    max: 1
+  - control: 0
+    channel: 5
+    row: 2
+    target: 18
+    min: -1
+    max: 1
+  - control: 0
+    channel: 5
     row: 3
+    target: 19
+    min: -1
+    max: 1
+  - control: 1
+    channel: 6
+    row: 1
     target: 23
     min: 0
     max: 5
   - control: 0
-    channel: 2
+    channel: 6
+    row: 1
+    target: 20
+    min: -1
+    max: 1
+  - control: 0
+    channel: 6
+    row: 2
+    target: 21
+    min: -1
+    max: 1
+  - control: 0
+    channel: 6
     row: 3
+    target: 22
+    min: -1
+    max: 1
+  - control: 1
+    channel: 7
+    row: 1
     target: 24
     min: 0
     max: 1.5
   - control: 0
-    channel: 3
-    row: 3
+    channel: 7
+    row: 1
     target: 25
     min: 0
     max: 1
   - control: 0
-    channel: 4
-    row: 3
+    channel: 7
+    row: 2
     target: 26
     min: 0.5
     max: 12
   - control: 0
-    channel: 5
-    row: 3
-    target: 27
-    min: 0
-    max: 30
-  - control: 0
-    channel: 6
+    channel: 7
     row: 3
     target: 28
     min: 0
     max: 1.5
+  - control: 1
+    channel: 8
+    row: 1
+    target: 27
+    min: 0
+    max: 30
   - control: 0
-    channel: 7
-    row: 3
+    channel: 8
+    row: 1
     target: 29
     min: 0
     max: 1
   - control: 0
     channel: 8
-    row: 3
+    row: 2
     target: 30
     min: 0
     max: 1
-  - control: 1
-    channel: 1
-    row: 1
+  - control: 0
+    channel: 8
+    row: 3
     target: 31
     min: 0
     max: 1
-  - control: 1
-    channel: 2
+  - control: 2
+    channel: 1
     row: 1
-    target: 17
-    min: -1
-    max: 1
-  - control: 1
-    channel: 3
-    row: 1
-    target: 18
-    min: -1
-    max: 1
-  - control: 1
-    channel: 4
-    row: 1
-    target: 19
-    min: -1
-    max: 1
-  - control: 1
-    channel: 5
-    row: 1
-    target: 20
-    min: -1
-    max: 1
-  - control: 1
-    channel: 6
-    row: 1
-    target: 21
-    min: -1
-    max: 1
-  - control: 1
-    channel: 7
-    row: 1
-    target: 22
-    min: -1
-    max: 1
+    target: 34
+    min: 0
+    max: 0.95
 --- !u!1 &1914908111
 GameObject:
   m_ObjectHideFlags: 0
