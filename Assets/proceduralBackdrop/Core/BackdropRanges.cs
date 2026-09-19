@@ -35,15 +35,18 @@ public class BackdropRanges : ScriptableObject
 {
     [Header("Layout")]
     public bool randomiseDomain = true;
-    public RandomRange spawnCount = new RandomRange(120, 600);
+    public RandomRange spawnCount = new RandomRange(250, 1200);
+    [Tooltip("Ignored while fitToCamera is on - X and Y come from the frame.")]
     public RandomRange domainSizeX = new RandomRange(30f, 90f);
+    [Tooltip("Ignored while fitToCamera is on - X and Y come from the frame.")]
     public RandomRange domainSizeY = new RandomRange(15f, 60f);
-    public RandomRange domainSizeZ = new RandomRange(30f, 90f);
+    [Tooltip("Depth, away from the camera. Authored even when fitting, since the frame cannot imply it.")]
+    public RandomRange domainSizeZ = new RandomRange(8f, 60f);
     public bool randomiseSolidFill = true;
 
     [Header("Per-instance variation")]
-    public RandomRange scaleMin = new RandomRange(0.2f, 1.0f);
-    public RandomRange scaleMax = new RandomRange(1.0f, 3.5f);
+    public RandomRange scaleMin = new RandomRange(0.2f, 1.2f);
+    public RandomRange scaleMax = new RandomRange(1.0f, 4.0f);
     public RandomRange scaleBiasX = new RandomRange(0.5f, 2f);
     public RandomRange scaleBiasY = new RandomRange(0.5f, 8f);
     public RandomRange scaleBiasZ = new RandomRange(0.5f, 2f);

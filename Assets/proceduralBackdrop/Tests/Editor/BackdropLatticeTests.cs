@@ -63,12 +63,14 @@ public class BackdropLatticeTests
     }
 
     [Test]
-    public void Position_HemisphereStaysOnTheUpperHalf()
+    public void Position_HemisphereStaysOnTheHalfFacingTheCamera()
     {
+        // The pole runs along +Z so the dome faces the viewer. A point behind
+        // the equator would sit behind the camera once the rig is placed.
         for (int i = 0; i < 300; i++)
             Assert.GreaterOrEqual(
-                BackdropLattice.Position(i, 300, BackdropDomain.Hemisphere, Vector3.one * 40f, false).y,
-                -1e-4f, $"id {i} dipped below the equator");
+                BackdropLattice.Position(i, 300, BackdropDomain.Hemisphere, Vector3.one * 40f, false).z,
+                -1e-4f, $"id {i} dipped behind the equator");
     }
 
     [Test]
@@ -78,7 +80,7 @@ public class BackdropLatticeTests
         // two equal-height bands and assert neither starves.
         int count = 600, upper = 0;
         for (int i = 0; i < count; i++)
-            if (BackdropLattice.Position(i, count, BackdropDomain.Hemisphere, Vector3.one * 2f, false).y > 0.5f)
+            if (BackdropLattice.Position(i, count, BackdropDomain.Hemisphere, Vector3.one * 2f, false).z > 0.5f)
                 upper++;
 
         float frac = (float)upper / count;
@@ -252,5 +254,151 @@ public class BackdropLatticeTests
         for (int i = 0; i < n; i++)
             Assert.IsTrue(b.Contains(m[i].GetColumn(3)),
                 $"instance {i} at {m[i].GetColumn(3)} sits outside the culling bounds {b}");
+    }
+
+    [Test]
+    public void FrameSizeAt_MatchesTheCameraAspect()
+    {
+        // 32:9 super-ultrawide. The whole point of fitting is that the field
+        // tracks the frame, so the ratio is the thing worth pinning down.
+        var f = BackdropLattice.FrameSizeAt(60f, 32f / 9f, 30f, false, 0f);
+        Assert.AreEqual(32f / 9f, f.x / f.y, 1e-4f);
+
+        var wide = BackdropLattice.FrameSizeAt(60f, 21f / 9f, 30f, false, 0f);
+        Assert.Less(wide.x, f.x, "a narrower aspect must produce a narrower field");
+        Assert.AreEqual(wide.y, f.y, 1e-4f, "aspect must not change the height");
+    }
+
+    [Test]
+    public void FrameSizeAt_GrowsWithDistanceUnderPerspective()
+    {
+        var near = BackdropLattice.FrameSizeAt(60f, 16f / 9f, 10f, false, 0f);
+        var far  = BackdropLattice.FrameSizeAt(60f, 16f / 9f, 40f, false, 0f);
+        Assert.AreEqual(4f, far.y / near.y, 1e-3f, "perspective frame should scale linearly with distance");
+    }
+
+    [Test]
+    public void FrameSizeAt_IsFlatUnderOrthographic()
+    {
+        var near = BackdropLattice.FrameSizeAt(60f, 16f / 9f, 10f, true, 12f);
+        var far  = BackdropLattice.FrameSizeAt(60f, 16f / 9f, 90f, true, 12f);
+        Assert.AreEqual(near.y, far.y, 1e-4f, "an orthographic frame must not grow with distance");
+        Assert.AreEqual(24f, near.y, 1e-4f);
+    }
+
+    [Test]
+    public void FitToFrame_SizesXAndYButLeavesDepthAlone()
+    {
+        var p = BackdropParameters.Default;
+        p.fitToCamera = true;
+        p.fitMargin = Vector2.one;
+        p.fitDistance = 20f;
+        p.domainSize = new Vector3(999f, 999f, 45f);
+
+        var fitted = BackdropLattice.FitToFrame(p, 60f, 32f / 9f, false, 0f);
+
+        Assert.AreEqual(45f, fitted.domainSize.z, 1e-4f, "depth is authored, not implied by the frame");
+        Assert.AreNotEqual(999f, fitted.domainSize.x);
+        Assert.AreEqual(32f / 9f, fitted.domainSize.x / fitted.domainSize.y, 1e-3f);
+    }
+
+    [Test]
+    public void FitToFrame_MeasuresAtTheFarFaceSoTheBackIsNotShort()
+    {
+        // A perspective frustum widens with distance. Fitting at the near face
+        // would leave the back of the field inside the frame, with visibly empty
+        // corners - this asserts the far face is what gets measured.
+        var p = BackdropParameters.Default;
+        p.fitToCamera = true;
+        p.fitMargin = Vector2.one;
+        p.fitDistance = 20f;
+        p.domainSize = new Vector3(1f, 1f, 30f);
+
+        var fitted = BackdropLattice.FitToFrame(p, 60f, 16f / 9f, false, 0f);
+        var atNear = BackdropLattice.FrameSizeAt(60f, 16f / 9f, 20f, false, 0f);
+
+        Assert.Greater(fitted.domainSize.y, atNear.y + 1e-3f);
+    }
+
+    [Test]
+    public void FitToFrame_AppliesMargin()
+    {
+        var p = BackdropParameters.Default;
+        p.fitToCamera = true;
+        p.fitDistance = 20f;
+        p.domainSize = new Vector3(1f, 1f, 0f);
+
+        p.fitMargin = Vector2.one;
+        var exact = BackdropLattice.FitToFrame(p, 60f, 16f / 9f, false, 0f).domainSize;
+
+        p.fitMargin = new Vector2(2f, 1.5f);
+        var bled = BackdropLattice.FitToFrame(p, 60f, 16f / 9f, false, 0f).domainSize;
+
+        Assert.AreEqual(exact.x * 2f, bled.x, 1e-3f);
+        Assert.AreEqual(exact.y * 1.5f, bled.y, 1e-3f);
+    }
+
+    [Test]
+    public void FitToFrame_IsAPassThroughWhenDisabled()
+    {
+        var p = BackdropParameters.Default;
+        p.fitToCamera = false;
+        p.domainSize = new Vector3(11f, 22f, 33f);
+
+        Assert.AreEqual(new Vector3(11f, 22f, 33f),
+            BackdropLattice.FitToFrame(p, 60f, 32f / 9f, false, 0f).domainSize);
+    }
+
+    [Test]
+    public void AxisCounts_GivesEvenWorldSpacingOnAnUnevenBox()
+    {
+        // The case a camera-fitted domain always produces: very wide, medium
+        // tall, shallow. A shared per-axis N would space these 20 apart across
+        // and 2 apart through.
+        var size = new Vector3(240f, 90f, 20f);
+        var n = BackdropLattice.AxisCounts(700, size);
+
+        float sx = size.x / n.x, sy = size.y / n.y, sz = size.z / n.z;
+        Assert.AreEqual(sx, sy, sx * 0.35f, $"x and y spacing diverge: {sx} vs {sy}");
+        Assert.AreEqual(sx, sz, sx * 0.35f, $"x and z spacing diverge: {sx} vs {sz}");
+    }
+
+    [Test]
+    public void AxisCounts_HasRoomForEveryInstance()
+    {
+        // Short of count, the index wraps and instances stack invisibly.
+        foreach (var size in new[]
+        {
+            new Vector3(240f, 90f, 20f), new Vector3(10f, 10f, 10f),
+            new Vector3(300f, 5f, 5f),   new Vector3(1f, 200f, 1f),
+        })
+        foreach (int count in new[] { 1, 7, 300, 700, 4000 })
+        {
+            var n = BackdropLattice.AxisCounts(count, size);
+            Assert.GreaterOrEqual(n.x * n.y * n.z, count, $"{size} / {count}");
+        }
+    }
+
+    [Test]
+    public void AxisCounts_PutsMoreResolutionOnTheLongerAxis()
+    {
+        var n = BackdropLattice.AxisCounts(500, new Vector3(200f, 50f, 25f));
+        Assert.Greater(n.x, n.y, "the widest axis should carry the most instances");
+        Assert.Greater(n.y, n.z);
+    }
+
+    [Test]
+    public void Position_WideCubeStillPutsEveryInstanceOnTheShell()
+    {
+        var size = new Vector3(240f, 90f, 20f);
+        for (int i = 0; i < 700; i++)
+        {
+            var v = BackdropLattice.Position(i, 700, BackdropDomain.Cube, size, false);
+            float onShell = Mathf.Min(
+                Mathf.Abs(Mathf.Abs(v.x) - size.x * 0.5f),
+                Mathf.Min(Mathf.Abs(Mathf.Abs(v.y) - size.y * 0.5f),
+                          Mathf.Abs(Mathf.Abs(v.z) - size.z * 0.5f)));
+            Assert.Less(onShell, 1e-2f, $"id {i} at {v} is not on any face");
+        }
     }
 }

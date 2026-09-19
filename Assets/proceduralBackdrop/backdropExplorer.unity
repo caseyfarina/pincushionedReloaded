@@ -224,8 +224,8 @@ Camera:
   m_GameObject: {fileID: 1578033340}
   m_Enabled: 1
   serializedVersion: 2
-  m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_ClearFlags: 2
+  m_BackGroundColor: {r: 1, g: 1, b: 1, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -304,10 +304,10 @@ MonoBehaviour:
     m_Bits: 1
   m_VolumeTrigger: {fileID: 0}
   m_VolumeFrameworkUpdateModeOption: 2
-  m_RenderPostProcessing: 0
-  m_Antialiasing: 0
+  m_RenderPostProcessing: 1
+  m_Antialiasing: 3
   m_AntialiasingQuality: 2
-  m_StopNaN: 0
+  m_StopNaN: 1
   m_Dithering: 0
   m_ClearDepth: 1
   m_AllowXRRendering: 1
@@ -319,7 +319,7 @@ MonoBehaviour:
   m_RequiresColorTexture: 0
   m_TaaSettings:
     m_Quality: 3
-    m_FrameInfluence: 0.1
+    m_FrameInfluence: 0.100000024
     m_JitterScale: 1
     m_MipBias: 0
     m_VarianceClampScale: 0.9
@@ -362,6 +362,9 @@ MonoBehaviour:
     spawnCount: 300
     domain: 2
     domainSize: {x: 60, y: 30, z: 60}
+    fitToCamera: 1
+    fitMargin: {x: 1.1, y: 1.1}
+    fitDistance: 30
     solidFill: 0
     scaleRange: {x: 0.6, y: 1.8}
     scaleAxisBias: {x: 1, y: 3, z: 1}
@@ -384,6 +387,7 @@ MonoBehaviour:
   shadows: 0
   receiveShadows: 0
   cycleSeed: 20260911
+  targetCamera: {fileID: 1578033342}
 --- !u!4 &1882672241
 Transform:
   m_ObjectHideFlags: 0
@@ -392,8 +396,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1882672237}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: -0.0050058276, y: 0.9947508, z: 0.058151066, w: 0.08404915}
+  m_LocalPosition: {x: -0.92488956, y: -2.2759585, z: 12.987171}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -459,21 +463,21 @@ MonoBehaviour:
   - control: 0
     channel: 1
     row: 1
-    target: 2
-    min: 5
-    max: 120
+    target: 34
+    min: 0.25
+    max: 3
   - control: 0
     channel: 1
     row: 2
-    target: 3
-    min: 5
-    max: 80
+    target: 35
+    min: 0.25
+    max: 3
   - control: 0
     channel: 1
     row: 3
     target: 4
-    min: 5
-    max: 120
+    min: 1
+    max: 160
   - control: 1
     channel: 2
     row: 1
@@ -645,7 +649,7 @@ MonoBehaviour:
   - control: 2
     channel: 1
     row: 1
-    target: 34
+    target: 37
     min: 0
     max: 0.95
 --- !u!1 &1914908111

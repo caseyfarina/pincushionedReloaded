@@ -73,28 +73,38 @@ public static class BackdropLattice
                 // Fibonacci spherical cap. The golden angle keeps successive
                 // points maximally separated, so there is no pole cluster - the
                 // same reason SplitScreenCameraRig samples a cap this way.
-                float y = 1f - t;
-                float r = Mathf.Sqrt(Mathf.Clamp01(1f - y * y));
+                //
+                // The pole runs along +Z, not +Y, so all three domains share one
+                // convention: XY is the screen plane and Z is depth away from the
+                // camera. With the rig facing the camera that points the dome at
+                // the viewer and fills the frame, where a +Y pole would present
+                // the dome edge-on and waste most of the width.
+                float z = 1f - t;
+                float r = Mathf.Sqrt(Mathf.Clamp01(1f - z * z));
                 float theta = id * 2.399963229728653f;
                 return Vector3.Scale(
-                    new Vector3(Mathf.Cos(theta) * r, y, Mathf.Sin(theta) * r),
+                    new Vector3(Mathf.Cos(theta) * r, Mathf.Sin(theta) * r, z),
                     size * 0.5f);
             }
 
             default:
             {
-                // N x N x N lattice, hollow unless asked otherwise: the interior
-                // of a solid cube is invisible from outside and would spend most
-                // of the instance budget on nothing.
-                int n = Mathf.Max(2, Mathf.CeilToInt(Mathf.Pow(Mathf.Max(count, 1), 1f / 3f)));
-                int ix = id % n;
-                int iy = (id / n) % n;
-                int iz = (id / (n * n)) % n;
+                // Resolution per axis is proportional to that axis's length, so
+                // spacing is even in world units. A shared N would put instances
+                // 20 apart across a wide field and 2 apart through a shallow one
+                // - which is what a camera-fitted domain always produces, since
+                // width tracks the frame while depth stays authored.
+                Vector3 n3 = AxisCounts(count, size);
+                int nx = (int)n3.x, ny = (int)n3.y, nz = (int)n3.z;
+
+                int ix = id % nx;
+                int iy = (id / nx) % ny;
+                int iz = (id / (nx * ny)) % nz;
 
                 var u = new Vector3(
-                    (float)ix / (n - 1) - 0.5f,
-                    (float)iy / (n - 1) - 0.5f,
-                    (float)iz / (n - 1) - 0.5f);
+                    nx > 1 ? (float)ix / (nx - 1) - 0.5f : 0f,
+                    ny > 1 ? (float)iy / (ny - 1) - 0.5f : 0f,
+                    nz > 1 ? (float)iz / (nz - 1) - 0.5f : 0f);
 
                 if (!solidFill)
                 {
@@ -164,6 +174,93 @@ public static class BackdropLattice
         }
 
         return count;
+    }
+
+    /// <summary>
+    /// Per-axis lattice resolution for a box, proportional to each axis's length
+    /// so world-space spacing is even, with the product landing near
+    /// <paramref name="count"/>.
+    ///
+    /// Returned as a Vector3 of whole numbers rather than three out parameters
+    /// purely so this stays easy to assert in a test.
+    /// </summary>
+    public static Vector3 AxisCounts(int count, Vector3 size)
+    {
+        count = Mathf.Max(count, 1);
+
+        // A zero-length axis still needs one plane of instances, not zero.
+        float sx = Mathf.Max(size.x, 1e-3f);
+        float sy = Mathf.Max(size.y, 1e-3f);
+        float sz = Mathf.Max(size.z, 1e-3f);
+
+        // Spacing s that would put `count` instances in the volume at even
+        // density; the per-axis resolution is then that axis divided by s.
+        float spacing = Mathf.Pow(sx * sy * sz / count, 1f / 3f);
+        if (spacing < 1e-5f) spacing = 1e-5f;
+
+        int nx = Mathf.Max(1, Mathf.RoundToInt(sx / spacing));
+        int ny = Mathf.Max(1, Mathf.RoundToInt(sy / spacing));
+        int nz = Mathf.Max(1, Mathf.RoundToInt(sz / spacing));
+
+        // Rounding can leave the product short of count, which would make the
+        // index wrap and stack instances on top of each other. Grow the longest
+        // axis until there is room for every one.
+        while ((long)nx * ny * nz < count)
+        {
+            if (sx / nx >= sy / ny && sx / nx >= sz / nz) nx++;
+            else if (sy / ny >= sz / nz) ny++;
+            else nz++;
+        }
+
+        return new Vector3(nx, ny, nz);
+    }
+
+    /// <summary>
+    /// The width and height that exactly fill a camera's frame at a given
+    /// distance, before margin. Perspective only - for an orthographic camera
+    /// the frame does not grow with distance, so height is just twice the size.
+    ///
+    /// Kept here rather than in the MonoBehaviour so the framing can be asserted
+    /// in tests: "a 32:9 camera produces a field 3.55x wider than it is tall" is
+    /// a fact worth pinning down, not something to re-check by eye every time
+    /// the aspect changes.
+    /// </summary>
+    public static Vector2 FrameSizeAt(float verticalFovDeg, float aspect, float distance, bool orthographic, float orthoSize)
+    {
+        if (orthographic)
+        {
+            float h = Mathf.Max(orthoSize, 0.001f) * 2f;
+            return new Vector2(h * Mathf.Max(aspect, 0.001f), h);
+        }
+
+        float halfH = Mathf.Tan(Mathf.Deg2Rad * Mathf.Clamp(verticalFovDeg, 1f, 179f) * 0.5f) * Mathf.Max(distance, 0.001f);
+        return new Vector2(halfH * 2f * Mathf.Max(aspect, 0.001f), halfH * 2f);
+    }
+
+    /// <summary>
+    /// Returns <paramref name="p"/> with domainSize X and Y replaced by the
+    /// camera's frame at fitDistance, times fitMargin. Z is left alone - depth is
+    /// an authored quality, not something the frame can imply.
+    ///
+    /// The fit is measured at the far face rather than the near one. A
+    /// perspective frustum widens with distance, so fitting at the near face
+    /// leaves the back of the field short of the frame edge and the corners
+    /// visibly empty.
+    /// </summary>
+    public static BackdropParameters FitToFrame(BackdropParameters p, float verticalFovDeg, float aspect,
+                                                bool orthographic, float orthoSize)
+    {
+        if (!p.fitToCamera) return p;
+
+        float far = p.fitDistance + Mathf.Max(p.domainSize.z, 0f);
+        var frame = FrameSizeAt(verticalFovDeg, aspect, far, orthographic, orthoSize);
+
+        p.domainSize = new Vector3(
+            frame.x * p.fitMargin.x,
+            frame.y * p.fitMargin.y,
+            p.domainSize.z);
+
+        return p;
     }
 
     /// <summary>

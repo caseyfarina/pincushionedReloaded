@@ -26,6 +26,11 @@ public enum BackdropParam
     // perform the amount on the fader" work.
     OffsetAmount, RotationAmount,
 
+    // Camera-fit controls. With fitToCamera on, domainSize X and Y are
+    // derived from the frame every frame, so binding a knob to them would
+    // be a control that visibly does nothing. These drive the fit instead.
+    FitMarginX, FitMarginY, FitDistance,
+
     // Size variation across the field, as a fraction of the largest instance.
     // More musical than a raw scale minimum, which is meaningless without
     // knowing the maximum.
@@ -282,6 +287,10 @@ public class MidiMixBackdropDriver : MonoBehaviour
             case BackdropParam.OffsetAmount:      return MaxComponent(p.offsetJitter);
             case BackdropParam.RotationAmount:    return MaxComponent(p.rotationJitter);
 
+            case BackdropParam.FitMarginX:        return p.fitMargin.x;
+            case BackdropParam.FitMarginY:        return p.fitMargin.y;
+            case BackdropParam.FitDistance:       return p.fitDistance;
+
             case BackdropParam.ScaleSpread:
                 return p.scaleRange.y > 1e-5f
                     ? Mathf.Clamp01(1f - p.scaleRange.x / p.scaleRange.y)
@@ -335,6 +344,10 @@ public class MidiMixBackdropDriver : MonoBehaviour
             case BackdropParam.OffsetAmount:   p.offsetJitter   = Rescale(p.offsetJitter, value);   return;
             case BackdropParam.RotationAmount: p.rotationJitter = Rescale(p.rotationJitter, value); return;
 
+            case BackdropParam.FitMarginX:  p.fitMargin.x = value; return;
+            case BackdropParam.FitMarginY:  p.fitMargin.y = value; return;
+            case BackdropParam.FitDistance: p.fitDistance = value; return;
+
             case BackdropParam.ScaleSpread:
                 p.scaleRange.x = p.scaleRange.y * (1f - Mathf.Clamp01(value));
                 return;
@@ -384,7 +397,7 @@ public class MidiMixBackdropDriver : MonoBehaviour
     ///
     ///   ch | fader             | knob 1      knob 2      knob 3
     ///   ---|-------------------|-------------------------------------
-    ///    1 | Spawn Count       | Domain X    Domain Y    Domain Z
+    ///    1 | Spawn Count       | Fit Margin X  Fit Margin Y  Depth
     ///    2 | Scale             | Bias X      Bias Y      Bias Z
     ///    3 | Offset Amount     | Offset X    Offset Y    Offset Z
     ///    4 | Rotation Amount   | Rot X       Rot Y       Rot Z
@@ -406,9 +419,9 @@ public class MidiMixBackdropDriver : MonoBehaviour
     {
         // 1 - Field: how many, and how big a volume they occupy.
         F(1, BackdropParam.SpawnCount,   0f, 1200f),
-        K(1, 1, BackdropParam.DomainSizeX, 5f, 120f),
-        K(1, 2, BackdropParam.DomainSizeY, 5f, 80f),
-        K(1, 3, BackdropParam.DomainSizeZ, 5f, 120f),
+        K(1, 1, BackdropParam.FitMarginX, 0.25f, 3f),
+        K(1, 2, BackdropParam.FitMarginY, 0.25f, 3f),
+        K(1, 3, BackdropParam.DomainSizeZ, 1f, 160f),
 
         // 2 - Scale: overall instance size, then the per-axis stretch. Bias Y is
         // the tower dial - it is what turns a field of blocks into a skyline.

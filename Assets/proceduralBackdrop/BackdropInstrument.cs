@@ -173,15 +173,66 @@ public class BackdropInstrument : MonoBehaviour
         Time.time;
 #endif
 
+    /// <summary>
+    /// Camera the backdrop sizes and orients itself against. Empty falls back to
+    /// Camera.main, and in edit mode to the Scene view, so the field previews
+    /// without needing Play.
+    /// </summary>
+    [SerializeField] private Camera targetCamera;
+
+    private Camera ResolveCamera()
+    {
+        if (targetCamera != null) return targetCamera;
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+        {
+            var sv = UnityEditor.SceneView.lastActiveSceneView;
+            if (sv != null && sv.camera != null) return sv.camera;
+        }
+#endif
+        return Camera.main;
+    }
+
+    /// <summary>
+    /// Sits the field in front of the camera, facing back at it, and sizes X and
+    /// Y to the frame. The transform is driven rather than the lattice being
+    /// rotated, so every domain inherits the orientation for free and the gizmo
+    /// still shows where the field actually is.
+    /// </summary>
+    private BackdropParameters FitToCamera(BackdropParameters p)
+    {
+        var cam = ResolveCamera();
+        if (cam == null || !p.fitToCamera) return p;
+
+        p = BackdropLattice.FitToFrame(p, cam.fieldOfView, cam.aspect, cam.orthographic, cam.orthographicSize);
+
+        // Sit at the centre of the field's depth, so fitDistance means the near
+        // face and the backdrop cannot creep forward onto the subject.
+        float centreDist = p.fitDistance + p.domainSize.z * 0.5f;
+        var t = cam.transform;
+        transform.SetPositionAndRotation(
+            t.position + t.forward * centreDist,
+            Quaternion.LookRotation(-t.forward, t.up));
+
+        return p;
+    }
+
     private void Update()
     {
         var mesh = ResolveMesh();
         if (mesh == null || material == null) return;
 
-        liveCount = BackdropLattice.Fill(parameters, NowTime, flashTime, matrices, flashValues);
+        // Fit is applied to a copy, not written back through Apply: the frame can
+        // change every frame, and folding that into the stored parameters would
+        // overwrite the authored domainSize and bump Revision continuously,
+        // which the explorer would read as an endless stream of edits.
+        var effective = FitToCamera(parameters);
+
+        liveCount = BackdropLattice.Fill(effective, NowTime, flashTime, matrices, flashValues);
         if (liveCount == 0) return;
 
-        if (!rpValid) RebuildRenderParams(mesh);
+        if (!rpValid) RebuildRenderParams(mesh, effective);
+        else rp.worldBounds = TransformedBounds(effective);
 
         if (mpb == null) mpb = new MaterialPropertyBlock();
         mpb.SetFloatArray(IdFlash, flashValues);
@@ -191,11 +242,11 @@ public class BackdropInstrument : MonoBehaviour
         Graphics.RenderMeshInstanced(rp, mesh, 0, matrices, liveCount);
     }
 
-    private void RebuildRenderParams(Mesh mesh)
+    private void RebuildRenderParams(Mesh mesh, in BackdropParameters effective)
     {
         rp = new RenderParams(material)
         {
-            worldBounds = TransformedBounds(),
+            worldBounds = TransformedBounds(effective),
             shadowCastingMode = shadows,
             receiveShadows = receiveShadows,
             layer = gameObject.layer,
@@ -213,9 +264,9 @@ public class BackdropInstrument : MonoBehaviour
     /// Unity could never frustum-cull it and every split-screen camera paid for
     /// the whole thing.
     /// </summary>
-    private Bounds TransformedBounds()
+    private Bounds TransformedBounds(in BackdropParameters p)
     {
-        var local = BackdropLattice.LocalBounds(parameters);
+        var local = BackdropLattice.LocalBounds(p);
         var b = new Bounds(transform.TransformPoint(local.center), Vector3.zero);
         Vector3 e = local.extents;
         for (int i = 0; i < 8; i++)
@@ -262,7 +313,7 @@ public class BackdropInstrument : MonoBehaviour
 
     private void OnDrawGizmosSelected()
     {
-        var b = TransformedBounds();
+        var b = TransformedBounds(FitToCamera(parameters));
         Gizmos.color = new Color(0.3f, 0.8f, 1f, 0.35f);
         Gizmos.DrawWireCube(b.center, b.size);
     }

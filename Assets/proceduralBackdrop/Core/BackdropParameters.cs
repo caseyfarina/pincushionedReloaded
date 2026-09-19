@@ -38,6 +38,16 @@ public struct BackdropParameters
     [Min(0)] public int spawnCount;
     public BackdropDomain domain;
     public Vector3 domainSize;
+
+    [Header("Camera fit")]
+    [Tooltip("Size the field to the camera's view instead of to absolute units, and sit it in front of the camera facing back. A backdrop's job is to fill the frame, and the frame is what changes when the aspect or the lens does.")]
+    public bool fitToCamera;
+
+    [Tooltip("How far past the frame edge the field extends. 1 = exactly fills, above 1 bleeds off-screen so no edge is visible when the camera moves.")]
+    public Vector2 fitMargin;
+
+    [Tooltip("Distance from the camera to the near face of the field. Depth runs away from the camera from there, so the backdrop never swallows the subject.")]
+    [Min(0.1f)] public float fitDistance;
     [Tooltip("Cube domain only: fill the volume rather than the shell.")]
     public bool solidFill;
 
@@ -73,12 +83,16 @@ public struct BackdropParameters
     public static BackdropParameters Default => new BackdropParameters
     {
         layoutSeed      = 1u,
-        spawnCount      = 300,
+        spawnCount      = 700,
         domain          = BackdropDomain.Cube,
-        domainSize      = new Vector3(60f, 30f, 60f),
+        domainSize      = new Vector3(60f, 30f, 22f),
         solidFill       = false,
 
-        scaleRange      = new Vector2(0.6f, 1.8f),
+        fitToCamera     = true,
+        fitMargin       = new Vector2(1.1f, 1.1f),
+        fitDistance     = 26f,
+
+        scaleRange      = new Vector2(0.7f, 2.4f),
         scaleAxisBias   = new Vector3(1f, 3f, 1f),
         offsetJitter    = new Vector3(0.5f, 0.5f, 0.5f),
         rotationJitter  = new Vector3(0f, 180f, 0f),
@@ -114,6 +128,13 @@ public struct BackdropParameters
             Mathf.Max(0.01f, c.domainSize.x),
             Mathf.Max(0.01f, c.domainSize.y),
             Mathf.Max(0.01f, c.domainSize.z));
+
+        // A margin at or below zero collapses the field to nothing, which reads
+        // as the backdrop having broken rather than as a parameter being wrong.
+        c.fitMargin = new Vector2(
+            Mathf.Clamp(c.fitMargin.x, 0.05f, 8f),
+            Mathf.Clamp(c.fitMargin.y, 0.05f, 8f));
+        c.fitDistance = Mathf.Max(0.1f, c.fitDistance);
 
         c.scaleRange    = Ordered(c.scaleRange, 0f);
         c.spinRateRange = Ordered(c.spinRateRange, float.NegativeInfinity);
