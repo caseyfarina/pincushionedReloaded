@@ -92,4 +92,56 @@ public class CableCurveTests
         Assert.Greater(DropAt(0.5f), DropAt(0.25f), "sag does not peak in the middle");
         Assert.Greater(DropAt(0.25f), DropAt(0.05f), "sag is not monotonic on the way up");
     }
+
+    [Test]
+    public void Ease_IsLinearAtZeroDeceleration()
+    {
+        for (float x = 0f; x <= 1f; x += 0.1f)
+            Assert.AreEqual(x, CableCurve.Ease(x, 0f), Eps, $"x {x}");
+    }
+
+    [Test]
+    public void Ease_SpansZeroToOneAndIsMonotonic()
+    {
+        foreach (float d in new[] { 0f, 1.5f, 6f })
+        {
+            Assert.AreEqual(0f, CableCurve.Ease(0f, d), Eps, $"deceleration {d}");
+            Assert.AreEqual(1f, CableCurve.Ease(1f, d), Eps, $"deceleration {d}");
+
+            float prev = -1f;
+            for (float x = 0f; x <= 1f; x += 0.05f)
+            {
+                float v = CableCurve.Ease(x, d);
+                Assert.GreaterOrEqual(v, prev, $"not monotonic at x {x}, deceleration {d}");
+                prev = v;
+            }
+        }
+    }
+
+    [Test]
+    public void Ease_DeceleratesMeaningTheHeadIsAlreadyPastHalfwayAtHalfTime()
+    {
+        Assert.Greater(CableCurve.Ease(0.5f, 3f), 0.5f,
+            "a decelerating flight covers more than half the distance in the first half of the time");
+    }
+
+    [Test]
+    public void Shiver_StartsAtZeroAndDecaysAway()
+    {
+        Assert.AreEqual(0f, CableCurve.Shiver(0f, 3.5f, 14f), Eps, "no shiver before any time has passed");
+        Assert.Greater(Mathf.Abs(CableCurve.Shiver(0.1f, 3.5f, 14f)), 1e-3f, "shiver never started");
+        Assert.Less(Mathf.Abs(CableCurve.Shiver(8f, 3.5f, 14f)), 1e-3f, "shiver never died away");
+    }
+
+    [Test]
+    public void Shiver_IsFiniteForPathologicalInputs()
+    {
+        foreach (float decay in new[] { 0f, 1e6f })
+            foreach (float freq in new[] { 0f, 1e6f })
+            {
+                float v = CableCurve.Shiver(2f, decay, freq);
+                Assert.IsFalse(float.IsNaN(v), $"NaN at decay {decay} freq {freq}");
+                Assert.IsFalse(float.IsInfinity(v), $"Inf at decay {decay} freq {freq}");
+            }
+    }
 }

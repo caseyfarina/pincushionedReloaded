@@ -83,4 +83,29 @@ public static class CableCurve
 
         return chord + Vector3.down * sag + n * (noiseAmp * Window(t));
     }
+
+    /// <summary>
+    /// Flight easing. x is normalised age along the flight.
+    ///
+    /// deceleration 0 is linear; higher values make the head cover ground early
+    /// and ease into the target. This is named for what it feels like, not for
+    /// a mechanism - nothing is integrated, so there is no drag here.
+    /// </summary>
+    public static float Ease(float x, float deceleration)
+    {
+        x = Mathf.Clamp01(x);
+        float p = 1f + Mathf.Max(0f, deceleration);
+        return 1f - Mathf.Pow(1f - x, p);
+    }
+
+    /// <summary>
+    /// The landing shiver: a damped oscillation that scales noise amplitude for
+    /// a moment after impact, then vanishes. Distinct from the idle sway, which
+    /// never decays - a settled cable must keep breathing.
+    /// </summary>
+    public static float Shiver(float age, float decay, float freq)
+    {
+        if (age <= 0f) return 0f;
+        return Mathf.Exp(-Mathf.Max(0f, decay) * age) * Mathf.Sin(freq * age);
+    }
 }
