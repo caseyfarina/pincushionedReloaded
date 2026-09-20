@@ -302,6 +302,54 @@ public static class BackdropLattice
     }
 
     /// <summary>
+    /// Base orientation for an instance from the shape it sits on, mapping local
+    /// +Y to the outward direction. +Y because a Y scale bias is the common case
+    /// - towers - so aligned towers point out of the surface rather than lying
+    /// along it.
+    ///
+    /// Only the curved and shelled domains have an orientation worth deriving.
+    /// The flat and box-like ones return identity, which reads as axis-aligned.
+    /// </summary>
+    public static Quaternion ShapeAlignment(int id, int count, in BackdropParameters p)
+    {
+        Vector3 pos = Position(id, count, p.domain, p.domainSize, p.solidFill, p);
+        Vector3 outward;
+
+        switch (p.domain)
+        {
+            case BackdropDomain.Arch:
+                // Radial in the screen plane: spokes around the opening.
+                outward = new Vector3(pos.x, pos.y, 0f);
+                break;
+
+            case BackdropDomain.Hemisphere:
+                outward = pos;
+                break;
+
+            case BackdropDomain.Cube:
+            case BackdropDomain.Corridor:
+            {
+                // Whichever face this instance is nearest to.
+                Vector3 half = p.domainSize * 0.5f;
+                float dx = half.x > 1e-4f ? Mathf.Abs(pos.x) / half.x : 0f;
+                float dy = half.y > 1e-4f ? Mathf.Abs(pos.y) / half.y : 0f;
+                float dz = half.z > 1e-4f ? Mathf.Abs(pos.z) / half.z : 0f;
+
+                if (dx >= dy && dx >= dz)      outward = new Vector3(Mathf.Sign(pos.x), 0f, 0f);
+                else if (dy >= dx && dy >= dz) outward = new Vector3(0f, Mathf.Sign(pos.y), 0f);
+                else                           outward = new Vector3(0f, 0f, Mathf.Sign(pos.z));
+                break;
+            }
+
+            default:
+                return Quaternion.identity;
+        }
+
+        if (outward.sqrMagnitude < 1e-8f) return Quaternion.identity;
+        return Quaternion.FromToRotation(Vector3.up, outward.normalized);
+    }
+
+    /// <summary>
     /// Scale multiplier for one instance: 1 for most, or accentRatio raised to a
     /// step for the accented minority.
     ///
@@ -405,7 +453,12 @@ public static class BackdropLattice
                 p.rotationJitter);
 
             float rate = Mathf.Lerp(p.spinRateRange.x, p.spinRateRange.y, Rand01(i, p.layoutSeed, 71u));
-            Quaternion q = Quaternion.AngleAxis(rate * time, spinAxis) * Quaternion.Euler(rot);
+
+            // Shape alignment is the base orientation, jitter perturbs it, spin
+            // rides on top. Jitter applied before alignment would rotate the
+            // instance out of the surface it is supposed to be sitting on.
+            Quaternion align = p.alignToShape ? ShapeAlignment(i, count, p) : Quaternion.identity;
+            Quaternion q = Quaternion.AngleAxis(rate * time, spinAxis) * align * Quaternion.Euler(rot);
 
             matrices[write] = Matrix4x4.TRS(pos, q, scale);
 

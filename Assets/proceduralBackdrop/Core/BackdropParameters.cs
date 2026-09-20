@@ -136,6 +136,9 @@ public struct BackdropParameters
     [Tooltip("Random rotation, degrees per axis.")]
     public Vector3 rotationJitter;
 
+    [Tooltip("Orients each instance to the shape it sits on instead of to the world: radially on the arch, outward on the dome, along the face normal on the cube and corridor. The box-like shapes have no meaningful orientation of their own, so it reads as axis-aligned there. Rotation jitter still applies on top.")]
+    public bool alignToShape;
+
     [Header("Animation")]
     [Tooltip("Degrees per second, min to max. Negative reverses.")]
     public Vector2 spinRateRange;
@@ -193,6 +196,7 @@ public struct BackdropParameters
         accentSteps     = 1,
         offsetJitter    = new Vector3(0.5f, 0.5f, 0.5f),
         rotationJitter  = new Vector3(0f, 180f, 0f),
+        alignToShape    = false,
 
         spinRateRange   = new Vector2(-8f, 8f),
         spinAxis        = Vector3.up,

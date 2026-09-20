@@ -210,6 +210,102 @@ public class BackdropRandomizerTests
     }
 
     [Test]
+    public void Randomize_ProportionIsOneDecision_NotThree()
+    {
+        // Three independent axis draws almost never produce a decisive shape -
+        // you get 1.3 / 2.1 / 0.8, which reads as mush. Every roll must now come
+        // out either uniform or stretched on exactly one axis.
+        var r = Ranges();
+
+        for (int seed = 0; seed < 300; seed++)
+        {
+            var b = BackdropRandomizer.Randomize(r, BackdropParameters.Default, new System.Random(seed)).scaleAxisBias;
+
+            int stretched = 0;
+            if (!Mathf.Approximately(b.x, 1f)) stretched++;
+            if (!Mathf.Approximately(b.y, 1f)) stretched++;
+            if (!Mathf.Approximately(b.z, 1f)) stretched++;
+
+            Assert.LessOrEqual(stretched, 1,
+                $"seed {seed} stretched {stretched} axes at once ({b}); proportion should be one decision");
+        }
+    }
+
+    [Test]
+    public void Randomize_ReachesUniformAndAllThreeProportions()
+    {
+        var r = Ranges();
+        bool uniform = false, tall = false, wide = false, deep = false;
+
+        for (int seed = 0; seed < 600; seed++)
+        {
+            var b = BackdropRandomizer.Randomize(r, BackdropParameters.Default, new System.Random(seed)).scaleAxisBias;
+            if (Mathf.Approximately(b.x, 1f) && Mathf.Approximately(b.y, 1f) && Mathf.Approximately(b.z, 1f)) uniform = true;
+            else if (!Mathf.Approximately(b.y, 1f)) tall = true;
+            else if (!Mathf.Approximately(b.x, 1f)) wide = true;
+            else deep = true;
+        }
+
+        Assert.IsTrue(uniform, "never produced a uniform field");
+        Assert.IsTrue(tall, "never produced towers");
+        Assert.IsTrue(wide, "never produced slabs");
+        Assert.IsTrue(deep, "never produced fins");
+    }
+
+    [Test]
+    public void Randomize_RotationIsEitherAlignedOrTumbledOnAllThreeAxes()
+    {
+        // The in-between - one axis jittered, the others not - is what made
+        // every roll read alike, and should no longer be reachable by chance.
+        var r = Ranges();
+
+        for (int seed = 0; seed < 300; seed++)
+        {
+            var p = BackdropRandomizer.Randomize(r, BackdropParameters.Default, new System.Random(seed));
+
+            if (p.alignToShape)
+            {
+                Assert.AreEqual(Vector3.zero, p.rotationJitter, $"seed {seed} aligned but still jittered");
+            }
+            else
+            {
+                Assert.AreEqual(p.rotationJitter.x, p.rotationJitter.y, 1e-4f, $"seed {seed} x/y differ");
+                Assert.AreEqual(p.rotationJitter.y, p.rotationJitter.z, 1e-4f, $"seed {seed} y/z differ");
+            }
+        }
+    }
+
+    [Test]
+    public void Randomize_ReachesBothAlignedAndTumbled()
+    {
+        var r = Ranges();
+        int aligned = 0;
+        for (int seed = 0; seed < 400; seed++)
+            if (BackdropRandomizer.Randomize(r, BackdropParameters.Default, new System.Random(seed)).alignToShape)
+                aligned++;
+
+        Assert.Greater(aligned, 40, "almost never aligned");
+        Assert.Less(aligned, 360, "almost always aligned");
+    }
+
+    [Test]
+    public void Mutate_KeepsTheProportionAxisAndOnlyChangesItsMagnitude()
+    {
+        // Re-picking the axis would be a jump out of the region, which is what
+        // Randomize is for.
+        var r = Ranges();
+        var basis = BackdropParameters.Default;
+        basis.scaleAxisBias = new Vector3(1f, 6f, 1f);
+
+        for (int seed = 0; seed < 60; seed++)
+        {
+            var b = BackdropRandomizer.Mutate(r, basis, 0.3f, new System.Random(seed)).scaleAxisBias;
+            Assert.Greater(b.y, b.x, $"seed {seed}: Y should still dominate");
+            Assert.Greater(b.y, b.z, $"seed {seed}: Y should still dominate");
+        }
+    }
+
+    [Test]
     public void Randomize_LandsOnRangeEndsOftenEnoughToMatter()
     {
         // The point of the whole change. Uniform sampling across twenty

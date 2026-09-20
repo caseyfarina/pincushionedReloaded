@@ -46,16 +46,15 @@ public static class BackdropRandomizer
         float sizeZ        = Draw(r.domainSizeZ, basis.domainSize.z, rng, strength, mutate, r);
         float sMin         = Draw(r.scaleMin, basis.scaleRange.x, rng, strength, mutate, r);
         float sMax         = Draw(r.scaleMax, basis.scaleRange.y, rng, strength, mutate, r);
-        float biasX        = Draw(r.scaleBiasX, basis.scaleAxisBias.x, rng, strength, mutate, r);
-        float biasY        = Draw(r.scaleBiasY, basis.scaleAxisBias.y, rng, strength, mutate, r);
-        float biasZ        = Draw(r.scaleBiasZ, basis.scaleAxisBias.z, rng, strength, mutate, r);
+        // One magnitude, not three. Which axis it lands on is decided below.
+        float biasMag      = Draw(r.scaleBias, MaxComponent(basis.scaleAxisBias), rng, strength, mutate, r);
         float occ          = Draw(r.occupancy,          basis.occupancy,          rng, strength, mutate, r);
         float occNoise     = Draw(r.occupancyNoiseScale, basis.occupancyNoiseScale, rng, strength, mutate, r);
         float accFrac      = Draw(r.accentFraction,     basis.accentFraction,     rng, strength, mutate, r);
         float accRatio     = Draw(r.accentRatio,        basis.accentRatio,        rng, strength, mutate, r);
         float nScale       = Draw(r.noiseScale,         basis.noiseScale,         rng, strength, mutate, r);
         float jitter       = Draw(r.offsetJitter, basis.offsetJitter.x, rng, strength, mutate, r);
-        float rotJitter    = Draw(r.rotationJitter, basis.rotationJitter.y, rng, strength, mutate, r);
+        float rotJitter    = Draw(r.rotationJitter, MaxComponent(basis.rotationJitter), rng, strength, mutate, r);
         float spin         = Draw(r.spinRate, Mathf.Abs(basis.spinRateRange.y), rng, strength, mutate, r);
         float waveAmp      = Draw(r.waveAmplitude, basis.waveAmplitude, rng, strength, mutate, r);
         float waveFreq     = Draw(r.waveFrequency, basis.waveFrequency, rng, strength, mutate, r);
@@ -67,6 +66,13 @@ public static class BackdropRandomizer
 
         // Discrete draws come last, again always consuming the same number of
         // rng values whether or not they are enabled.
+        // Proportion and orientation are each one decision for the whole field.
+        // Drawn unconditionally, like every other roll, so the draw count stays
+        // independent of the outcome.
+        float proportionRoll = (float)rng.NextDouble();
+        float axisRoll       = (float)rng.NextDouble();
+        float alignRoll      = (float)rng.NextDouble();
+
         int   motionRoll   = rng.Next(2);
         int   domainRoll   = rng.Next(3);
         int   shadingRoll  = rng.Next(3);
@@ -87,9 +93,48 @@ public static class BackdropRandomizer
         p.spawnCount     = Mathf.RoundToInt(spawn);
         p.domainSize     = new Vector3(sizeX, sizeY, sizeZ);
         p.scaleRange     = new Vector2(Mathf.Min(sMin, sMax), Mathf.Max(sMin, sMax));
-        p.scaleAxisBias  = new Vector3(biasX, biasY, biasZ);
         p.offsetJitter   = new Vector3(jitter, jitter, jitter);
-        p.rotationJitter = new Vector3(0f, rotJitter, 0f);
+
+        // Proportion: uniform, or one axis stretched. Y is weighted heaviest
+        // because standing forms read as architecture where a stretched X or Z
+        // reads as debris - but all three stay reachable.
+        if (mutate)
+        {
+            // Mutation scales whatever proportion is already there rather than
+            // re-picking the axis, which would be a jump out of the region.
+            float cur = MaxComponent(basis.scaleAxisBias);
+            p.scaleAxisBias = cur > 1e-4f
+                ? basis.scaleAxisBias * (biasMag / cur)
+                : Vector3.one;
+        }
+        else if (proportionRoll < r.uniformProportionChance)
+        {
+            p.scaleAxisBias = Vector3.one;
+        }
+        else
+        {
+            p.scaleAxisBias = axisRoll < 0.55f ? new Vector3(1f, biasMag, 1f)
+                            : axisRoll < 0.80f ? new Vector3(biasMag, 1f, 1f)
+                                               : new Vector3(1f, 1f, biasMag);
+        }
+
+        // Orientation: aligned to the shape, or tumbled on all three axes. The
+        // in-between - one axis jittered, the others not - is what made every
+        // roll read the same, so it is no longer reachable by chance.
+        if (!mutate)
+        {
+            bool aligned = alignRoll < r.alignChance;
+            p.alignToShape = aligned;
+            p.rotationJitter = aligned
+                ? Vector3.zero
+                : new Vector3(rotJitter, rotJitter, rotJitter);
+        }
+        else
+        {
+            p.rotationJitter = basis.rotationJitter.sqrMagnitude > 1e-6f
+                ? new Vector3(rotJitter, rotJitter, rotJitter)
+                : Vector3.zero;
+        }
         p.spinRateRange  = new Vector2(-spin, spin);
         p.occupancy           = occ;
         p.occupancyNoiseScale = occNoise;
@@ -130,6 +175,14 @@ public static class BackdropRandomizer
 
         return p;
     }
+
+    /// <summary>
+    /// The dominant component of a vector parameter. Proportion and rotation are
+    /// single decisions for the whole field, so when mutating from an existing
+    /// value there is one magnitude to carry forward, not three.
+    /// </summary>
+    private static float MaxComponent(Vector3 v)
+        => Mathf.Max(Mathf.Abs(v.x), Mathf.Max(Mathf.Abs(v.y), Mathf.Abs(v.z)));
 
     /// <summary>
     /// One scalar. A locked range returns the basis value but still consumes an

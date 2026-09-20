@@ -180,6 +180,27 @@ Measured over 40 rolls: scale bias Y spans its full 0.5-8.0 range and spawn
 count holds about a fifth of the time. Under uniform it clustered mid-range and
 never held.
 
+### Proportion and orientation are single decisions
+
+Three independent per-axis draws almost never produce a decisive field: you get
+1.3 / 2.1 / 0.8, which reads as mush rather than as towers or slabs. Both are now
+one decision for the whole field.
+
+**Proportion** rolls uniform against stretched, and if stretched picks one axis
+and one magnitude. Y is weighted heaviest — standing forms read as architecture
+where a stretched X or Z reads as debris — but all three stay reachable.
+Measured over 200 rolls: 66 uniform, 71 towers, 40 slabs, 23 fins.
+
+**Orientation** rolls aligned against tumbled. Aligned means oriented *to the
+shape* — radial on the arch, outward on the dome, along the face normal on the
+cube and corridor — not merely zeroed; the flat and box-like domains have no
+orientation of their own and read as axis-aligned. Tumbled jitters all three
+axes by the same amount. The in-between, one axis jittered and the others not,
+is no longer reachable by chance.
+
+`Mutate` scales the existing proportion rather than re-picking the axis, since
+changing which axis dominates is a jump out of the region.
+
 ### Two invariants with tests behind them
 
 **Every parameter consumes exactly three RNG draws before any branch.** The

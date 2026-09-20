@@ -66,9 +66,14 @@ public class BackdropRanges : ScriptableObject
     [Header("Per-instance variation")]
     public RandomRange scaleMin = new RandomRange(0.2f, 1.2f);
     public RandomRange scaleMax = new RandomRange(1.0f, 4.0f);
-    public RandomRange scaleBiasX = new RandomRange(0.5f, 2f);
-    public RandomRange scaleBiasY = new RandomRange(0.5f, 8f);
-    public RandomRange scaleBiasZ = new RandomRange(0.5f, 2f);
+    [Tooltip("How far the dominant axis is stretched when a roll decides the field is not uniform. One range, not three: the axis is chosen separately, so this is the magnitude of whatever proportion was picked.")]
+    public RandomRange scaleBias = new RandomRange(1.5f, 8f);
+
+    [Tooltip("Chance a roll leaves the proportions uniform. The rest of the time one axis is picked and stretched, so the field comes out decisively towers, or slabs, or fins - rather than the mush three independent draws produce.")]
+    [Range(0f, 1f)] public float uniformProportionChance = 0.3f;
+
+    [Tooltip("Chance a roll aligns instances to the shape instead of rotating them freely. Two clear outcomes - ordered or tumbled - rather than a partial rotation on each axis that reads as neither.")]
+    [Range(0f, 1f)] public float alignChance = 0.45f;
     public RandomRange accentFraction = new RandomRange(0f, 0.3f);
     public RandomRange accentRatio = new RandomRange(1.3f, 2.2f);
     public RandomRange offsetJitter = new RandomRange(0f, 3f);
