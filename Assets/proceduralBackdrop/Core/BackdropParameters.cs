@@ -12,6 +12,15 @@ public enum BackdropDomain { Plane = 0, Hemisphere = 1, Cube = 2 }
 /// </summary>
 public enum BackdropShadingMode { Toon = 0, FresnelToon = 1, Lit = 2 }
 
+/// <summary>How instances move between their lattice point and wherever they are now.</summary>
+public enum BackdropMotion
+{
+    /// <summary>One shared sine, phase-spread across the field. Reads as a wave passing through.</summary>
+    Sine = 0,
+    /// <summary>A 3D noise field sampled at each instance's position. Reads as drift or turbulence.</summary>
+    Noise = 1,
+}
+
 /// <summary>
 /// Every value the backdrop has. One struct, because it is simultaneously the
 /// inspector surface, the unit of preset save/recall, the thing the randomiser
@@ -51,11 +60,27 @@ public struct BackdropParameters
     [Tooltip("Cube domain only: fill the volume rather than the shell.")]
     public bool solidFill;
 
+    [Header("Occupancy")]
+    [Tooltip("Fraction of lattice slots that actually get an instance. Below 1 opens gaps. A fully populated lattice always reads as a grid; holes are what make it read as structure. Thinning filters a fixed lattice rather than rebuilding a smaller one, so lowering this removes instances without moving the ones that remain.")]
+    [Range(0f, 1f)] public float occupancy;
+
+    [Tooltip("0 scatters the gaps evenly. Above 0 clusters them through a noise field, so the holes group into voids and the instances into clumps - far more building-like than even speckle. Higher values make smaller clusters.")]
+    [Min(0f)] public float occupancyNoiseScale;
+
     [Header("Per-instance variation")]
     [Tooltip("Uniform scale multiplier, min to max.")]
     public Vector2 scaleRange;
     [Tooltip("Per-axis multiplier applied after the uniform scale. (1,1,1) = untouched.")]
     public Vector3 scaleAxisBias;
+
+    [Tooltip("Fraction of instances promoted to a larger size class. A field drawn from one continuous size range has no hierarchy - everything reads as the same object at different distances. A minority at a fixed ratio above the rest gives the eye landmarks to read the field against.")]
+    [Range(0f, 1f)] public float accentFraction;
+
+    [Tooltip("What an accented instance is multiplied by. 1.618 is the golden ratio, so each size class relates to the next the way a Fibonacci term does; 2 or 3 give a blockier, more deliberate hierarchy.")]
+    [Min(0.01f)] public float accentRatio;
+
+    [Tooltip("How many ratio steps an accent can climb. 1 gives two size classes, 2 gives three, and so on - a short Fibonacci series across the field rather than a single jump.")]
+    [Range(1, 4)] public int accentSteps;
     [Tooltip("Random displacement off the lattice point, metres per axis.")]
     public Vector3 offsetJitter;
     [Tooltip("Random rotation, degrees per axis.")]
@@ -65,9 +90,14 @@ public struct BackdropParameters
     [Tooltip("Degrees per second, min to max. Negative reverses.")]
     public Vector2 spinRateRange;
     public Vector3 spinAxis;
+    public BackdropMotion motion;
+    [Tooltip("Sine mode only: the direction instances travel. Noise mode displaces in all three axes.")]
     public Vector3 waveAxis;
     public float waveAmplitude;
+    [Tooltip("Sine mode: cycles per second. Noise mode: how fast the field drifts.")]
     public float waveFrequency;
+    [Tooltip("Noise mode only: spatial frequency of the field. Low values move whole regions together; high values make neighbours move independently.")]
+    [Min(0.001f)] public float noiseScale;
     [Tooltip("0 = every instance waves in unison, 1 = phases spread over a full cycle.")]
     [Range(0f, 1f)] public float wavePhaseSpread;
 
@@ -88,20 +118,28 @@ public struct BackdropParameters
         domainSize      = new Vector3(60f, 30f, 22f),
         solidFill       = false,
 
+        occupancy           = 1f,
+        occupancyNoiseScale = 0f,
+
         fitToCamera     = true,
         fitMargin       = new Vector2(1.1f, 1.1f),
         fitDistance     = 26f,
 
         scaleRange      = new Vector2(0.7f, 2.4f),
         scaleAxisBias   = new Vector3(1f, 3f, 1f),
+        accentFraction  = 0.1f,
+        accentRatio     = 1.618034f,
+        accentSteps     = 1,
         offsetJitter    = new Vector3(0.5f, 0.5f, 0.5f),
         rotationJitter  = new Vector3(0f, 180f, 0f),
 
         spinRateRange   = new Vector2(-8f, 8f),
         spinAxis        = Vector3.up,
+        motion          = BackdropMotion.Sine,
         waveAxis        = Vector3.up,
         waveAmplitude   = 0.75f,
         waveFrequency   = 0.15f,
+        noiseScale      = 0.05f,
         wavePhaseSpread = 1f,
 
         shading         = BackdropShadingMode.Toon,
@@ -146,6 +184,14 @@ public struct BackdropParameters
         c.waveAxis = c.waveAxis.sqrMagnitude < 1e-6f ? Vector3.up : c.waveAxis.normalized;
 
         c.waveFrequency   = Mathf.Max(0f, c.waveFrequency);
+        c.noiseScale      = Mathf.Max(0.001f, c.noiseScale);
+
+        c.accentFraction = Mathf.Clamp01(c.accentFraction);
+        c.accentRatio    = Mathf.Max(0.01f, c.accentRatio);
+        c.accentSteps    = Mathf.Clamp(c.accentSteps, 1, 4);
+
+        c.occupancy           = Mathf.Clamp01(c.occupancy);
+        c.occupancyNoiseScale = Mathf.Max(0f, c.occupancyNoiseScale);
         c.wavePhaseSpread = Mathf.Clamp01(c.wavePhaseSpread);
 
         c.flashDecay     = Mathf.Max(0.01f, c.flashDecay);

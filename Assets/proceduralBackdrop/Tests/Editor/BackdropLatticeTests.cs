@@ -350,6 +350,228 @@ public class BackdropLatticeTests
     }
 
     [Test]
+    public void Occupancy_ThinsTheFieldWithoutMovingWhatRemains()
+    {
+        // The property that makes occupancy usable as a performance control: it
+        // filters a fixed lattice rather than rebuilding a smaller one, so
+        // pulling it down removes instances instead of rearranging everything.
+        var full = P(400, BackdropDomain.Cube);
+        full.occupancy = 1f;
+        full.offsetJitter = Vector3.zero;
+        full.waveAmplitude = 0f;
+        full.spinRateRange = Vector2.zero;
+        full.accentFraction = 0f;
+
+        var thin = full;
+        thin.occupancy = 0.5f;
+
+        var mf = new Matrix4x4[512]; var ff = new float[512];
+        var mt = new Matrix4x4[512]; var ft = new float[512];
+        int nf = BackdropLattice.Fill(full, 0f, -1000f, mf, ff);
+        int nt = BackdropLattice.Fill(thin, 0f, -1000f, mt, ft);
+
+        Assert.Less(nt, nf, "occupancy 0.5 should render fewer instances");
+
+        // Every surviving position must still appear in the full field.
+        var fullPositions = new System.Collections.Generic.HashSet<Vector3>();
+        for (int i = 0; i < nf; i++) fullPositions.Add(mf[i].GetColumn(3));
+        for (int i = 0; i < nt; i++)
+            Assert.IsTrue(fullPositions.Contains(mt[i].GetColumn(3)),
+                $"thinned instance {i} sits somewhere the full field never had one");
+    }
+
+    [Test]
+    public void Occupancy_RoughlyMatchesTheRequestedFraction()
+    {
+        var p = P(1000, BackdropDomain.Cube);
+        var m = new Matrix4x4[1200]; var f = new float[1200];
+
+        foreach (float want in new[] { 0.25f, 0.5f, 0.75f })
+        {
+            p.occupancy = want;
+            int n = BackdropLattice.Fill(p, 0f, -1000f, m, f);
+            float got = n / 1000f;
+            Assert.AreEqual(want, got, 0.08f, $"asked for {want:P0}, rendered {got:P0}");
+        }
+    }
+
+    [Test]
+    public void Occupancy_AtZeroAndOneAreTheLimits()
+    {
+        var p = P(200, BackdropDomain.Plane);
+        var m = new Matrix4x4[256]; var f = new float[256];
+
+        p.occupancy = 0f;
+        Assert.AreEqual(0, BackdropLattice.Fill(p, 0f, -1000f, m, f));
+
+        p.occupancy = 1f;
+        Assert.AreEqual(200, BackdropLattice.Fill(p, 0f, -1000f, m, f));
+    }
+
+    [Test]
+    public void Occupancy_NoiseScaleClustersTheGaps()
+    {
+        // Clustered gaps read as structure; evenly scattered ones read as
+        // damage. Neighbouring slots should agree more often under noise than
+        // under a pure per-slot roll.
+        var even = P(600, BackdropDomain.Plane);
+        even.occupancy = 0.5f;
+        even.occupancyNoiseScale = 0f;
+
+        var clustered = even;
+        clustered.occupancyNoiseScale = 0.08f;
+
+        int agreeEven = 0, agreeClustered = 0;
+        for (int i = 0; i < 599; i++)
+        {
+            if (BackdropLattice.IsOccupied(i, 600, even) == BackdropLattice.IsOccupied(i + 1, 600, even)) agreeEven++;
+            if (BackdropLattice.IsOccupied(i, 600, clustered) == BackdropLattice.IsOccupied(i + 1, 600, clustered)) agreeClustered++;
+        }
+
+        Assert.Greater(agreeClustered, agreeEven,
+            $"noise-scaled occupancy should cluster: neighbours agreed {agreeClustered} vs {agreeEven}");
+    }
+
+    [Test]
+    public void Accent_PromotesRoughlyTheRequestedFraction()
+    {
+        var p = BackdropParameters.Default;
+        p.accentFraction = 0.1f;
+        p.accentRatio = 1.618034f;
+        p.accentSteps = 1;
+
+        int accented = 0;
+        for (int i = 0; i < 2000; i++)
+            if (BackdropLattice.AccentMultiplier(i, p) > 1.0001f) accented++;
+
+        Assert.AreEqual(0.1f, accented / 2000f, 0.03f);
+    }
+
+    [Test]
+    public void Accent_UsesExactRatioSteps()
+    {
+        // The accents must land on discrete classes, not a smear - that is what
+        // separates a size hierarchy from a wider random range.
+        var p = BackdropParameters.Default;
+        p.accentFraction = 1f;
+        p.accentRatio = 1.618034f;
+        p.accentSteps = 3;
+
+        for (int i = 0; i < 300; i++)
+        {
+            float m = BackdropLattice.AccentMultiplier(i, p);
+            float steps = Mathf.Log(m) / Mathf.Log(1.618034f);
+            Assert.AreEqual(Mathf.Round(steps), steps, 1e-3f,
+                $"instance {i} multiplier {m} is not a whole power of the ratio");
+            Assert.LessOrEqual(Mathf.Round(steps), 3f);
+        }
+    }
+
+    [Test]
+    public void Accent_HigherStepsAreRarer()
+    {
+        // A skyline has many mid-rise and few towers; a flat distribution across
+        // classes would read as noise rather than hierarchy.
+        var p = BackdropParameters.Default;
+        p.accentFraction = 1f;
+        p.accentRatio = 2f;
+        p.accentSteps = 3;
+
+        int one = 0, two = 0, three = 0;
+        for (int i = 0; i < 3000; i++)
+        {
+            int steps = Mathf.RoundToInt(Mathf.Log(BackdropLattice.AccentMultiplier(i, p)) / Mathf.Log(2f));
+            if (steps == 1) one++; else if (steps == 2) two++; else if (steps >= 3) three++;
+        }
+
+        Assert.Greater(one, two, "one-step accents should outnumber two-step");
+        Assert.Greater(two, three, "two-step accents should outnumber three-step");
+    }
+
+    [Test]
+    public void Accent_ZeroFractionLeavesEveryInstanceAlone()
+    {
+        var p = BackdropParameters.Default;
+        p.accentFraction = 0f;
+        for (int i = 0; i < 500; i++)
+            Assert.AreEqual(1f, BackdropLattice.AccentMultiplier(i, p), 1e-6f, $"instance {i}");
+    }
+
+    [Test]
+    public void LocalBounds_StillContainsAccentedInstances()
+    {
+        // Accents are the largest objects in the field, so they are exactly the
+        // ones that pop out at a glancing angle if the bounds ignore them.
+        var p = P(300, BackdropDomain.Cube);
+        p.accentFraction = 0.5f;
+        p.accentRatio = 2f;
+        p.accentSteps = 3;
+        p.offsetJitter = Vector3.one * 2f;
+
+        var b = BackdropLattice.LocalBounds(p);
+        var m = new Matrix4x4[512]; var f = new float[512];
+        int n = BackdropLattice.Fill(p, 0.5f, -1000f, m, f);
+
+        for (int i = 0; i < n; i++)
+            Assert.IsTrue(b.Contains(m[i].GetColumn(3)), $"instance {i} outside bounds {b}");
+    }
+
+    [Test]
+    public void NoiseMotion_MovesNeighboursTogetherAndStaysBounded()
+    {
+        var p = P(200, BackdropDomain.Plane);
+        p.motion = BackdropMotion.Noise;
+        p.waveAmplitude = 3f;
+        p.waveFrequency = 0.3f;
+        p.noiseScale = 0.05f;
+        p.offsetJitter = Vector3.zero;
+        p.spinRateRange = Vector2.zero;
+        p.occupancy = 1f;
+        p.accentFraction = 0f;
+
+        var rest = p; rest.waveAmplitude = 0f;
+        var mr = new Matrix4x4[256]; var fr = new float[256];
+        BackdropLattice.Fill(rest, 0f, -1000f, mr, fr);
+
+        var m = new Matrix4x4[256]; var f = new float[256];
+        for (float t = 0f; t < 20f; t += 2.5f)
+        {
+            int n = BackdropLattice.Fill(p, t, -1000f, m, f);
+            for (int i = 0; i < n; i++)
+            {
+                float d = Vector3.Distance(m[i].GetColumn(3), mr[i].GetColumn(3));
+                Assert.LessOrEqual(d, 3f * Mathf.Sqrt(3f) + 1e-2f,
+                    $"instance {i} at t={t} strayed {d} from rest, beyond the amplitude");
+            }
+        }
+    }
+
+    [Test]
+    public void NoiseMotion_ActuallyDiffersFromSine()
+    {
+        var sine = P(120, BackdropDomain.Plane);
+        sine.waveAmplitude = 2f;
+        sine.offsetJitter = Vector3.zero;
+        sine.spinRateRange = Vector2.zero;
+        sine.accentFraction = 0f;
+        sine.motion = BackdropMotion.Sine;
+
+        var noise = sine;
+        noise.motion = BackdropMotion.Noise;
+
+        var ms = new Matrix4x4[128]; var fs = new float[128];
+        var mn = new Matrix4x4[128]; var fn = new float[128];
+        BackdropLattice.Fill(sine, 3.7f, -1000f, ms, fs);
+        BackdropLattice.Fill(noise, 3.7f, -1000f, mn, fn);
+
+        int differ = 0;
+        for (int i = 0; i < 120; i++)
+            if (Vector3.Distance(ms[i].GetColumn(3), mn[i].GetColumn(3)) > 1e-3f) differ++;
+
+        Assert.Greater(differ, 100, "noise motion should not resemble the sine it replaces");
+    }
+
+    [Test]
     public void AxisCounts_GivesEvenWorldSpacingOnAnUnevenBox()
     {
         // The case a camera-fitted domain always produces: very wide, medium

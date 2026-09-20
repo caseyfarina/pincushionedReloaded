@@ -53,6 +53,8 @@ public class BackdropRanges : ScriptableObject
     [Header("Layout")]
     public bool randomiseDomain = true;
     public RandomRange spawnCount = new RandomRange(250, 1200);
+    public RandomRange occupancy = new RandomRange(0.35f, 1f);
+    public RandomRange occupancyNoiseScale = new RandomRange(0f, 0.12f);
     [Tooltip("Ignored while fitToCamera is on - X and Y come from the frame.")]
     public RandomRange domainSizeX = new RandomRange(30f, 90f);
     [Tooltip("Ignored while fitToCamera is on - X and Y come from the frame.")]
@@ -67,6 +69,8 @@ public class BackdropRanges : ScriptableObject
     public RandomRange scaleBiasX = new RandomRange(0.5f, 2f);
     public RandomRange scaleBiasY = new RandomRange(0.5f, 8f);
     public RandomRange scaleBiasZ = new RandomRange(0.5f, 2f);
+    public RandomRange accentFraction = new RandomRange(0f, 0.3f);
+    public RandomRange accentRatio = new RandomRange(1.3f, 2.2f);
     public RandomRange offsetJitter = new RandomRange(0f, 3f);
     public RandomRange rotationJitter = new RandomRange(0f, 180f);
 
@@ -75,6 +79,9 @@ public class BackdropRanges : ScriptableObject
     public RandomRange waveAmplitude = new RandomRange(0f, 3f);
     public RandomRange waveFrequency = new RandomRange(0.02f, 0.6f);
     public RandomRange wavePhaseSpread = new RandomRange(0f, 1f);
+    public RandomRange noiseScale = new RandomRange(0.01f, 0.25f);
+    [Tooltip("Sine or Noise motion. Off pins whichever mode is already set.")]
+    public bool randomiseMotion = true;
 
     [Header("Look")]
     public bool randomiseShading = true;

@@ -31,6 +31,13 @@ public enum BackdropParam
     // be a control that visibly does nothing. These drive the fit instead.
     FitMarginX, FitMarginY, FitDistance,
 
+    // Occupancy is the strongest single control on the panel: it opens holes in
+    // the lattice, which is what stops a filled array reading as a grid.
+    Occupancy, OccupancyNoiseScale,
+
+    // Size hierarchy, and the spatial frequency of the noise motion field.
+    AccentFraction, AccentRatio, NoiseScale,
+
     // Size variation across the field, as a fraction of the largest instance.
     // More musical than a raw scale minimum, which is meaningless without
     // knowing the maximum.
@@ -116,6 +123,7 @@ public class MidiMixBackdropDriver : MonoBehaviour
         MidiMixRouter.OnChannelFader += HandleFader;
         MidiMixRouter.OnMasterFader  += HandleMasterFader;
         MidiMixRouter.OnMute         += HandleMute;
+        MidiMixRouter.OnRecArm       += HandleRecArm;
     }
 
     private void OnDisable()
@@ -124,6 +132,7 @@ public class MidiMixBackdropDriver : MonoBehaviour
         MidiMixRouter.OnChannelFader -= HandleFader;
         MidiMixRouter.OnMasterFader  -= HandleMasterFader;
         MidiMixRouter.OnMute         -= HandleMute;
+        MidiMixRouter.OnRecArm       -= HandleRecArm;
     }
 
     private void HandleKnob(int channel, int row, float v01)
@@ -148,6 +157,23 @@ public class MidiMixBackdropDriver : MonoBehaviour
         else return;
 
         instrument.ApplyAndRelayout(p);
+        lastSeenRevision = instrument.Revision;
+        ResetTakeover();
+    }
+
+    /// <summary>
+    /// Rec-arm row, previously unbound. Rec-arm 1 flips sine against noise
+    /// motion - a mode switch, which suits a button far better than stealing a
+    /// knob that would then read as a dead control in one of its two positions.
+    /// </summary>
+    private void HandleRecArm(int channel, bool down)
+    {
+        if (!muteRowSelectsModes || !down || instrument == null) return;
+        if (channel != 1) return;
+
+        var p = instrument.Current;
+        p.motion = p.motion == BackdropMotion.Sine ? BackdropMotion.Noise : BackdropMotion.Sine;
+        instrument.Apply(p);
         lastSeenRevision = instrument.Revision;
         ResetTakeover();
     }
@@ -287,6 +313,12 @@ public class MidiMixBackdropDriver : MonoBehaviour
             case BackdropParam.OffsetAmount:      return MaxComponent(p.offsetJitter);
             case BackdropParam.RotationAmount:    return MaxComponent(p.rotationJitter);
 
+            case BackdropParam.Occupancy:           return p.occupancy;
+            case BackdropParam.OccupancyNoiseScale: return p.occupancyNoiseScale;
+            case BackdropParam.AccentFraction:      return p.accentFraction;
+            case BackdropParam.AccentRatio:         return p.accentRatio;
+            case BackdropParam.NoiseScale:          return p.noiseScale;
+
             case BackdropParam.FitMarginX:        return p.fitMargin.x;
             case BackdropParam.FitMarginY:        return p.fitMargin.y;
             case BackdropParam.FitDistance:       return p.fitDistance;
@@ -344,6 +376,12 @@ public class MidiMixBackdropDriver : MonoBehaviour
             case BackdropParam.OffsetAmount:   p.offsetJitter   = Rescale(p.offsetJitter, value);   return;
             case BackdropParam.RotationAmount: p.rotationJitter = Rescale(p.rotationJitter, value); return;
 
+            case BackdropParam.Occupancy:           p.occupancy = value; return;
+            case BackdropParam.OccupancyNoiseScale: p.occupancyNoiseScale = value; return;
+            case BackdropParam.AccentFraction:      p.accentFraction = value; return;
+            case BackdropParam.AccentRatio:         p.accentRatio = value; return;
+            case BackdropParam.NoiseScale:          p.noiseScale = value; return;
+
             case BackdropParam.FitMarginX:  p.fitMargin.x = value; return;
             case BackdropParam.FitMarginY:  p.fitMargin.y = value; return;
             case BackdropParam.FitDistance: p.fitDistance = value; return;
@@ -398,14 +436,15 @@ public class MidiMixBackdropDriver : MonoBehaviour
     ///   ch | fader             | knob 1      knob 2      knob 3
     ///   ---|-------------------|-------------------------------------
     ///    1 | Spawn Count       | Fit Margin X  Fit Margin Y  Depth
-    ///    2 | Scale             | Bias X      Bias Y      Bias Z
-    ///    3 | Offset Amount     | Offset X    Offset Y    Offset Z
+    ///    2 | Scale             | Bias X      Bias Y      Accent %
+    ///    3 | Offset Amount     | Offset X    Offset Y    Gap Cluster
     ///    4 | Rotation Amount   | Rot X       Rot Y       Rot Z
     ///    5 | Spin Rate         | Axis X      Axis Y      Axis Z
     ///    6 | Wave Amplitude    | Axis X      Axis Y      Axis Z
-    ///    7 | Wave Frequency    | Phase       Flash Decay Flash Ripple
+    ///    7 | Wave Frequency    | Phase       Noise Scale Scale Spread
     ///    8 | Flash Intensity   | Hue         Saturation  Value
-    ///   master: Scale Spread
+    ///   master: Occupancy
+    ///   rec-arm 1: sine / noise motion
     ///
     /// Channels are ordered by how much a small move changes the image: count
     /// and size first, disorder next, motion after that, and the look last. A
@@ -428,13 +467,13 @@ public class MidiMixBackdropDriver : MonoBehaviour
         F(2, BackdropParam.ScaleMax,     0.05f, 5f),
         K(2, 1, BackdropParam.ScaleBiasX, 0.1f, 4f),
         K(2, 2, BackdropParam.ScaleBiasY, 0.1f, 12f),
-        K(2, 3, BackdropParam.ScaleBiasZ, 0.1f, 4f),
+        K(2, 3, BackdropParam.AccentFraction, 0f, 0.4f),
 
         // 3 - Offset: how far instances stray off the lattice.
         F(3, BackdropParam.OffsetAmount, 0f, 6f),
         K(3, 1, BackdropParam.OffsetJitterX, 0f, 6f),
         K(3, 2, BackdropParam.OffsetJitterY, 0f, 6f),
-        K(3, 3, BackdropParam.OffsetJitterZ, 0f, 6f),
+        K(3, 3, BackdropParam.OccupancyNoiseScale, 0f, 0.2f),
 
         // 4 - Rotation: how far they turn off axis.
         F(4, BackdropParam.RotationAmount, 0f, 180f),
@@ -458,8 +497,8 @@ public class MidiMixBackdropDriver : MonoBehaviour
         // and the flash envelope. Everything on this strip shapes time.
         F(7, BackdropParam.WaveFrequency, 0f, 1.5f),
         K(7, 1, BackdropParam.WavePhaseSpread, 0f, 1f),
-        K(7, 2, BackdropParam.FlashDecay, 0.5f, 12f),
-        K(7, 3, BackdropParam.FlashRipple, 0f, 1.5f),
+        K(7, 2, BackdropParam.NoiseScale, 0.005f, 0.3f),
+        K(7, 3, BackdropParam.ScaleSpread, 0f, 0.95f),
 
         // 8 - Look: flash on the fader so it can be ridden, colour above it.
         // Pairs with this channel's mute button, which fires the flash.
@@ -470,6 +509,6 @@ public class MidiMixBackdropDriver : MonoBehaviour
 
         // Master: size variation across the whole field - the one quality that
         // is genuinely global rather than belonging to any single strip.
-        M(BackdropParam.ScaleSpread, 0f, 0.95f),
+        M(BackdropParam.Occupancy, 0.05f, 1f),
     };
 }

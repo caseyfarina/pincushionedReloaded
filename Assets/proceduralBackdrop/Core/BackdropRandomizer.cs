@@ -49,6 +49,11 @@ public static class BackdropRandomizer
         float biasX        = Draw(r.scaleBiasX, basis.scaleAxisBias.x, rng, strength, mutate, r);
         float biasY        = Draw(r.scaleBiasY, basis.scaleAxisBias.y, rng, strength, mutate, r);
         float biasZ        = Draw(r.scaleBiasZ, basis.scaleAxisBias.z, rng, strength, mutate, r);
+        float occ          = Draw(r.occupancy,          basis.occupancy,          rng, strength, mutate, r);
+        float occNoise     = Draw(r.occupancyNoiseScale, basis.occupancyNoiseScale, rng, strength, mutate, r);
+        float accFrac      = Draw(r.accentFraction,     basis.accentFraction,     rng, strength, mutate, r);
+        float accRatio     = Draw(r.accentRatio,        basis.accentRatio,        rng, strength, mutate, r);
+        float nScale       = Draw(r.noiseScale,         basis.noiseScale,         rng, strength, mutate, r);
         float jitter       = Draw(r.offsetJitter, basis.offsetJitter.x, rng, strength, mutate, r);
         float rotJitter    = Draw(r.rotationJitter, basis.rotationJitter.y, rng, strength, mutate, r);
         float spin         = Draw(r.spinRate, Mathf.Abs(basis.spinRateRange.y), rng, strength, mutate, r);
@@ -62,6 +67,7 @@ public static class BackdropRandomizer
 
         // Discrete draws come last, again always consuming the same number of
         // rng values whether or not they are enabled.
+        int   motionRoll   = rng.Next(2);
         int   domainRoll   = rng.Next(3);
         int   shadingRoll  = rng.Next(3);
         bool  solidRoll    = rng.Next(2) == 0;
@@ -74,6 +80,7 @@ public static class BackdropRandomizer
         float holdS = (float)rng.NextDouble();
         float holdF = (float)rng.NextDouble();
         float holdH = (float)rng.NextDouble();
+        float holdM = (float)rng.NextDouble();
         float hold  = r.holdChance;
         uint  seedRoll     = unchecked((uint)rng.Next(1, int.MaxValue));
 
@@ -84,6 +91,11 @@ public static class BackdropRandomizer
         p.offsetJitter   = new Vector3(jitter, jitter, jitter);
         p.rotationJitter = new Vector3(0f, rotJitter, 0f);
         p.spinRateRange  = new Vector2(-spin, spin);
+        p.occupancy           = occ;
+        p.occupancyNoiseScale = occNoise;
+        p.accentFraction      = accFrac;
+        p.accentRatio         = accRatio;
+        p.noiseScale          = nScale;
         p.waveAmplitude  = waveAmp;
         p.waveFrequency  = waveFreq;
         p.wavePhaseSpread = wavePhase;
@@ -100,6 +112,9 @@ public static class BackdropRandomizer
         // Discrete parameters are not mutated at low strength — flipping the
         // domain shape is a jump out of the region, not a refinement of it.
         bool allowDiscrete = !mutate || strength >= 0.5f;
+
+        if (r.randomiseMotion && allowDiscrete && holdM >= hold)
+            p.motion = (BackdropMotion)motionRoll;
 
         if (r.randomiseDomain && allowDiscrete && holdD >= hold)
             p.domain = (BackdropDomain)domainRoll;

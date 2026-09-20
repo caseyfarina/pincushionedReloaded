@@ -359,22 +359,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BackdropInstrument
   parameters:
     layoutSeed: 1
-    spawnCount: 300
+    spawnCount: 700
     domain: 2
-    domainSize: {x: 60, y: 30, z: 60}
+    domainSize: {x: 60, y: 30, z: 22}
     fitToCamera: 1
     fitMargin: {x: 1.1, y: 1.1}
-    fitDistance: 30
+    fitDistance: 26
     solidFill: 0
-    scaleRange: {x: 0.6, y: 1.8}
+    occupancy: 1
+    occupancyNoiseScale: 0
+    scaleRange: {x: 0.7, y: 2.4}
     scaleAxisBias: {x: 1, y: 3, z: 1}
+    accentFraction: 0.1
+    accentRatio: 1.618034
+    accentSteps: 1
     offsetJitter: {x: 0.5, y: 0.5, z: 0.5}
     rotationJitter: {x: 0, y: 180, z: 0}
     spinRateRange: {x: -8, y: 8}
     spinAxis: {x: 0, y: 1, z: 0}
+    motion: 0
     waveAxis: {x: 0, y: 1, z: 0}
     waveAmplitude: 0.75
     waveFrequency: 0.15
+    noiseScale: 0.05
     wavePhaseSpread: 1
     shading: 0
     emissionColor: {r: 1, g: 1, b: 1, a: 1}
@@ -499,9 +506,9 @@ MonoBehaviour:
   - control: 0
     channel: 2
     row: 3
-    target: 9
-    min: 0.1
-    max: 4
+    target: 39
+    min: 0
+    max: 0.4
   - control: 1
     channel: 3
     row: 1
@@ -523,9 +530,9 @@ MonoBehaviour:
   - control: 0
     channel: 3
     row: 3
-    target: 12
+    target: 38
     min: 0
-    max: 6
+    max: 0.2
   - control: 1
     channel: 4
     row: 1
@@ -613,15 +620,15 @@ MonoBehaviour:
   - control: 0
     channel: 7
     row: 2
-    target: 26
-    min: 0.5
-    max: 12
+    target: 41
+    min: 0.005
+    max: 0.3
   - control: 0
     channel: 7
     row: 3
-    target: 28
+    target: 42
     min: 0
-    max: 1.5
+    max: 0.95
   - control: 1
     channel: 8
     row: 1
@@ -650,8 +657,8 @@ MonoBehaviour:
     channel: 1
     row: 1
     target: 37
-    min: 0
-    max: 0.95
+    min: 0.05
+    max: 1
 --- !u!1 &1914908111
 GameObject:
   m_ObjectHideFlags: 0

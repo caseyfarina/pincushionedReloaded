@@ -130,6 +130,81 @@ public static class BackdropLattice
     /// Buffers are caller-owned so the renderer can keep them across frames; this
     /// runs every frame and must not allocate.
     /// </summary>
+    /// <summary>
+    /// Whether the lattice slot at <paramref name="id"/> carries an instance.
+    ///
+    /// Evaluated per slot against a fixed lattice, so lowering occupancy removes
+    /// instances without moving the ones that stay - the same property the pin
+    /// scatter relies on, where changing the count adds and removes from a
+    /// stable ordering rather than reshuffling.
+    /// </summary>
+    public static bool IsOccupied(int id, int slotCount, in BackdropParameters p)
+    {
+        if (p.occupancy >= 1f) return true;
+        if (p.occupancy <= 0f) return false;
+
+        if (p.occupancyNoiseScale <= 0f)
+            return Rand01(id, p.layoutSeed, 977u) < p.occupancy;
+
+        // Clustered: threshold a noise field sampled at the slot's own position,
+        // so gaps group into voids and instances into clumps. Even speckle reads
+        // as damage; clusters read as structure.
+        Vector3 at = Position(id, slotCount, p.domain, p.domainSize, p.solidFill) * p.occupancyNoiseScale;
+        float n = Noise3(at.x, at.y, at.z, p.layoutSeed);
+
+        // Nudged by a per-slot value so the threshold edge is ragged rather than
+        // a clean contour, which otherwise reads as a machined cut.
+        n = n * 0.85f + Rand01(id, p.layoutSeed, 613u) * 0.15f;
+        return n < p.occupancy;
+    }
+
+    /// <summary>
+    /// Scale multiplier for one instance: 1 for most, or accentRatio raised to a
+    /// step for the accented minority.
+    ///
+    /// A field drawn from one continuous size range has no hierarchy - every
+    /// instance reads as the same object at a different distance, and the eye
+    /// has nothing to measure against. Promoting a minority to a discrete size
+    /// class gives it landmarks. At the default 1.618 each class stands to the
+    /// next as consecutive Fibonacci terms do, which is why the accents read as
+    /// belonging to the field rather than as a handful of oversized strays.
+    ///
+    /// Drawn from its own hash stream, so the accents stay put when the base
+    /// scale range is dialled.
+    /// </summary>
+    public static float AccentMultiplier(int id, in BackdropParameters p)
+    {
+        if (p.accentFraction <= 0f) return 1f;
+
+        float roll = Rand01(id, p.layoutSeed, 401u);
+        if (roll >= p.accentFraction) return 1f;
+
+        // Higher steps are progressively rarer, so the series thins as it climbs
+        // the way a real skyline does - many mid-rise, a few towers, one spire.
+        int steps = 1;
+        for (int k = 1; k < p.accentSteps; k++)
+        {
+            if (Rand01(id, p.layoutSeed, (uint)(431 + k * 7)) < 0.35f) steps++;
+            else break;
+        }
+
+        return Mathf.Pow(p.accentRatio, steps);
+    }
+
+    /// <summary>
+    /// 0-1 value noise in three dimensions, built from Unity's 2D Perlin across
+    /// three planes. Cheap, deterministic, and adequate for drift - this is a
+    /// displacement field, not a texture.
+    /// </summary>
+    public static float Noise3(float x, float y, float z, uint seed)
+    {
+        float o = (seed % 1000u) * 0.137f;
+        float a = Mathf.PerlinNoise(x + o, y + o);
+        float b = Mathf.PerlinNoise(y + o + 31.416f, z + o);
+        float c = Mathf.PerlinNoise(z + o + 78.233f, x + o);
+        return (a + b + c) / 3f;
+    }
+
     public static int Fill(in BackdropParameters p, float time, float flashTime,
                            Matrix4x4[] matrices, float[] flash)
     {
@@ -142,8 +217,15 @@ public static class BackdropLattice
         float waveW = p.waveFrequency * 2f * Mathf.PI;
         float decay = Mathf.Max(p.flashDecay, 0.01f);
 
+        // `write` trails `i` once slots start being skipped: the lattice is
+        // indexed by slot so positions never shift, while the buffers stay
+        // densely packed for the instanced draw.
+        int write = 0;
+
         for (int i = 0; i < count; i++)
         {
+            if (!IsOccupied(i, count, p)) continue;
+
             float idNorm = (float)i / count;
 
             Vector3 pos = Position(i, count, p.domain, p.domainSize, p.solidFill);
@@ -152,10 +234,27 @@ public static class BackdropLattice
 
             // Absolute offset from the lattice point, never an accumulating add -
             // accumulating walks every instance off its lattice point permanently.
-            float phase = idNorm * p.wavePhaseSpread * 2f * Mathf.PI;
-            pos += waveAxis * (Mathf.Sin(time * waveW + phase) * p.waveAmplitude);
+            if (p.motion == BackdropMotion.Noise)
+            {
+                // Sampled at the instance's own position, so neighbours move
+                // together and the field drifts as a body rather than each
+                // instance bobbing on its own clock.
+                float t = time * p.waveFrequency;
+                Vector3 at = pos * p.noiseScale;
+                var n = new Vector3(
+                    Noise3(at.x + t, at.y, at.z, p.layoutSeed) - 0.5f,
+                    Noise3(at.x, at.y + t, at.z, p.layoutSeed + 17u) - 0.5f,
+                    Noise3(at.x, at.y, at.z + t, p.layoutSeed + 41u) - 0.5f);
+                pos += n * (2f * p.waveAmplitude);
+            }
+            else
+            {
+                float phase = idNorm * p.wavePhaseSpread * 2f * Mathf.PI;
+                pos += waveAxis * (Mathf.Sin(time * waveW + phase) * p.waveAmplitude);
+            }
 
             float s = Mathf.Lerp(p.scaleRange.x, p.scaleRange.y, Rand01(i, p.layoutSeed, 31u));
+            s *= AccentMultiplier(i, p);
             Vector3 scale = p.scaleAxisBias * s;
 
             Vector3 rot = Vector3.Scale(
@@ -165,15 +264,19 @@ public static class BackdropLattice
             float rate = Mathf.Lerp(p.spinRateRange.x, p.spinRateRange.y, Rand01(i, p.layoutSeed, 71u));
             Quaternion q = Quaternion.AngleAxis(rate * time, spinAxis) * Quaternion.Euler(rot);
 
-            matrices[i] = Matrix4x4.TRS(pos, q, scale);
+            matrices[write] = Matrix4x4.TRS(pos, q, scale);
 
             // flashTime is a timestamp, not a level. The idNorm term staggers the
-            // onset so the flash sweeps the field instead of blinking flat.
+            // onset so the flash sweeps the field instead of blinking flat. It is
+            // keyed to the slot, not the write index, so the sweep keeps its
+            // direction and speed however many slots are skipped.
             float since = time - flashTime - idNorm * p.flashRipple;
-            flash[i] = since < 0f ? 0f : Mathf.Exp(-since * decay) * p.flashIntensity;
+            flash[write] = since < 0f ? 0f : Mathf.Exp(-since * decay) * p.flashIntensity;
+
+            write++;
         }
 
-        return count;
+        return write;
     }
 
     /// <summary>
@@ -272,9 +375,14 @@ public static class BackdropLattice
     /// </summary>
     public static Bounds LocalBounds(in BackdropParameters p)
     {
+        // Accented instances are the largest thing in the field, so the bounds
+        // have to assume one sits on an edge - otherwise the biggest objects are
+        // exactly the ones that pop out at a glancing angle.
+        float accent = p.accentFraction > 0f ? Mathf.Pow(Mathf.Max(p.accentRatio, 1f), p.accentSteps) : 1f;
+
         float reach = p.offsetJitter.magnitude
                     + Mathf.Abs(p.waveAmplitude)
-                    + Mathf.Max(p.scaleRange.y, 0f) * Mathf.Max(p.scaleAxisBias.x,
+                    + Mathf.Max(p.scaleRange.y, 0f) * accent * Mathf.Max(p.scaleAxisBias.x,
                           Mathf.Max(p.scaleAxisBias.y, p.scaleAxisBias.z));
 
         return new Bounds(Vector3.zero, p.domainSize + Vector3.one * (reach * 2f));
