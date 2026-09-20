@@ -32,6 +32,9 @@ public class BackdropInstrument : MonoBehaviour
     [Tooltip("Material for every instance. Must have Enable GPU Instancing ticked.")]
     [SerializeField] private Material material;
 
+    [Tooltip("Material for the spherical part of a multi-part model. Empty falls back to the main material. Each part is already its own draw, so a second material costs nothing beyond the material switch.")]
+    [SerializeField] private Material sphereMaterial;
+
     [Tooltip("Off by default: shadow casters were what drove the cost curve in this project's dancer sweep, and a backdrop has no business in the shadow atlas.")]
     [SerializeField] private ShadowCastingMode shadows = ShadowCastingMode.Off;
 
@@ -55,9 +58,11 @@ public class BackdropInstrument : MonoBehaviour
     private static readonly int IdFlash = Shader.PropertyToID("_Flash");
 
     private Matrix4x4[] matrices = new Matrix4x4[BackdropParameters.MaxSpawnCount];
+    private Matrix4x4[] partMatrices = new Matrix4x4[BackdropParameters.MaxSpawnCount];
     private float[] flashValues = new float[BackdropParameters.MaxSpawnCount];
     private MaterialPropertyBlock mpb;
     private RenderParams rp;
+    private RenderParams rpSphere;
     private bool rpValid;
 
     private float flashTime = -1000f;
@@ -68,6 +73,7 @@ public class BackdropInstrument : MonoBehaviour
     private System.Random layoutRng;
     private bool warnedNoLibrary;
     private Mesh fallbackMesh;
+    private BackdropModel fallbackModel;
 
     private void OnEnable()
     {
@@ -81,6 +87,7 @@ public class BackdropInstrument : MonoBehaviour
             if (Application.isPlaying) Destroy(fallbackMesh);
             else DestroyImmediate(fallbackMesh);
             fallbackMesh = null;
+            fallbackModel = null;
         }
     }
 
@@ -225,8 +232,8 @@ public class BackdropInstrument : MonoBehaviour
 
     private void Update()
     {
-        var mesh = ResolveMesh();
-        if (mesh == null || material == null) return;
+        var model = ResolveModel();
+        if (model == null || material == null) return;
 
         // Fit is applied to a copy, not written back through Apply: the frame can
         // change every frame, and folding that into the stored parameters would
@@ -237,18 +244,39 @@ public class BackdropInstrument : MonoBehaviour
         liveCount = BackdropLattice.Fill(effective, NowTime, flashTime, matrices, flashValues);
         if (liveCount == 0) return;
 
-        if (!rpValid) RebuildRenderParams(mesh, effective);
-        else rp.worldBounds = TransformedBounds(effective);
+        if (!rpValid) RebuildRenderParams(effective);
+        else { var b = TransformedBounds(effective); rp.worldBounds = b; rpSphere.worldBounds = b; }
 
         if (mpb == null) mpb = new MaterialPropertyBlock();
         mpb.SetFloatArray(IdFlash, flashValues);
         rp.matProps = mpb;
+        rpSphere.matProps = mpb;
 
-        // One instanced draw for the whole field.
-        Graphics.RenderMeshInstanced(rp, mesh, 0, matrices, liveCount);
+        // One instanced draw per part. A part is one submesh of one mesh, which
+        // is what an instanced draw renders - so a model carrying two submeshes
+        // needs two calls, and submitting only the first is what left these
+        // shapes looking half-built.
+        float ns = model.normalizeScale;
+        for (int part = 0; part < model.parts.Count; part++)
+        {
+            var bp = model.parts[part];
+            if (bp.mesh == null) continue;
+
+            Matrix4x4 offset = Matrix4x4.Scale(new Vector3(ns, ns, ns)) * bp.Local;
+
+            // A single-part model at unit scale needs no per-part transform, so
+            // skip the copy entirely - that is the common case.
+            bool identity = offset.isIdentity;
+            if (!identity)
+                for (int i = 0; i < liveCount; i++) partMatrices[i] = matrices[i] * offset;
+
+            var pass = bp.isSphere && sphereMaterial != null ? rpSphere : rp;
+            Graphics.RenderMeshInstanced(pass, bp.mesh, bp.subMesh,
+                                         identity ? matrices : partMatrices, liveCount);
+        }
     }
 
-    private void RebuildRenderParams(Mesh mesh, in BackdropParameters effective)
+    private void RebuildRenderParams(in BackdropParameters effective)
     {
         rp = new RenderParams(material)
         {
@@ -261,6 +289,16 @@ public class BackdropInstrument : MonoBehaviour
 
         material.SetFloat("_ShadingMode", (int)parameters.shading);
         material.SetColor("_EmissionColor", parameters.emissionColor);
+
+        // The sphere material follows the field's shading mode so the two halves
+        // of a model stay in the same world, but keeps its own colour.
+        rpSphere = rp;
+        if (sphereMaterial != null)
+        {
+            rpSphere.material = sphereMaterial;
+            sphereMaterial.SetFloat("_ShadingMode", (int)parameters.shading);
+        }
+
         rpValid = true;
     }
 
@@ -286,7 +324,7 @@ public class BackdropInstrument : MonoBehaviour
         return b;
     }
 
-    private Mesh ResolveMesh()
+    private BackdropModel ResolveModel()
     {
         var m = library != null ? library.Get(meshIndex) : null;
         if (m != null) return m;
@@ -294,15 +332,25 @@ public class BackdropInstrument : MonoBehaviour
         // A built-in cube keeps the backdrop visible while a library is being
         // set up, so an empty list reads as "not configured yet" rather than as
         // a broken renderer.
-        if (fallbackMesh == null)
+        if (fallbackModel == null)
         {
             var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
             fallbackMesh = Instantiate(go.GetComponent<MeshFilter>().sharedMesh);
             fallbackMesh.name = "BackdropFallbackCube";
             fallbackMesh.hideFlags = HideFlags.HideAndDontSave;
             if (Application.isPlaying) Destroy(go); else DestroyImmediate(go);
+
+            fallbackModel = new BackdropModel { name = "Fallback Cube", normalizeScale = 1f };
+            fallbackModel.parts.Add(new BackdropPart
+            {
+                mesh = fallbackMesh,
+                subMesh = 0,
+                localPosition = Vector3.zero,
+                localRotation = Quaternion.identity,
+                localScale = Vector3.one,
+            });
         }
-        return fallbackMesh;
+        return fallbackModel;
     }
 
     private void EnsureCyclers()

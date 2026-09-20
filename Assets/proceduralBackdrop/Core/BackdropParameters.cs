@@ -189,7 +189,7 @@ public struct BackdropParameters
         driftDirection   = Vector3.zero,
         driftAmount      = 0f,
 
-        scaleRange      = new Vector2(0.7f, 2.4f),
+        scaleRange      = new Vector2(2.5f, 6f),
         scaleAxisBias   = new Vector3(1f, 3f, 1f),
         accentFraction  = 0.1f,
         accentRatio     = 1.618034f,

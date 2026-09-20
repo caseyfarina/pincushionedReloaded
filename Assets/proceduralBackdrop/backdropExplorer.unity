@@ -384,6 +384,7 @@ MonoBehaviour:
     accentSteps: 1
     offsetJitter: {x: 0.5, y: 0.5, z: 0.5}
     rotationJitter: {x: 0, y: 180, z: 0}
+    alignToShape: 0
     spinRateRange: {x: -8, y: 8}
     spinAxis: {x: 0, y: 1, z: 0}
     motion: 0
@@ -400,6 +401,7 @@ MonoBehaviour:
   library: {fileID: 11400000, guid: a59926589d5c21c4b8177bf0a1a01d1c, type: 2}
   meshIndex: 0
   material: {fileID: 2100000, guid: 158373d9a2cebac4fa6ab48e9f517d42, type: 2}
+  sphereMaterial: {fileID: 2100000, guid: f2e70381b0ee7ac4b8a44d92f81bd28e, type: 2}
   shadows: 0
   receiveShadows: 0
   cycleSeed: 20260911
@@ -412,8 +414,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1882672237}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.0050058276, y: 0.9947508, z: 0.058151066, w: 0.08404915}
-  m_LocalPosition: {x: -0.92488956, y: -2.2759585, z: 12.987171}
+  m_LocalRotation: {x: 0, y: 0.99939084, z: 0.034899496, w: -0}
+  m_LocalPosition: {x: 0, y: 3.4190106, z: -48.09013}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
