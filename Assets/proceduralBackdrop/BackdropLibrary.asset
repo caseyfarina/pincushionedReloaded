@@ -15,6 +15,9 @@ MonoBehaviour:
   scanFolder: Assets/proceduralBackdrop/Meshes
   triangleWarnThreshold: 4000
   normalizeScale: 1
+  accentMaterialNames:
+  - sphere
+  - accent
   sphereThreshold: 0.86
   models:
   - name: CubePanel
@@ -24,6 +27,7 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+      materialName: Outer
       isSphere: 0
       sphericity: 0.35997579
     - mesh: {fileID: 6271093427156374420, guid: 93bb9c4620d69554288bffbe28e0153b, type: 3}
@@ -31,6 +35,7 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+      materialName: Inner
       isSphere: 0
       sphericity: 0
     - mesh: {fileID: 6291427681300151356, guid: 93bb9c4620d69554288bffbe28e0153b, type: 3}
@@ -38,6 +43,7 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0.7071073, y: 0, z: 0, w: 0.7071063}
       localScale: {x: 0.01, y: 0.009999999, z: 0.009999999}
+      materialName: Lit
       isSphere: 0
       sphericity: 0.53848946
     normalizeScale: 0.6700168
@@ -49,6 +55,7 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+      materialName: BackdropFrame
       isSphere: 0
       sphericity: 0.12377116
     - mesh: {fileID: 7581034504931001715, guid: 487f350909b3ab6418b5f5954d2a3f39, type: 3}
@@ -56,7 +63,8 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
-      isSphere: 0
+      materialName: BackdropSphere
+      isSphere: 1
       sphericity: 0.3307841
     normalizeScale: 0.5120358
     triangles: 1962
@@ -67,6 +75,7 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+      materialName: BackdropFrame
       isSphere: 0
       sphericity: 0.1277373
     normalizeScale: 0.5185103
@@ -78,6 +87,7 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+      materialName: BackdropFrame
       isSphere: 0
       sphericity: 0.15867324
     - mesh: {fileID: 4009754865533552884, guid: d81bf51e6caca0e48bd113f9ddfb860c, type: 3}
@@ -85,7 +95,8 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
-      isSphere: 0
+      materialName: BackdropSphere
+      isSphere: 1
       sphericity: 0.3034954
     normalizeScale: 0.520736
     triangles: 1904
@@ -96,6 +107,7 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+      materialName: BackdropFrame
       isSphere: 0
       sphericity: 0.12133088
     - mesh: {fileID: 6493805837975976105, guid: ce45ddc61b15add44b8808b160cc3bf9, type: 3}
@@ -103,6 +115,7 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+      materialName: BackdropSphere
       isSphere: 1
       sphericity: 0.9438761
     normalizeScale: 0.5256
@@ -114,6 +127,7 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+      materialName: BackdropFrame
       isSphere: 0
       sphericity: 0.12488701
     - mesh: {fileID: -5020463641934148832, guid: d3d36645d4f9caf4a8cb2146dbdf9d2e, type: 3}
@@ -121,7 +135,8 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
-      isSphere: 0
+      materialName: BackdropSphere
+      isSphere: 1
       sphericity: 0.27829
     normalizeScale: 0.5230206
     triangles: 2236
@@ -132,6 +147,7 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+      materialName: BackdropFrame
       isSphere: 0
       sphericity: 0.057149604
     - mesh: {fileID: 7018447610185063558, guid: 039983810b1f85448b72d5a6bf21c50e, type: 3}
@@ -139,6 +155,7 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+      materialName: BackdropSphere
       isSphere: 1
       sphericity: 0.9438761
     normalizeScale: 0.53143406
@@ -150,6 +167,7 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+      materialName: BackdropFrame
       isSphere: 0
       sphericity: 0.11430275
     - mesh: {fileID: -5600843760025742659, guid: e61c025692b81454599efabc7e9827b7, type: 3}
@@ -157,7 +175,8 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
-      isSphere: 0
+      materialName: BackdropSphere
+      isSphere: 1
       sphericity: 0.22187546
     normalizeScale: 0.51087034
     triangles: 2339
@@ -168,6 +187,7 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+      materialName: BackdropFrame
       isSphere: 0
       sphericity: 0.10564859
     - mesh: {fileID: -4574512033522792496, guid: a0439b0fd84fcee4b8836df4963ba87e, type: 3}
@@ -175,7 +195,8 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
-      isSphere: 0
+      materialName: BackdropSphere
+      isSphere: 1
       sphericity: 0.32356662
     normalizeScale: 0.5180682
     triangles: 1970
@@ -186,6 +207,7 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+      materialName: BackdropFrame
       isSphere: 0
       sphericity: 0.13293257
     - mesh: {fileID: 4806863126008002722, guid: b49bbc973ae92034091371363116b093, type: 3}
@@ -193,6 +215,7 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+      materialName: BackdropSphere
       isSphere: 1
       sphericity: 0.9438761
     normalizeScale: 0.5477207
@@ -204,6 +227,7 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+      materialName: BackdropFrame
       isSphere: 0
       sphericity: 0.11265365
     - mesh: {fileID: 1498856149917963015, guid: c4bef5898ae9d144b82d32d25bb1137c, type: 3}
@@ -211,6 +235,7 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+      materialName: BackdropSphere
       isSphere: 1
       sphericity: 0.9438761
     normalizeScale: 0.5153338
@@ -222,6 +247,7 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+      materialName: BackdropFrame
       isSphere: 0
       sphericity: 0.11372644
     - mesh: {fileID: 3431355239039153631, guid: ab717efd9c95575469331599ef9fceca, type: 3}
@@ -229,6 +255,7 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+      materialName: BackdropSphere
       isSphere: 1
       sphericity: 0.943876
     normalizeScale: 0.5303663
@@ -240,6 +267,7 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+      materialName: BackdropFrame
       isSphere: 0
       sphericity: 0.14144145
     normalizeScale: 0.5275783
@@ -251,6 +279,7 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+      materialName: BackdropFrame
       isSphere: 0
       sphericity: 0.104932964
     - mesh: {fileID: -4353195858958013324, guid: 02a075962d50efe49a724ac683cf657b, type: 3}
@@ -258,6 +287,7 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+      materialName: BackdropSphere
       isSphere: 1
       sphericity: 0.943876
     normalizeScale: 0.5112346
@@ -269,6 +299,7 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+      materialName: BackdropFrame
       isSphere: 0
       sphericity: 0.1459751
     - mesh: {fileID: -2223061862593671618, guid: e4f23da6ae361db4c91078b90c1da2ab, type: 3}
@@ -276,7 +307,8 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
-      isSphere: 0
+      materialName: BackdropSphere
+      isSphere: 1
       sphericity: 0.2898726
     normalizeScale: 0.50266534
     triangles: 3498
@@ -287,6 +319,7 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+      materialName: BackdropFrame
       isSphere: 0
       sphericity: 0.15356053
     - mesh: {fileID: -4677424953954335266, guid: 704db75a30e27c74eba01e35dfeef559, type: 3}
@@ -294,7 +327,8 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
-      isSphere: 0
+      materialName: BackdropSphere
+      isSphere: 1
       sphericity: 0.3215757
     normalizeScale: 0.51122594
     triangles: 2493

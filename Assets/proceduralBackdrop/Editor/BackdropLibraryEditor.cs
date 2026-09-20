@@ -64,7 +64,7 @@ public class BackdropLibraryEditor : Editor
             if (root == null) continue;
 
             EnsureReadable(path);
-            var model = BuildModel(root, lib.normalizeScale, lib.sphereThreshold);
+            var model = BuildModel(root, lib);
             if (model == null) continue;
 
             found.Add(model);
@@ -171,7 +171,25 @@ public class BackdropLibraryEditor : Editor
         return uniformity * alignment;
     }
 
-    private static BackdropModel BuildModel(GameObject root, bool normalize, float sphereThreshold)
+    /// <summary>
+    /// Whether an authored material name marks this part as an accent. The FBX
+    /// already carries the distinction - these shapes are built with
+    /// BackdropFrame and BackdropSphere - so reading the name is reading the
+    /// author's intent instead of guessing at it from geometry.
+    /// </summary>
+    private static bool IsAccentMaterial(string materialName, BackdropLibrary lib)
+    {
+        if (string.IsNullOrEmpty(materialName) || lib.accentMaterialNames == null) return false;
+
+        foreach (var token in lib.accentMaterialNames)
+        {
+            if (string.IsNullOrEmpty(token)) continue;
+            if (materialName.IndexOf(token, System.StringComparison.OrdinalIgnoreCase) >= 0) return true;
+        }
+        return false;
+    }
+
+    private static BackdropModel BuildModel(GameObject root, BackdropLibrary lib)
     {
         var model = new BackdropModel { name = root.name };
         var rootT = root.transform;
@@ -184,6 +202,9 @@ public class BackdropLibraryEditor : Editor
             var mesh = mf.sharedMesh;
             if (mesh == null) continue;
 
+            var mr = mf.GetComponent<MeshRenderer>();
+            var authored = mr != null ? mr.sharedMaterials : null;
+
             // Relative to the model root, so a part authored away from the origin
             // keeps its offset when the model is instanced.
             Matrix4x4 local = rootT.worldToLocalMatrix * mf.transform.localToWorldMatrix;
@@ -191,6 +212,18 @@ public class BackdropLibraryEditor : Editor
             for (int sub = 0; sub < mesh.subMeshCount; sub++)
             {
                 float round = Sphericity(mesh, sub);
+
+                string matName = authored != null && sub < authored.Length && authored[sub] != null
+                    ? authored[sub].name
+                    : string.Empty;
+
+                // The authored name decides. Roundness only gets a vote when the
+                // file says nothing useful, because geometry is a poor proxy for
+                // intent - a flattened sphere is still the sphere.
+                bool accent = !string.IsNullOrEmpty(matName)
+                    ? IsAccentMaterial(matName, lib)
+                    : round >= lib.sphereThreshold;
+
                 model.parts.Add(new BackdropPart
                 {
                     mesh = mesh,
@@ -198,8 +231,9 @@ public class BackdropLibraryEditor : Editor
                     localPosition = local.GetColumn(3),
                     localRotation = local.rotation,
                     localScale = local.lossyScale,
+                    materialName = matName,
                     sphericity = round,
-                    isSphere = round >= sphereThreshold,
+                    isSphere = accent,
                 });
                 model.triangles += (int)(mesh.GetIndexCount(sub) / 3);
             }
@@ -213,6 +247,8 @@ public class BackdropLibraryEditor : Editor
         }
 
         if (model.parts.Count == 0) return null;
+
+        bool normalize = lib.normalizeScale;
 
         // Fit into a one-unit box. Largest dimension rather than radius, because
         // a slab and a cube of the same radius read as wildly different sizes.

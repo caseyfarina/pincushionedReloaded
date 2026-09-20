@@ -22,10 +22,13 @@ public struct BackdropPart
     public Quaternion localRotation;
     public Vector3 localScale;
 
-    [Tooltip("Set on scan when this part's vertices are all about the same distance from its centre. These shapes pair a body with a sphere, and the two want different materials - so the distinction has to survive into the renderer.")]
+    [Tooltip("Name of the material this submesh was authored with in Blender. This is what decides whether the part takes the accent material, because it is a statement of intent rather than a guess about geometry.")]
+    public string materialName;
+
+    [Tooltip("Set on scan when materialName matches one of the library's accent names.")]
     public bool isSphere;
 
-    [Tooltip("0 is a flat or boxy part, 1 is a perfect sphere. Kept so the scan's decision can be second-guessed without re-deriving it.")]
+    [Tooltip("How round the part measures, 0 to 1. Informational only - it disagreed with the authored material on 7 of 13 models, because a squashed or half-buried sphere is still the sphere.")]
     public float sphericity;
 
     public Matrix4x4 Local => Matrix4x4.TRS(
@@ -89,8 +92,11 @@ public class BackdropLibrary : ScriptableObject
     [Tooltip("Normalise every model into a one-unit box on scan, so swapping mesh changes the shape rather than the size of the field.")]
     public bool normalizeScale = true;
 
-    [Tooltip("How round a part must be to be treated as a sphere and take the sphere material. 1 is a perfect sphere; the bodies in this set sit well below 0.8.")]
-    [Range(0.5f, 1f)] public float sphereThreshold = 0.86f;
+    [Tooltip("A part whose authored material name contains any of these takes the sphere material. Case-insensitive substring match, so BackdropSphere matches 'sphere'.")]
+    public List<string> accentMaterialNames = new List<string> { "sphere", "accent" };
+
+    [Tooltip("Fallback only, for parts whose material name says nothing. Roundness is a poor proxy for intent - it misses squashed and half-buried spheres - so the name wins wherever there is one.")]
+    [Range(0.5f, 1f)] public float sphereThreshold = 0.9f;
 
     public List<BackdropModel> models = new List<BackdropModel>();
 
