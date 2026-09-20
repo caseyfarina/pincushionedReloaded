@@ -365,8 +365,17 @@ MonoBehaviour:
     fitToCamera: 1
     fitMargin: {x: 1.1, y: 1.1}
     fitDistance: 26
+    frameOffset: {x: 0, y: 0}
+    archInnerRadius: 0.4
+    colonnadeCount: 6
+    colonnadeWidth: 0.45
+    skylineHeight: 0.7
+    skylineRoughness: 0.35
+    skylineInverted: 0
     solidFill: 0
     occupancy: 1
+    driftDirection: {x: 0, y: 0, z: 0}
+    driftAmount: 0
     occupancyNoiseScale: 0
     scaleRange: {x: 0.7, y: 2.4}
     scaleAxisBias: {x: 1, y: 3, z: 1}
@@ -482,9 +491,9 @@ MonoBehaviour:
   - control: 0
     channel: 1
     row: 3
-    target: 4
-    min: 1
-    max: 160
+    target: 42
+    min: -0.6
+    max: 0.6
   - control: 1
     channel: 2
     row: 1
@@ -506,9 +515,9 @@ MonoBehaviour:
   - control: 0
     channel: 2
     row: 3
-    target: 39
+    target: 47
     min: 0
-    max: 0.4
+    max: 1
   - control: 1
     channel: 3
     row: 1
@@ -530,9 +539,9 @@ MonoBehaviour:
   - control: 0
     channel: 3
     row: 3
-    target: 38
-    min: 0
-    max: 0.2
+    target: 46
+    min: 0.05
+    max: 1
   - control: 1
     channel: 4
     row: 1
@@ -554,9 +563,9 @@ MonoBehaviour:
   - control: 0
     channel: 4
     row: 3
-    target: 15
+    target: 49
     min: 0
-    max: 180
+    max: 1
   - control: 1
     channel: 5
     row: 1
@@ -578,9 +587,9 @@ MonoBehaviour:
   - control: 0
     channel: 5
     row: 3
-    target: 19
-    min: -1
-    max: 1
+    target: 44
+    min: 0
+    max: 0.9
   - control: 1
     channel: 6
     row: 1
@@ -602,9 +611,9 @@ MonoBehaviour:
   - control: 0
     channel: 6
     row: 3
-    target: 22
-    min: -1
-    max: 1
+    target: 45
+    min: 1
+    max: 16
   - control: 1
     channel: 7
     row: 1
@@ -626,7 +635,7 @@ MonoBehaviour:
   - control: 0
     channel: 7
     row: 3
-    target: 42
+    target: 52
     min: 0
     max: 0.95
   - control: 1

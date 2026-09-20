@@ -38,6 +38,12 @@ public enum BackdropParam
     // Size hierarchy, and the spatial frequency of the noise motion field.
     AccentFraction, AccentRatio, NoiseScale,
 
+    // Region-shape controls, and the offset that lets any of them sit off-centre.
+    FrameOffsetX, FrameOffsetY,
+    ArchInnerRadius, ColonnadeCount, ColonnadeWidth,
+    SkylineHeight, SkylineRoughness,
+    DriftAmount, DriftDirectionX, DriftDirectionY,
+
     // Size variation across the field, as a fraction of the largest instance.
     // More musical than a raw scale minimum, which is meaningless without
     // knowing the maximum.
@@ -89,7 +95,7 @@ public class MidiMixBackdropDriver : MonoBehaviour
     [Tooltip("How close a control must come to the live value to take it over, 0-1.")]
     [SerializeField, Range(0.005f, 0.2f)] private float takeoverTolerance = 0.02f;
 
-    [Tooltip("Mute 1-3 select the domain, 4-6 the shading model, 7 toggles solid fill, 8 flashes.")]
+    [Tooltip("Mute 1-7 select the domain and 8 flashes; solo 1-3 select shading and 4 toggles solid fill; rec-arm 1 flips sine against noise motion.")]
     [SerializeField] private bool muteRowSelectsModes = true;
 
     [SerializeField] private List<MixBinding> bindings = new List<MixBinding>();
@@ -123,6 +129,7 @@ public class MidiMixBackdropDriver : MonoBehaviour
         MidiMixRouter.OnChannelFader += HandleFader;
         MidiMixRouter.OnMasterFader  += HandleMasterFader;
         MidiMixRouter.OnMute         += HandleMute;
+        MidiMixRouter.OnSolo         += HandleSolo;
         MidiMixRouter.OnRecArm       += HandleRecArm;
     }
 
@@ -132,6 +139,7 @@ public class MidiMixBackdropDriver : MonoBehaviour
         MidiMixRouter.OnChannelFader -= HandleFader;
         MidiMixRouter.OnMasterFader  -= HandleMasterFader;
         MidiMixRouter.OnMute         -= HandleMute;
+        MidiMixRouter.OnSolo         -= HandleSolo;
         MidiMixRouter.OnRecArm       -= HandleRecArm;
     }
 
@@ -144,19 +152,44 @@ public class MidiMixBackdropDriver : MonoBehaviour
     private void HandleMasterFader(float v01)
         => Feed(MixControlKind.MasterFader, 0, 0, v01);
 
+    /// <summary>
+    /// Mute row selects the domain, one button each. Seven domains no longer fit
+    /// alongside shading, and direct selection beats cycling during a set: you
+    /// reach for the shape you want instead of pressing a button four times to
+    /// arrive at it.
+    /// </summary>
     private void HandleMute(int channel, bool down)
     {
         if (!muteRowSelectsModes || !down || instrument == null) return;
 
         if (channel == 8) { instrument.Flash(); return; }
 
+        int domainCount = System.Enum.GetValues(typeof(BackdropDomain)).Length;
+        if (channel > domainCount) return;
+
         var p = instrument.Current;
-        if (channel >= 1 && channel <= 3)      p.domain    = (BackdropDomain)(channel - 1);
-        else if (channel >= 4 && channel <= 6) p.shading   = (BackdropShadingMode)(channel - 4);
-        else if (channel == 7)                 p.solidFill = !p.solidFill;
+        p.domain = (BackdropDomain)(channel - 1);
+        instrument.Apply(p);
+        lastSeenRevision = instrument.Revision;
+        ResetTakeover();
+    }
+
+    /// <summary>
+    /// Solo row, previously unbound: shading on 1-3, solid fill on 4. Displaced
+    /// from the mute row when the region shapes took it over.
+    /// </summary>
+    private void HandleSolo(int channel, bool down)
+    {
+        if (!muteRowSelectsModes || !down || instrument == null) return;
+
+        var p = instrument.Current;
+        int shadingCount = System.Enum.GetValues(typeof(BackdropShadingMode)).Length;
+
+        if (channel >= 1 && channel <= shadingCount) p.shading = (BackdropShadingMode)(channel - 1);
+        else if (channel == 4)                       p.solidFill = !p.solidFill;
         else return;
 
-        instrument.ApplyAndRelayout(p);
+        instrument.Apply(p);
         lastSeenRevision = instrument.Revision;
         ResetTakeover();
     }
@@ -313,6 +346,17 @@ public class MidiMixBackdropDriver : MonoBehaviour
             case BackdropParam.OffsetAmount:      return MaxComponent(p.offsetJitter);
             case BackdropParam.RotationAmount:    return MaxComponent(p.rotationJitter);
 
+            case BackdropParam.FrameOffsetX:        return p.frameOffset.x;
+            case BackdropParam.FrameOffsetY:        return p.frameOffset.y;
+            case BackdropParam.ArchInnerRadius:     return p.archInnerRadius;
+            case BackdropParam.ColonnadeCount:      return p.colonnadeCount;
+            case BackdropParam.ColonnadeWidth:      return p.colonnadeWidth;
+            case BackdropParam.SkylineHeight:       return p.skylineHeight;
+            case BackdropParam.SkylineRoughness:    return p.skylineRoughness;
+            case BackdropParam.DriftAmount:         return p.driftAmount;
+            case BackdropParam.DriftDirectionX:     return p.driftDirection.x;
+            case BackdropParam.DriftDirectionY:     return p.driftDirection.y;
+
             case BackdropParam.Occupancy:           return p.occupancy;
             case BackdropParam.OccupancyNoiseScale: return p.occupancyNoiseScale;
             case BackdropParam.AccentFraction:      return p.accentFraction;
@@ -376,6 +420,17 @@ public class MidiMixBackdropDriver : MonoBehaviour
             case BackdropParam.OffsetAmount:   p.offsetJitter   = Rescale(p.offsetJitter, value);   return;
             case BackdropParam.RotationAmount: p.rotationJitter = Rescale(p.rotationJitter, value); return;
 
+            case BackdropParam.FrameOffsetX:     p.frameOffset.x = value; return;
+            case BackdropParam.FrameOffsetY:     p.frameOffset.y = value; return;
+            case BackdropParam.ArchInnerRadius:  p.archInnerRadius = value; return;
+            case BackdropParam.ColonnadeCount:   p.colonnadeCount = Mathf.RoundToInt(value); return;
+            case BackdropParam.ColonnadeWidth:   p.colonnadeWidth = value; return;
+            case BackdropParam.SkylineHeight:    p.skylineHeight = value; return;
+            case BackdropParam.SkylineRoughness: p.skylineRoughness = value; return;
+            case BackdropParam.DriftAmount:      p.driftAmount = value; return;
+            case BackdropParam.DriftDirectionX:  p.driftDirection.x = value; return;
+            case BackdropParam.DriftDirectionY:  p.driftDirection.y = value; return;
+
             case BackdropParam.Occupancy:           p.occupancy = value; return;
             case BackdropParam.OccupancyNoiseScale: p.occupancyNoiseScale = value; return;
             case BackdropParam.AccentFraction:      p.accentFraction = value; return;
@@ -435,15 +490,21 @@ public class MidiMixBackdropDriver : MonoBehaviour
     ///
     ///   ch | fader             | knob 1      knob 2      knob 3
     ///   ---|-------------------|-------------------------------------
-    ///    1 | Spawn Count       | Fit Margin X  Fit Margin Y  Depth
-    ///    2 | Scale             | Bias X      Bias Y      Accent %
-    ///    3 | Offset Amount     | Offset X    Offset Y    Gap Cluster
-    ///    4 | Rotation Amount   | Rot X       Rot Y       Rot Z
-    ///    5 | Spin Rate         | Axis X      Axis Y      Axis Z
-    ///    6 | Wave Amplitude    | Axis X      Axis Y      Axis Z
-    ///    7 | Wave Frequency    | Phase       Noise Scale Scale Spread
-    ///    8 | Flash Intensity   | Hue         Saturation  Value
+    ///    1 | Spawn Count       | Fit Margin X  Fit Margin Y  Frame Offset X
+    ///    2 | Scale             | Bias X        Bias Y        Skyline Height
+    ///    3 | Offset Amount     | Offset X      Offset Y      Colonnade Width
+    ///    4 | Rotation Amount   | Rot X         Rot Y         Drift Amount
+    ///    5 | Spin Rate         | Axis X        Axis Y        Arch Radius
+    ///    6 | Wave Amplitude    | Axis X        Axis Y        Colonnade Count
+    ///    7 | Wave Frequency    | Phase         Noise Scale   Scale Spread
+    ///    8 | Flash Intensity   | Hue           Saturation    Value
+    ///
+    /// Knob row 3 is the region-shape row: each shape has its defining dial on
+    /// the strip whose family it belongs to. Only one is live at a time, since
+    /// only one domain is selected - the rest are inert rather than wrong.
     ///   master: Occupancy
+    ///   mute 1-7: domain select      mute 8: flash
+    ///   solo 1-3: shading            solo 4: solid fill
     ///   rec-arm 1: sine / noise motion
     ///
     /// Channels are ordered by how much a small move changes the image: count
@@ -460,38 +521,38 @@ public class MidiMixBackdropDriver : MonoBehaviour
         F(1, BackdropParam.SpawnCount,   0f, 1200f),
         K(1, 1, BackdropParam.FitMarginX, 0.25f, 3f),
         K(1, 2, BackdropParam.FitMarginY, 0.25f, 3f),
-        K(1, 3, BackdropParam.DomainSizeZ, 1f, 160f),
+        K(1, 3, BackdropParam.FrameOffsetX, -0.6f, 0.6f),
 
         // 2 - Scale: overall instance size, then the per-axis stretch. Bias Y is
         // the tower dial - it is what turns a field of blocks into a skyline.
         F(2, BackdropParam.ScaleMax,     0.05f, 5f),
         K(2, 1, BackdropParam.ScaleBiasX, 0.1f, 4f),
         K(2, 2, BackdropParam.ScaleBiasY, 0.1f, 12f),
-        K(2, 3, BackdropParam.AccentFraction, 0f, 0.4f),
+        K(2, 3, BackdropParam.SkylineHeight, 0f, 1f),
 
         // 3 - Offset: how far instances stray off the lattice.
         F(3, BackdropParam.OffsetAmount, 0f, 6f),
         K(3, 1, BackdropParam.OffsetJitterX, 0f, 6f),
         K(3, 2, BackdropParam.OffsetJitterY, 0f, 6f),
-        K(3, 3, BackdropParam.OccupancyNoiseScale, 0f, 0.2f),
+        K(3, 3, BackdropParam.ColonnadeWidth, 0.05f, 1f),
 
         // 4 - Rotation: how far they turn off axis.
         F(4, BackdropParam.RotationAmount, 0f, 180f),
         K(4, 1, BackdropParam.RotationJitterX, 0f, 180f),
         K(4, 2, BackdropParam.RotationJitterY, 0f, 180f),
-        K(4, 3, BackdropParam.RotationJitterZ, 0f, 180f),
+        K(4, 3, BackdropParam.DriftAmount, 0f, 1f),
 
         // 5 - Spin: rate on the fader, axis on the knobs.
         F(5, BackdropParam.SpinRateMagnitude, 0f, 90f),
         K(5, 1, BackdropParam.SpinAxisX, -1f, 1f),
         K(5, 2, BackdropParam.SpinAxisY, -1f, 1f),
-        K(5, 3, BackdropParam.SpinAxisZ, -1f, 1f),
+        K(5, 3, BackdropParam.ArchInnerRadius, 0f, 0.9f),
 
         // 6 - Wave: amplitude on the fader, direction on the knobs.
         F(6, BackdropParam.WaveAmplitude, 0f, 5f),
         K(6, 1, BackdropParam.WaveAxisX, -1f, 1f),
         K(6, 2, BackdropParam.WaveAxisY, -1f, 1f),
-        K(6, 3, BackdropParam.WaveAxisZ, -1f, 1f),
+        K(6, 3, BackdropParam.ColonnadeCount, 1f, 16f),
 
         // 7 - Timing: wave rate, how far the wave phase spreads across the field,
         // and the flash envelope. Everything on this strip shapes time.

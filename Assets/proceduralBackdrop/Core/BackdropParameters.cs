@@ -1,7 +1,29 @@
 using UnityEngine;
 
 /// <summary>Which shape the instances are distributed evenly across.</summary>
-public enum BackdropDomain { Plane = 0, Hemisphere = 1, Cube = 2 }
+/// <summary>
+/// Which shape the instances are distributed evenly across.
+///
+/// The first three fill the frame; the rest occupy a region of it and leave the
+/// remainder clear, so the backdrop divides the composition rather than backing
+/// all of it. New entries are appended, never inserted - the values are
+/// serialized in scenes and presets.
+/// </summary>
+public enum BackdropDomain
+{
+    Plane = 0,
+    Hemisphere = 1,
+    Cube = 2,
+
+    /// <summary>Annulus in the screen plane. The void in the middle is where a performer goes.</summary>
+    Arch = 3,
+    /// <summary>Rhythmic vertical bands with gaps between them.</summary>
+    Colonnade = 4,
+    /// <summary>A ground grid whose heights come from a noise field - a city or a ridgeline.</summary>
+    Skyline = 5,
+    /// <summary>The cube shell minus its front and back faces, so every edge is a perspective line.</summary>
+    Corridor = 6,
+}
 
 /// <summary>
 /// Which shading model BackdropShading.shadergraph branches to. Three
@@ -57,12 +79,40 @@ public struct BackdropParameters
 
     [Tooltip("Distance from the camera to the near face of the field. Depth runs away from the camera from there, so the backdrop never swallows the subject.")]
     [Min(0.1f)] public float fitDistance;
+
+    [Tooltip("Shifts the field within the frame, in fractions of frame width and height. Every domain is otherwise centred on the camera axis and can only divide the frame symmetrically; this is what puts a colonnade in the right third and leaves the left clear.")]
+    public Vector2 frameOffset;
+
+    [Header("Region shapes")]
+    [Tooltip("Arch only: the hole, as a fraction of the outer radius. 0 fills the disc; 0.5 leaves half the width open.")]
+    [Range(0f, 0.95f)] public float archInnerRadius;
+
+    [Tooltip("Colonnade only: how many bands across the frame.")]
+    [Range(1, 24)] public int colonnadeCount;
+
+    [Tooltip("Colonnade only: how much of each band's slot is filled. 1 closes the gaps into a solid wall.")]
+    [Range(0.05f, 1f)] public float colonnadeWidth;
+
+    [Tooltip("Skyline only: how much of the domain height the tallest points reach.")]
+    [Range(0f, 1f)] public float skylineHeight;
+
+    [Tooltip("Skyline only: spatial frequency of the height field. Low is rolling hills, high is a jagged city.")]
+    [Min(0.001f)] public float skylineRoughness;
+
+    [Tooltip("Skyline only: flips the field to hang from the top instead of standing on the ground.")]
+    public bool skylineInverted;
     [Tooltip("Cube domain only: fill the volume rather than the shell.")]
     public bool solidFill;
 
     [Header("Occupancy")]
     [Tooltip("Fraction of lattice slots that actually get an instance. Below 1 opens gaps. A fully populated lattice always reads as a grid; holes are what make it read as structure. Thinning filters a fixed lattice rather than rebuilding a smaller one, so lowering this removes instances without moving the ones that remain.")]
     [Range(0f, 1f)] public float occupancy;
+
+    [Tooltip("Direction the density falls off across the field. Zero disables the gradient.")]
+    public Vector3 driftDirection;
+
+    [Tooltip("How completely the density fades along driftDirection. 1 empties the far end entirely; the field dissolves rather than stopping, so it weights the frame without drawing a line across it.")]
+    [Range(0f, 1f)] public float driftAmount;
 
     [Tooltip("0 scatters the gaps evenly. Above 0 clusters them through a noise field, so the holes group into voids and the instances into clumps - far more building-like than even speckle. Higher values make smaller clusters.")]
     [Min(0f)] public float occupancyNoiseScale;
@@ -124,6 +174,17 @@ public struct BackdropParameters
         fitToCamera     = true,
         fitMargin       = new Vector2(1.1f, 1.1f),
         fitDistance     = 26f,
+        frameOffset     = Vector2.zero,
+
+        archInnerRadius  = 0.4f,
+        colonnadeCount   = 6,
+        colonnadeWidth   = 0.45f,
+        skylineHeight    = 0.7f,
+        skylineRoughness = 0.35f,
+        skylineInverted  = false,
+
+        driftDirection   = Vector3.zero,
+        driftAmount      = 0f,
 
         scaleRange      = new Vector2(0.7f, 2.4f),
         scaleAxisBias   = new Vector3(1f, 3f, 1f),
@@ -189,6 +250,13 @@ public struct BackdropParameters
         c.accentFraction = Mathf.Clamp01(c.accentFraction);
         c.accentRatio    = Mathf.Max(0.01f, c.accentRatio);
         c.accentSteps    = Mathf.Clamp(c.accentSteps, 1, 4);
+
+        c.archInnerRadius  = Mathf.Clamp(c.archInnerRadius, 0f, 0.95f);
+        c.colonnadeCount   = Mathf.Clamp(c.colonnadeCount, 1, 24);
+        c.colonnadeWidth   = Mathf.Clamp(c.colonnadeWidth, 0.05f, 1f);
+        c.skylineHeight    = Mathf.Clamp01(c.skylineHeight);
+        c.skylineRoughness = Mathf.Max(0.001f, c.skylineRoughness);
+        c.driftAmount      = Mathf.Clamp01(c.driftAmount);
 
         c.occupancy           = Mathf.Clamp01(c.occupancy);
         c.occupancyNoiseScale = Mathf.Max(0f, c.occupancyNoiseScale);

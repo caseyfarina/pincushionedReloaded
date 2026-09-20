@@ -349,6 +349,242 @@ public class BackdropLatticeTests
             BackdropLattice.FitToFrame(p, 60f, 32f / 9f, false, 0f).domainSize);
     }
 
+    private static BackdropParameters Region(BackdropDomain d, int count)
+    {
+        var p = BackdropParameters.Default;
+        p.domain = d;
+        p.spawnCount = count;
+        p.domainSize = new Vector3(160f, 60f, 20f);
+        p.offsetJitter = Vector3.zero;
+        p.waveAmplitude = 0f;
+        p.spinRateRange = Vector2.zero;
+        p.accentFraction = 0f;
+        p.occupancy = 1f;
+        return p;
+    }
+
+    private static Vector3[] Positions(BackdropParameters p)
+    {
+        var m = new Matrix4x4[p.spawnCount + 8];
+        var f = new float[p.spawnCount + 8];
+        int n = BackdropLattice.Fill(p, 0f, -1000f, m, f);
+        var v = new Vector3[n];
+        for (int i = 0; i < n; i++) v[i] = m[i].GetColumn(3);
+        return v;
+    }
+
+    [Test]
+    public void Arch_LeavesTheMiddleEmpty()
+    {
+        // The whole point of the shape: a performer stands in the hole.
+        var p = Region(BackdropDomain.Arch, 600);
+        p.archInnerRadius = 0.5f;
+
+        foreach (var v in Positions(p))
+        {
+            float r = Mathf.Sqrt(
+                (v.x / (p.domainSize.x * 0.5f)) * (v.x / (p.domainSize.x * 0.5f)) +
+                (v.y / (p.domainSize.y * 0.5f)) * (v.y / (p.domainSize.y * 0.5f)));
+            Assert.GreaterOrEqual(r, 0.5f - 1e-3f, $"instance at {v} is inside the arch void");
+            Assert.LessOrEqual(r, 1f + 1e-3f, $"instance at {v} is outside the outer rim");
+        }
+    }
+
+    [Test]
+    public void Arch_AtZeroInnerRadiusFillsTheDisc()
+    {
+        var p = Region(BackdropDomain.Arch, 400);
+        p.archInnerRadius = 0f;
+
+        float nearest = float.MaxValue;
+        foreach (var v in Positions(p))
+            nearest = Mathf.Min(nearest, new Vector2(v.x / (p.domainSize.x * 0.5f), v.y / (p.domainSize.y * 0.5f)).magnitude);
+
+        Assert.Less(nearest, 0.15f, "a zero inner radius should reach the centre");
+    }
+
+    [Test]
+    public void Colonnade_ProducesTheRequestedNumberOfBandsWithGaps()
+    {
+        var p = Region(BackdropDomain.Colonnade, 600);
+        p.colonnadeCount = 6;
+        p.colonnadeWidth = 0.4f;
+
+        var xs = new System.Collections.Generic.List<float>();
+        foreach (var v in Positions(p)) xs.Add(v.x);
+        xs.Sort();
+
+        // Count the gaps: a jump much larger than typical spacing is a band edge.
+        float slot = p.domainSize.x / p.colonnadeCount;
+        int gaps = 0;
+        for (int i = 1; i < xs.Count; i++)
+            if (xs[i] - xs[i - 1] > slot * 0.3f) gaps++;
+
+        Assert.AreEqual(p.colonnadeCount - 1, gaps,
+            $"expected {p.colonnadeCount - 1} gaps between {p.colonnadeCount} bands, found {gaps}");
+    }
+
+    [Test]
+    public void Colonnade_FullWidthClosesTheGaps()
+    {
+        var p = Region(BackdropDomain.Colonnade, 600);
+        p.colonnadeCount = 6;
+        p.colonnadeWidth = 1f;
+
+        var xs = new System.Collections.Generic.List<float>();
+        foreach (var v in Positions(p)) xs.Add(v.x);
+        xs.Sort();
+
+        float slot = p.domainSize.x / p.colonnadeCount;
+        int gaps = 0;
+        for (int i = 1; i < xs.Count; i++)
+            if (xs[i] - xs[i - 1] > slot * 0.6f) gaps++;
+
+        Assert.AreEqual(0, gaps, "width 1 should read as a solid wall, not bands");
+    }
+
+    [Test]
+    public void Skyline_VariesHeightAndStaysOnItsSideOfTheField()
+    {
+        var p = Region(BackdropDomain.Skyline, 500);
+        p.skylineHeight = 0.7f;
+        p.skylineInverted = false;
+
+        float lo = float.MaxValue, hi = float.MinValue;
+        foreach (var v in Positions(p)) { lo = Mathf.Min(lo, v.y); hi = Mathf.Max(hi, v.y); }
+
+        float half = p.domainSize.y * 0.5f;
+        Assert.GreaterOrEqual(lo, -half - 1e-3f);
+        Assert.LessOrEqual(hi, -half + 0.7f * p.domainSize.y + 1e-3f,
+            "skyline rose past its height limit");
+        Assert.Greater(hi - lo, p.domainSize.y * 0.1f, "heights barely varied; the field reads flat");
+
+        // Depth too. A sheet collapsed to a single row still varies in height,
+        // so the height check alone would not have caught it.
+        float zlo = float.MaxValue, zhi = float.MinValue;
+        foreach (var v in Positions(p)) { zlo = Mathf.Min(zlo, v.z); zhi = Mathf.Max(zhi, v.z); }
+        Assert.Greater(zhi - zlo, p.domainSize.z * 0.5f, "skyline collapsed into one depth plane");
+    }
+
+    [Test]
+    public void SheetCounts_SplitsProportionallyAndLeavesRoom()
+    {
+        foreach (int count in new[] { 1, 17, 500, 4000 })
+        foreach (var ab in new[] { (440f, 20f), (160f, 20f), (10f, 10f), (5f, 900f) })
+        {
+            var n = BackdropLattice.SheetCounts(count, ab.Item1, ab.Item2);
+            Assert.GreaterOrEqual(n.x * n.y, count, $"{count} over {ab}");
+            Assert.GreaterOrEqual(n.x, 1f);
+            Assert.GreaterOrEqual(n.y, 1f);
+        }
+
+        // Proportional: the longer extent carries more.
+        var wide = BackdropLattice.SheetCounts(600, 440f, 20f);
+        Assert.Greater(wide.x, wide.y, "the longer extent should carry more instances");
+    }
+
+    [Test]
+    public void Skyline_InvertedHangsFromTheTop()
+    {
+        var p = Region(BackdropDomain.Skyline, 400);
+        p.skylineHeight = 0.6f;
+
+        p.skylineInverted = false;
+        float upMean = 0f; var up = Positions(p);
+        foreach (var v in up) upMean += v.y;
+        upMean /= up.Length;
+
+        p.skylineInverted = true;
+        float downMean = 0f; var down = Positions(p);
+        foreach (var v in down) downMean += v.y;
+        downMean /= down.Length;
+
+        Assert.Greater(downMean, upMean, "inverting should move the mass to the top of the frame");
+    }
+
+    [Test]
+    public void Corridor_IsHollowThroughTheMiddle()
+    {
+        // Every instance must sit on one of the four side faces, leaving the
+        // centre open all the way through.
+        var p = Region(BackdropDomain.Corridor, 600);
+        float hx = p.domainSize.x * 0.5f, hy = p.domainSize.y * 0.5f;
+
+        foreach (var v in Positions(p))
+        {
+            bool onSide = Mathf.Abs(Mathf.Abs(v.x) - hx) < 1e-2f
+                       || Mathf.Abs(Mathf.Abs(v.y) - hy) < 1e-2f;
+            Assert.IsTrue(onSide, $"instance at {v} is not on a corridor wall");
+        }
+    }
+
+    [Test]
+    public void Corridor_UsesItsFullDepth()
+    {
+        var p = Region(BackdropDomain.Corridor, 600);
+
+        float lo = float.MaxValue, hi = float.MinValue;
+        foreach (var v in Positions(p)) { lo = Mathf.Min(lo, v.z); hi = Mathf.Max(hi, v.z); }
+
+        Assert.Greater(hi - lo, p.domainSize.z * 0.5f,
+            "the corridor should run into depth, not sit in one plane");
+    }
+
+    [Test]
+    public void Drift_ThinsOneEndAndLeavesTheOther()
+    {
+        var p = Region(BackdropDomain.Plane, 900);
+        p.occupancy = 1f;
+        p.driftDirection = Vector3.right;
+        p.driftAmount = 1f;
+
+        int left = 0, right = 0;
+        var m = new Matrix4x4[1024]; var f = new float[1024];
+        int n = BackdropLattice.Fill(p, 0f, -1000f, m, f);
+        for (int i = 0; i < n; i++)
+        {
+            if (((Vector3)m[i].GetColumn(3)).x < 0f) left++; else right++;
+        }
+
+        Assert.Greater(left, right * 2,
+            $"drift should weight the near end: {left} left vs {right} right");
+        Assert.Greater(right, 0, "a full fade should still leave a few at the far end, not a hard cut");
+    }
+
+    [Test]
+    public void Drift_AtZeroAmountChangesNothing()
+    {
+        var p = Region(BackdropDomain.Plane, 400);
+        p.occupancy = 0.6f;
+        p.driftDirection = Vector3.right;
+
+        p.driftAmount = 0f;
+        int without = Positions(p).Length;
+
+        p.driftDirection = Vector3.zero;
+        int none = Positions(p).Length;
+
+        Assert.AreEqual(none, without, "zero drift amount must behave as no drift at all");
+    }
+
+    [Test]
+    public void EveryDomain_KeepsInstancesInsideTheCullingBounds()
+    {
+        // The region shapes are new; bounds that do not contain them would pop
+        // the whole field out at a glancing angle.
+        foreach (BackdropDomain d in System.Enum.GetValues(typeof(BackdropDomain)))
+        {
+            var p = Region(d, 300);
+            p.offsetJitter = Vector3.one;
+            p.waveAmplitude = 1f;
+            p.accentFraction = 0.2f;
+
+            var b = BackdropLattice.LocalBounds(p);
+            foreach (var v in Positions(p))
+                Assert.IsTrue(b.Contains(v), $"{d}: instance at {v} outside bounds {b}");
+        }
+    }
+
     [Test]
     public void Occupancy_ThinsTheFieldWithoutMovingWhatRemains()
     {

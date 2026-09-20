@@ -210,8 +210,14 @@ public class BackdropInstrument : MonoBehaviour
         // face and the backdrop cannot creep forward onto the subject.
         float centreDist = p.fitDistance + p.domainSize.z * 0.5f;
         var t = cam.transform;
+
+        // frameOffset is in fractions of the frame, so a value of 0.25 shifts by
+        // a quarter of the visible width however wide the frame happens to be.
+        Vector3 shift = t.right * (p.frameOffset.x * p.domainSize.x)
+                      + t.up    * (p.frameOffset.y * p.domainSize.y);
+
         transform.SetPositionAndRotation(
-            t.position + t.forward * centreDist,
+            t.position + t.forward * centreDist + shift,
             Quaternion.LookRotation(-t.forward, t.up));
 
         return p;

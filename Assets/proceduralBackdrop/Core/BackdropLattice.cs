@@ -28,6 +28,8 @@ public static class BackdropLattice
         }
     }
 
+    private static float Frac(float v) => v - Mathf.Floor(v);
+
     public static float Rand01(int id, uint seed, uint stream)
     {
         unchecked
@@ -47,10 +49,123 @@ public static class BackdropLattice
     /// rather than by random sampling, so density never piles up at a pole or an
     /// edge the way rejection sampling does.
     /// </summary>
+    /// <summary>
+    /// Overload kept for the domains that need no extra parameters. Region
+    /// shapes route through the <see cref="BackdropParameters"/> overload.
+    /// </summary>
     public static Vector3 Position(int id, int count, BackdropDomain domain, Vector3 size, bool solidFill)
+        => Position(id, count, domain, size, solidFill, BackdropParameters.Default);
+
+    public static Vector3 Position(int id, int count, BackdropDomain domain, Vector3 size, bool solidFill,
+                                   in BackdropParameters p)
     {
         count = Mathf.Max(count, 1);
         float t = (float)id / count;
+
+        switch (domain)
+        {
+            case BackdropDomain.Arch:
+            {
+                // Annulus in the screen plane. Radius goes through a square root
+                // so area is covered evenly - lerping the radius directly piles
+                // instances up at the inner rim, where the circumference is
+                // smallest.
+                float rin = Mathf.Clamp01(p.archInnerRadius);
+                float r = Mathf.Sqrt(Mathf.Lerp(rin * rin, 1f, t));
+                float theta = id * 2.399963229728653f;
+
+                // Depth is stratified by the golden ratio conjugate rather than
+                // randomly, so the shell stays evenly filled at any count.
+                float z = (Frac(id * 0.6180339887f) - 0.5f) * size.z;
+
+                return new Vector3(Mathf.Cos(theta) * r * size.x * 0.5f,
+                                   Mathf.Sin(theta) * r * size.y * 0.5f,
+                                   z);
+            }
+
+            case BackdropDomain.Colonnade:
+            {
+                int cols = Mathf.Clamp(p.colonnadeCount, 1, 24);
+                int perCol = Mathf.Max(1, Mathf.CeilToInt((float)count / cols));
+
+                int col = Mathf.Min(id / perCol, cols - 1);
+                int k = id - col * perCol;
+
+                // Each band is its own little box, filled by the same even-spacing
+                // rule the cube uses, so a band reads as a slab rather than a line.
+                float slotW = size.x / cols;
+                float bandW = slotW * Mathf.Clamp(p.colonnadeWidth, 0.05f, 1f);
+                var bandSize = new Vector3(bandW, size.y, size.z);
+
+                Vector3 n3 = AxisCounts(perCol, bandSize);
+                int nx = (int)n3.x, ny = (int)n3.y, nz = (int)n3.z;
+
+                int ix = k % nx;
+                int iy = (k / nx) % ny;
+                int iz = (k / (nx * ny)) % nz;
+
+                var local = new Vector3(
+                    nx > 1 ? ((float)ix / (nx - 1) - 0.5f) * bandW : 0f,
+                    ny > 1 ? ((float)iy / (ny - 1) - 0.5f) * size.y : 0f,
+                    nz > 1 ? ((float)iz / (nz - 1) - 0.5f) * size.z : 0f);
+
+                float centre = (col + 0.5f) / cols - 0.5f;
+                local.x += centre * size.x;
+                return local;
+            }
+
+            case BackdropDomain.Skyline:
+            {
+                // A ground grid whose heights come from a noise field. Instances
+                // are lifted rather than stacked, so with the Y scale bias up
+                // they read as towers of differing height without the count
+                // having to vary per column.
+                Vector2 n2 = SheetCounts(count, size.x, Mathf.Max(size.z, 0.001f));
+                int nx = (int)n2.x, nz = (int)n2.y;
+
+                int ix = id % nx;
+                int iz = (id / nx) % nz;
+
+                float u = nx > 1 ? (float)ix / (nx - 1) - 0.5f : 0f;
+                float w = nz > 1 ? (float)iz / (nz - 1) - 0.5f : 0f;
+
+                float h = Noise3(u * size.x * p.skylineRoughness, 0f,
+                                 w * size.z * p.skylineRoughness, p.layoutSeed);
+                float rise = h * Mathf.Clamp01(p.skylineHeight);
+
+                // Measured from the floor up, or the ceiling down when inverted.
+                float y = p.skylineInverted
+                    ? size.y * 0.5f - rise * size.y
+                    : -size.y * 0.5f + rise * size.y;
+
+                return new Vector3(u * size.x, y, w * size.z);
+            }
+
+            case BackdropDomain.Corridor:
+            {
+                // The cube shell without its front and back faces, so the frame
+                // is bounded left, right, top and bottom while the centre stays
+                // open all the way through. Every edge becomes a perspective line.
+                float perim = 2f * (size.x + size.y);
+                Vector2 n2 = SheetCounts(count, perim, Mathf.Max(size.z, 0.001f));
+                int np = Mathf.Max((int)n2.x, 4), nz = (int)n2.y;
+
+                int ip = id % np;
+                int iz = (id / np) % nz;
+
+                float d = (float)ip / np * perim;   // walk the rectangle
+                float hx = size.x * 0.5f, hy = size.y * 0.5f;
+
+                Vector3 xy;
+                if (d < size.x)                          xy = new Vector3(-hx + d, -hy, 0f);
+                else if (d < size.x + size.y)            xy = new Vector3(hx, -hy + (d - size.x), 0f);
+                else if (d < 2f * size.x + size.y)       xy = new Vector3(hx - (d - size.x - size.y), hy, 0f);
+                else                                     xy = new Vector3(-hx, hy - (d - 2f * size.x - size.y), 0f);
+
+                xy.z = nz > 1 ? ((float)iz / (nz - 1) - 0.5f) * size.z : 0f;
+                return xy;
+            }
+        }
 
         switch (domain)
         {
@@ -140,22 +255,50 @@ public static class BackdropLattice
     /// </summary>
     public static bool IsOccupied(int id, int slotCount, in BackdropParameters p)
     {
-        if (p.occupancy >= 1f) return true;
-        if (p.occupancy <= 0f) return false;
+        float occ = p.occupancy * DriftFactor(id, slotCount, p);
+
+        if (occ >= 1f) return true;
+        if (occ <= 0f) return false;
 
         if (p.occupancyNoiseScale <= 0f)
-            return Rand01(id, p.layoutSeed, 977u) < p.occupancy;
+            return Rand01(id, p.layoutSeed, 977u) < occ;
 
         // Clustered: threshold a noise field sampled at the slot's own position,
         // so gaps group into voids and instances into clumps. Even speckle reads
         // as damage; clusters read as structure.
-        Vector3 at = Position(id, slotCount, p.domain, p.domainSize, p.solidFill) * p.occupancyNoiseScale;
+        Vector3 at = Position(id, slotCount, p.domain, p.domainSize, p.solidFill, p) * p.occupancyNoiseScale;
         float n = Noise3(at.x, at.y, at.z, p.layoutSeed);
 
         // Nudged by a per-slot value so the threshold edge is ragged rather than
         // a clean contour, which otherwise reads as a machined cut.
         n = n * 0.85f + Rand01(id, p.layoutSeed, 613u) * 0.15f;
-        return n < p.occupancy;
+        return n < occ;
+    }
+
+    /// <summary>
+    /// Density multiplier for one slot under the drift gradient: 1 at the near
+    /// end of driftDirection, falling to (1 - driftAmount) at the far end.
+    ///
+    /// A gradient rather than a cut, because a hard edge draws a line across the
+    /// composition while a fade weights it. The projection is normalised against
+    /// the domain so the falloff spans the field whatever its size.
+    /// </summary>
+    public static float DriftFactor(int id, int slotCount, in BackdropParameters p)
+    {
+        if (p.driftAmount <= 0f || p.driftDirection.sqrMagnitude < 1e-6f) return 1f;
+
+        Vector3 pos = Position(id, slotCount, p.domain, p.domainSize, p.solidFill, p);
+        Vector3 half = p.domainSize * 0.5f;
+
+        // Normalised into -1..1 per axis first, so an ultrawide field does not
+        // make the horizontal gradient shallower than the vertical one.
+        var unit = new Vector3(
+            half.x > 1e-4f ? pos.x / half.x : 0f,
+            half.y > 1e-4f ? pos.y / half.y : 0f,
+            half.z > 1e-4f ? pos.z / half.z : 0f);
+
+        float along = Vector3.Dot(unit, p.driftDirection.normalized);
+        return Mathf.Lerp(1f, 1f - p.driftAmount, Mathf.Clamp01(along * 0.5f + 0.5f));
     }
 
     /// <summary>
@@ -228,7 +371,7 @@ public static class BackdropLattice
 
             float idNorm = (float)i / count;
 
-            Vector3 pos = Position(i, count, p.domain, p.domainSize, p.solidFill);
+            Vector3 pos = Position(i, count, p.domain, p.domainSize, p.solidFill, p);
             Vector3 jitter = Rand3(i, p.layoutSeed, 11u) * 2f - Vector3.one;
             pos += Vector3.Scale(jitter, p.offsetJitter);
 
@@ -277,6 +420,27 @@ public static class BackdropLattice
         }
 
         return write;
+    }
+
+    /// <summary>
+    /// Resolution for a two-dimensional sheet: counts proportional to the two
+    /// extents, with the product landing at or just above <paramref name="count"/>.
+    ///
+    /// Separate from AxisCounts because that one divides a volume, and feeding
+    /// it a degenerate third axis collapses the second to 1 - which silently
+    /// flattens a sheet into a single row.
+    /// </summary>
+    public static Vector2 SheetCounts(int count, float extentA, float extentB)
+    {
+        count = Mathf.Max(count, 1);
+        float a = Mathf.Max(extentA, 1e-4f);
+        float b = Mathf.Max(extentB, 1e-4f);
+
+        int na = Mathf.Max(1, Mathf.RoundToInt(Mathf.Sqrt(count * a / b)));
+        int nb = Mathf.Max(1, Mathf.CeilToInt((float)count / na));
+
+        while ((long)na * nb < count) { if (a / na >= b / nb) na++; else nb++; }
+        return new Vector2(na, nb);
     }
 
     /// <summary>
