@@ -147,12 +147,37 @@ calls would buy nothing.
 cannot be a material property. This falls out of the single-mesh decision and
 costs nothing.
 
-### The tube illusion
+### The tube illusion — analytic, not a texture
 
-The normal map is a strip whose tangent-space normals bow from `-X` at one edge
-to `+X` at the other. With a rolled highlight, a flat ribbon reads as a cylinder
-from any angle — far cheaper than tube geometry at the intended cable counts.
-Jacket detail (braid, ribbing, strain relief) tiles along `U`.
+**The cylinder normal is computed, not sampled.** For a flat strip standing in
+for a tube, the tangent-space normal across the ribbon is exactly a half-circle:
+
+```hlsl
+float  x  = v * 2.0 - 1.0;              // -1 at one edge, +1 at the other
+float3 nT = float3(x, 0.0, sqrt(saturate(1.0 - x * x)));
+```
+
+`x` is the sideways bow, `0` is along the cable (a cylinder does not curve that
+way), and `sqrt(1-x*x)` is the bulge toward the viewer.
+
+This is preferred over a painted normal strip on every axis that matters:
+
+- **No resolution limit.** A painted strip stairsteps at the grazing edges where
+  the gradient is steepest — precisely where the silhouette illusion is most
+  fragile. The analytic normal is smooth at any ribbon width.
+- **It sidesteps the import traps this project already documents.** `sRGB` left
+  true and a missing `flipGreenChannel` are listed in the root CLAUDE.md as
+  recurring normal-map failures. A computed normal cannot suffer either.
+- **Zero memory, zero import settings, no asset to lose.**
+- `thickness` may change at runtime without the map ever being wrong.
+
+A **detail normal** is layered over it for jacket character — braid, ribbing,
+moulded strain relief — tiling along `U`. This is a strictly easier problem: it
+tiles in one direction only, and errors read as texture rather than as a broken
+silhouette. First implementation is procedural in the shader (braid is two
+interleaved diagonal sine families; ribbing is a `frac` ramp), which makes braid
+tightness a live parameter rather than a baked choice. A sampled detail map
+remains an option if the procedural version proves thin.
 
 **`U` scales with the cable's world length, not with `t`.** Otherwise a short
 patch cable and a long run get identical repeat counts, and the mismatch in
@@ -253,8 +278,10 @@ MonoBehaviours are compile-verified only, as with the backdrop.
 
 - **Nothing runs against MIDI hardware.** Consistent with the rest of the
   project; the explorer scene is keyboard-only by design.
-- **The normal-map strip must be authored.** The tube illusion depends entirely
-  on it, and there is no placeholder that demonstrates the effect. Until it
-  exists, cables look like flat ribbons and the look cannot be judged.
+- **The jacket detail may read as thin.** The cylinder itself is analytic and
+  needs no asset, so cables look round from the first run. Only the braid and
+  ribbing character is at risk, and it degrades to a clean smooth cable rather
+  than to a flat ribbon — a mild failure with an obvious fallback (a sampled
+  tiling detail normal).
 - **Connector meshes must be sourced or modelled.** `CableLibrary` degrades to
   an empty set without them; the ribbon still renders headless.
