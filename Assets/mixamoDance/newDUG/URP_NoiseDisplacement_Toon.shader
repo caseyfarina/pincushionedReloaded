@@ -26,6 +26,9 @@ Shader "Custom/URP_NoiseDisplacement_Toon"
         _FresnelPower ("Fresnel Power", Range(0.5, 8)) = 3
         [HDR] _FresnelColor ("Fresnel Color", Color) = (0.2, 0.8, 1, 1)
 
+        [Header(Ambient Occlusion)]
+        _OcclusionStrength ("Occlusion Strength", Range(0, 1)) = 1.0
+
         [Header(Normal)]
         _BumpMap ("Normal Map", 2D) = "bump" {}
         _BumpScale ("Normal Scale", Range(0, 2)) = 1.0
@@ -102,6 +105,7 @@ Shader "Custom/URP_NoiseDisplacement_Toon"
                 half _ShadingMode;
                 half _FresnelPower;
                 half4 _FresnelColor;
+                half _OcclusionStrength;
             CBUFFER_END
 
             // Per-instance flash, written as a float array by BackdropInstrument.
@@ -201,6 +205,7 @@ Shader "Custom/URP_NoiseDisplacement_Toon"
             #pragma multi_compile _ SHADOWS_SHADOWMASK
             #pragma multi_compile_fragment _ _LIGHT_COOKIES
             #pragma multi_compile _ _FORWARD_PLUS
+            #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
 
             // Custom keywords
             #pragma multi_compile_local _ _DISPLACEMENT_ON
@@ -236,6 +241,7 @@ Shader "Custom/URP_NoiseDisplacement_Toon"
                 half _ShadingMode;
                 half _FresnelPower;
                 half4 _FresnelColor;
+                half _OcclusionStrength;
             CBUFFER_END
 
             // Per-instance flash, written as a float array by BackdropInstrument.
@@ -434,6 +440,17 @@ Shader "Custom/URP_NoiseDisplacement_Toon"
 
                 // ---- Ambient / GI ----
                 half3 bakedGI = SAMPLE_GI(input.lightmapUV, input.vertexSH, normalWS);
+
+                // Screen-space AO, from whichever renderer feature is supplying
+                // it. Applied to ambient only: folding it into direct light
+                // would smear a soft gradient across the cel bands and undo the
+                // reason for a toon shader in the first place.
+                #if defined(_SCREEN_SPACE_OCCLUSION)
+                    float2 aoUV = GetNormalizedScreenSpaceUV(input.positionCS);
+                    AmbientOcclusionFactor aoFactor = GetScreenSpaceAmbientOcclusion(aoUV);
+                    bakedGI *= lerp(1.0h, aoFactor.indirectAmbientOcclusion, _OcclusionStrength);
+                #endif
+
                 // Apply GI with a subtle cel treatment — avoid fully flat ambient
                 color += bakedGI * albedo;
 
@@ -513,6 +530,7 @@ Shader "Custom/URP_NoiseDisplacement_Toon"
                 half _ShadingMode;
                 half _FresnelPower;
                 half4 _FresnelColor;
+                half _OcclusionStrength;
             CBUFFER_END
 
             // Per-instance flash, written as a float array by BackdropInstrument.
@@ -617,6 +635,7 @@ Shader "Custom/URP_NoiseDisplacement_Toon"
                 half _ShadingMode;
                 half _FresnelPower;
                 half4 _FresnelColor;
+                half _OcclusionStrength;
             CBUFFER_END
 
             // Per-instance flash, written as a float array by BackdropInstrument.
@@ -707,6 +726,7 @@ Shader "Custom/URP_NoiseDisplacement_Toon"
                 half _ShadingMode;
                 half _FresnelPower;
                 half4 _FresnelColor;
+                half _OcclusionStrength;
             CBUFFER_END
 
             // Per-instance flash, written as a float array by BackdropInstrument.
