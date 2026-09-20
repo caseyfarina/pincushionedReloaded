@@ -41,13 +41,16 @@ Assets/
     Samples/TestScene/                   App controllers + spawners (+ Editor/ inspectors)
     Samples/Resources/                   ScriptableObject assets (build-safe)
   proceduralPincushioning/               GPU-instanced pin scatter system (see its CLAUDE.md)
-  ScatterData/                           Baked SurfaceSampleData assets (52)
+  proceduralBackdrop/                    Instanced generative backdrop (see its CLAUDE.md)
+  ScatterData/                           Baked SurfaceSampleData assets (79; stays flat)
   ScatterPrefabs/                        Batch-tool output prefabs (41; the importer writes _Pinned directly)
-  pinnedMeshes/                          *_Pinned prefabs used by the main scene
+  pinnedMeshes/<Category>/               *_Pinned prefabs, same 9 categories
   Prefabs/Pincushioned Rig.prefab        All 8 app controllers, Inspector-configured
   SplitScreen/                           Mosaic split-screen camera system
   mixamoDance/                           PoseInstrument prototype — isolated from the main scene
-  Artifacts/                             51 scans + materials (see Artifact inventory)
+  Artifacts/<Category>/{stem}/           78 scans + materials, filed by category
+                                         (Dinosaurs Megafauna Skulls Egyptian Sculpture
+                                          Specimens Machines Antiquities Misc)
   buildingFloor.fbx                      The room shell each floor is built from
   Plugins/Demigiant/DOTween/             DOTween Pro (DLL, no asmdef, globally accessible)
 Packages/manifest.json                   com.caseyfarina.midifighter64 (git URL, pinned tag)
@@ -668,18 +671,51 @@ cheap. For screenshots, `capture_game_view` only renders one camera; use
 - **Never commit** `3DObjectProcessing/`'s API key files or its ~750 MB of derived
   scan data. Both are gitignored.
 
-### Artifact inventory — 51 scans, three sources
+### Artifact inventory — 78 scans, three sources
 
 | Source | Count | Licence | Notes |
 |---|---:|---|---|
 | Recovered originals (Ashmolean / Giza / misc) | 15 | mixed | Arrived pre-processed; no high-poly source survives |
 | **Smithsonian** (2026-09-05) | 25 | **CC0** | Sculpture, instruments, paleo crania |
-| **Sketchfab — NHM Wien** (2026-09-07) | 10 | **CC BY-NC** | Articulated animal skeletons |
+| **Sketchfab — NHM Wien** (2026-09-07, 2026-09-11) | 37 | **CC BY-NC** | Articulated skeletons, then objects/specimens |
 | **Sketchfab — noe-3d.at** (2026-09-06) | 1 | **CC BY-NC** | `Flusspferd mit Jungem` |
 
-**11 assets are NON-COMMERCIAL.** Every NHM Wien model plus the hippo is
-CC BY-NC. Fine for personal and non-commercial exhibition; if pincushioned is
-ever ticketed, commissioned or sold, all 11 have to come out.
+**38 assets are NON-COMMERCIAL — now the majority of the collection.** Every NHM
+Wien model plus the hippo is CC BY-NC. Fine for personal and non-commercial
+exhibition; if pincushioned is ever ticketed, commissioned or sold, **38 of the
+78 artifacts have to come out** and only the 25 CC0 Smithsonian pieces plus the
+15 unestablished originals remain. The 2026-09-11 batch of 27 shifted this from
+a minority carve-out to a structural constraint — plan the show accordingly.
+
+#### Categories
+
+Artifacts are filed by category in **both** `Assets/Artifacts/<Category>/` and
+`Assets/pinnedMeshes/<Category>/`, and each carries a matching Unity **asset
+label**, so `l:Skulls` in the Project search finds them wherever they sit.
+
+| Category | n | What it holds |
+|---|---:|---|
+| `Skulls` | 15 | Isolated crania, jaws, teeth — plus the Stegosaurus tailspike and the flattened Archaeopteryx slab, which are isolated *elements* rather than skulls |
+| `Egyptian` | 12 | The Ashmolean / Giza set |
+| `Sculpture` | 12 | Portrait busts, figures, the NHMW allegorical figures |
+| `Specimens` | 10 | Frogs, fungi, shells, hippo, turtle — biological, non-skeletal |
+| `Machines` | 8 | Typewriters, stereoscope, battery, current meter, space suit, Chandra |
+| `Megafauna` | 7 | Full articulated skeletons of large mammals **and birds** (moa, terror bird) |
+| `Antiquities` | 7 | Bronze Age vessels, armour, wall reliefs |
+| `Dinosaurs` | 4 | Full-body Mesozoic mounts |
+| `Misc` | 3 | Crab Nebula, Declaration desk, mangan nodule |
+
+**The skull/skeleton split tracks the source almost exactly**, and that is not a
+coincidence: every Smithsonian paleo scan is a compact isolated element (measured
+bounding-box long/short ratios 1.1–8.0, none elongated), while NHM Wien was
+acquired *because* Smithsonian had no articulated skeletons.
+
+`Megafauna` is deliberately not called `Mammals` — the moa and the terror bird
+are birds, and they belong on the same shelf as the giant deer.
+
+Two orphans sit outside the scheme at the roots: `mammoth_Scatter.prefab` and
+`mammoth_Surface_White.mat`, which have no `Assets/Artifacts/` folder backing
+them. They predate this work and were left alone.
 
 **Provenance lives in `3DObjectProcessing/provenance/` and is tracked in git**,
 unlike the scans it describes. `provenance/ATTRIBUTION.md` is the ready-to-use
@@ -777,17 +813,85 @@ the tool fixes each one:
 | FBX | `isReadable = false` | **true** | The scatter bake reads vertices/normals/UVs |
 | `*_Normal.png` | type `Default` | **NormalMap** + `flipGreenChannel` | Pipeline emits OpenGL-convention normals |
 
-**48 of 51 artifacts carry a normal map.** Most came from their source scans; 11
-Egyptian pieces and 9 NHM Wien skeletons have one *derived from albedo* (see the
-pipeline CLAUDE.md) because no high-poly source survives for them. The 3 without
-cannot take one: Chandra and Odobenocetops have no albedo at all, and
-sarcophagus_of_duaenre still has the corrupted checkerboard.
 | `*_MetallicSmoothness.png` | `sRGB = true` | **false** | Data map, not colour — lights wrongly otherwise |
 | `*_Occlusion.png` | `sRGB = true` | **false** | Same |
+
+**71 of 78 artifacts carry a normal map.** Most came from their source scans; 11
+Egyptian pieces and the entire NHM Wien set have one *derived from albedo* (see
+the pipeline CLAUDE.md) because no high-poly source survives for them. The 7
+without cannot take one: Chandra and Odobenocetops have no albedo at all,
+sarcophagus_of_duaenre still has the corrupted checkerboard, and the **4 dart
+frogs ship no texture at all** (see below).
+
+**The 4 dart frogs are untextured grey geometry, by source.**
+`Dendrobates_azureus` (male + female), `Phyllobates_terribilis` and
+`Ranitomeya_imitator` ship a GLB with **no image and no vertex colour** — only a
+flat `baseColorFactor` of (0.37, 0.37, 0.37). There is nothing to derive a normal
+from and nothing to tint. This is not a pipeline failure and re-running will not
+fix it; the colour would have to come from the shader or a repaint. Worth knowing
+because poison dart frogs are *entirely* about colour.
 
 The importer also **warns when a `_BaseColor.png` is under 50 KB**, which is the
 signature of the Stage 6 placeholder-checkerboard bug (see the pipeline's
 CLAUDE.md). That guard exists because the bug shipped silently once already.
+
+#### Scale normalization — baked into the MESH, not the transform
+
+Every `_Pinned` prefab sits at transform scale **1.0**, and every artifact has a
+mesh bounding radius of **1.0**. That is enforced at intake by
+`ArtifactImportWindow.NormalizeModelScale()`, which sets the FBX's
+`ModelImporter.globalScale` (Scale Factor) and reimports.
+
+**Source scans agree on nothing.** Measured across this collection before the fix,
+raw mesh radius ran from **0.00012** (`Smilodon_fatalis`) to **11,675**
+(`Diplodocus_carnegii`) — eight orders of magnitude, with 41 artifacts under 1
+unit and 27 over 10. Placing any of them meant hand-scaling, and compensating
+scales in the thousands invite shadow and culling artifacts.
+
+**Why the mesh and not the prefab root.** A root-scale fix leaves the odd number
+sitting on the transform, and `MeshSurfaceScatter.ModelRadius` reads mesh-**local**
+bounds and ignores the transform entirely — so every downstream consumer would
+still see the raw source figure. Normalizing the mesh makes `ModelRadius` report
+1.0 and lets the transform stay clean.
+
+**Samples are mesh-local, so a rescale invalidates them.** `NormalizeModelScale`
+runs in `FixImports` (step 4), before the bake in step 6. If you ever rescale an
+artifact afterwards, re-bake its `SurfaceSampleData` or the pins will sit off the
+surface. `SurfaceSampleBaker.Bake(..., overwrite: true)` rewrites in place, which
+is the way to re-bake without round-tripping through the importer's flat roots.
+
+The bake is **not** GPU-accelerated — it is single-threaded C# over
+`mesh.triangles` plus a `System.Random` loop across the pool. It is still cheap:
+the whole importer measured **~1.55 s per model** including a 20,000-sample bake,
+so re-baking the entire collection is about two minutes.
+
+**This does not stop artifacts differing in apparent size on a floor** — it makes
+1.0 the shared starting point. Deliberate size relationships are then set per
+placement, and read as intentional rather than as source-file accident.
+
+#### Two things the importer does NOT do — check both after every batch
+
+Found the hard way on the 2026-09-11 batch of 27.
+
+1. **It still writes to the flat roots**, `Assets/Artifacts` and `Assets/pinnedMeshes`,
+   which are `const` in `ArtifactImportWindow.cs`. It has no knowledge of the
+   category folders, so **new artifacts always land at the top level** and must
+   be filed afterwards. Import first, categorise second — doing it the other way
+   round just scatters the new batch back across the root.
+2. **It used to leave `density.mode` at `Uniform`.** Fixed 2026-09-12 — the
+   importer now writes the house setting directly. The failure mode is worth
+   remembering because it was completely silent: The house setting is
+   `Noise / noiseScale 5 / octaves 2 / contrast 1.4`, and in Uniform mode
+   `noiseOffset` is never read — so `AudioScatterAgitationDriver` has **no effect
+   at all** on a freshly imported artifact. This is silent: the pins render
+   perfectly and simply never react to audio. All 27 were switched after import;
+   verify with a pass over `Assets/pinnedMeshes` reading
+   `MeshSurfaceScatter.density.mode`.
+
+Note that `density` is a nested `ScatterDensity` object — `mode`, `noiseScale`,
+`noiseOctaves` and `contrast` live on **it**, not on `MeshSurfaceScatter`. A
+reflection probe for a `densityMode` field on the component finds nothing and
+silently reports every prefab as fine.
 
 `_Scatter` vs `_Pinned`: `BatchScatterProcessorWindow` still outputs
 `Assets/ScatterPrefabs/{stem}_Scatter.prefab` for ad-hoc use, but the scenes
@@ -804,6 +908,11 @@ the list and call `RebuildGrid()` and you get an empty scene.
 
 `PinDebugRig.BuildProblemReport()` is the fastest correctness check — it names
 any model with no pin variants, a missing mesh/material, or no sample data.
+**Use it rather than rolling your own reflection probe.** A hand-written check
+that reads `sampleData` and compares it with `== null` on a boxed `object`
+bypasses Unity's overloaded equality operator, so a *missing* asset reference
+reads as present and the probe reports everything healthy. That is exactly how
+the three broken `_Pinned 1` duplicates can appear fine.
 
 **Pins do not render while the editor is unfocused.** `MeshSurfaceScatter` draws
 via `Graphics.RenderMeshInstanced` from `[ExecuteAlways] Update()`, and an
@@ -828,10 +937,20 @@ Untested, in priority order:
    or delete the duplicate. Same for the Stegosaurus and Triceratops `_Pinned 1`
    duplicates; those three are the only entries in `BuildProblemReport()`.
 5. The MIDI Mix is nearly unused: 23 knobs, 9 faders, 24 buttons free.
-6. **All 36 new artifacts are staged in `PinDebug`, not in the main scene.**
-   Placing them on floors and binding MF64 pads is untouched. Remember the
-   53-pad budget and that `MidiFighterInteriorSpawner` claims every unreserved
-   pad. The grid is at 55 models.
+6. **78 artifacts are staged in `PinDebug`, not in the main scene.** Placing
+   them on floors and binding MF64 pads is untouched, and the arithmetic is now
+   the problem: **78 staged models against a 53-pad budget**, so the collection
+   no longer fits on the MF64 one-pad-per-object. Either the categories drive
+   floor membership (9 categories, 8 floors) or the spawner needs a different
+   addressing scheme. `MidiFighterInteriorSpawner` still claims every unreserved
+   pad.
+
+   The **4 dart frogs are deliberately excluded from the PinDebug grid** — they
+   are reserved for a different treatment than pin-scattering (2026-09-11).
+   Their artifacts and `_Pinned` prefabs still exist under `Specimens`; only the
+   rig's `prefabs` list leaves them out. Re-populating that list from
+   `PinDebugSceneBuilder.LoadPinnedPrefabs()` will pull them back in, so exclude
+   them again if you rebuild it that way.
 7. **`sarcophagus_of_duaenre` has a checkerboard base colour** — corrupted by
    the Stage 6 bug in an earlier run, before that bug was found. Its source GLB
    is not in `raw_scans/`, so it must be re-fetched from wherever it came from.
@@ -917,11 +1036,49 @@ Also: do not redeclare `_BlitTexture_TexelSize`, it comes from `Blit.hlsl`; and
 Reference stills from Maxon's product page are in
 `%TEMP%/cd_ref/` for look comparison.
 
+## Generative backdrop (`Assets/proceduralBackdrop/`)
+
+An instanced field of meshes behind the performers, sized to the camera frame
+and played from the MIDI Mix. Built 2026-09-11 to 2026-09-20. Working scene:
+`Assets/proceduralBackdrop/backdropExplorer.unity` — press Play, then `Space`.
+
+**Full detail is in its own CLAUDE.md.** The points that matter from outside:
+
+**It is `Graphics.RenderMeshInstanced`, not VFX Graph, and that was a reversal.**
+Everything the backdrop does is a closed-form function of
+`(instanceId, seed, time)` — nothing integrates frame to frame. GPU-simulated
+particle state is the only thing VFX Graph uniquely offers, so with it unused
+what remained was an opaque binary that cannot be diffed, cannot be unit-tested,
+and has **zero support across the Unity CLI's 142 commands** (checked: the CLI
+has authoring commands for Animator and Timeline, none for VFX Graph). The
+switch cost one file, because the instrument/driver split meant the drivers
+never knew what the renderer was.
+
+**It shares the dancer's shader**, `Assets/mixamoDance/newDUG/URP_NoiseDisplacement_Toon.shader`,
+extended with instancing support, a per-instance flash, and a shading mode. Every
+default preserves prior behaviour, so `newDUG.mat` is unaffected.
+
+**Two fixes in that shader reach beyond the backdrop:**
+
+- It had the instance-ID macros but **no `#pragma multi_compile_instancing`**, so Unity compiled no instanced variants. It looked instancing-ready and was not.
+- It never declared `_SCREEN_SPACE_OCCLUSION`, so **AO was computed and discarded** for everything using it — the dancer included. It wrote DepthNormals, so it was contributing occlusion while receiving none. Now applied to the ambient term only, since folding AO into direct light smears the cel bands.
+
+**Both AO systems are enabled on `PC_Renderer`** — HTrace at intensity 3 and
+URP's own at 0.4 — and they now stack. Worth picking one; left alone because it
+is a project-wide look decision.
+
+**90 EditMode tests**, all on the pure lattice and randomiser math. The
+MonoBehaviours are compile-verified only.
+
+**Nothing has run against MIDI hardware**, same standing gap as the rest of the
+project.
+
 ## Subsystem Docs
 
 Each major subsystem has its own CLAUDE.md with detailed docs:
 - `Packages/com.caseyfarina.midifighter64/CLAUDE.md` — MIDI package API, event flow, grid/note layouts, LED palette, gotchas
 - `Assets/proceduralPincushioning/CLAUDE.md` — GPU scatter system, bake pipeline, render pass
+- `Assets/proceduralBackdrop/CLAUDE.md` — generative backdrop: lattice math, camera fit, randomiser, MIDI Mix layout, why it is not VFX Graph
 - `FEATURE-pose-instrument-play-freeze.md` — pose instrument design, Mixamo import chain, measured acceptance results
 - `3DObjectProcessing/CLAUDE.md` — Python mesh processing, Smithsonian API, Blender bridge (source is tracked; its ~750 MB of scan output is gitignored)
 
