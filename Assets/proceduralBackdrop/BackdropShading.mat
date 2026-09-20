@@ -53,7 +53,7 @@ Material:
     - _FresnelPower: 3
     - _Metallic: 0
     - _OutlineWidth: 2
-    - _ShadingMode: 0
+    - _ShadingMode: 2
     - _ShadowSmoothness: 0.02
     - _ShadowThreshold: 0.5
     - _Smoothness: 0.35
@@ -64,7 +64,7 @@ Material:
     - _BaseColor: {r: 0.75, g: 0.73, b: 0.7, a: 1}
     - _DisplacementScrollSpeed: {r: 0, g: 0, b: 0, a: 0}
     - _DisplacementTiling: {r: 1, g: 1, b: 0, a: 0}
-    - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}
+    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _FresnelColor: {r: 0.2, g: 0.8, b: 1, a: 1}
     - _OutlineColor: {r: 0, g: 0, b: 0, a: 1}
     - _ShadowColor: {r: 0.39999998, g: 0.39999998, b: 0.5, a: 1}

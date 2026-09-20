@@ -33,6 +33,23 @@ public struct RandomRange
 [CreateAssetMenu(menuName = "Performance/Backdrop Ranges", fileName = "BackdropRanges")]
 public class BackdropRanges : ScriptableObject
 {
+    [Header("Randomise character")]
+
+    [Tooltip("Chance a parameter lands exactly on an end of its range rather than somewhere inside it. " +
+             "Uniform sampling across ~20 parameters almost never puts several of them near an extreme, " +
+             "so every roll comes out mid-range and the results all read alike. Snapping to the ends is " +
+             "what produces a field that is decisively squat, or tall, or still.")]
+    [Range(0f, 1f)] public float extremeChance = 0.4f;
+
+    [Tooltip("Of the rolls that land on an end, how often it is the maximum. Below 0.5 favours sparse, small, slow; above favours dense, large, fast.")]
+    [Range(0f, 1f)] public float maxVsMin = 0.5f;
+
+    [Tooltip("Chance a parameter is left at its current value instead of being redrawn. " +
+             "With every parameter redrawn at once, consecutive rolls have nothing in common and a look " +
+             "can never be developed - only stumbled on. Holding a few keeps each roll recognisably " +
+             "related to the last.")]
+    [Range(0f, 1f)] public float holdChance = 0.15f;
+
     [Header("Layout")]
     public bool randomiseDomain = true;
     public RandomRange spawnCount = new RandomRange(250, 1200);

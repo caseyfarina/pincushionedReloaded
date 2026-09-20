@@ -31,7 +31,15 @@ public class BackdropRandomizerTests
         var a = BackdropRandomizer.Randomize(r, basis, new System.Random(1));
         var b = BackdropRandomizer.Randomize(r, basis, new System.Random(2));
 
-        Assert.AreNotEqual(a.waveFrequency, b.waveFrequency);
+        // Any single parameter can legitimately agree across two seeds now that
+        // a roll can snap to an end or hold its value, so compare the whole
+        // configuration rather than one float.
+        bool identical = a.spawnCount == b.spawnCount
+                      && a.domainSize == b.domainSize
+                      && a.scaleRange == b.scaleRange
+                      && Mathf.Approximately(a.waveFrequency, b.waveFrequency)
+                      && Mathf.Approximately(a.waveAmplitude, b.waveAmplitude);
+        Assert.IsFalse(identical, "two different seeds produced the same configuration");
     }
 
     [Test]
@@ -199,5 +207,142 @@ public class BackdropRandomizerTests
             Assert.AreEqual(321,
                 BackdropRandomizer.Mutate(r, basis, 0.9f, new System.Random(seed)).spawnCount,
                 $"seed {seed}");
+    }
+
+    [Test]
+    public void Randomize_LandsOnRangeEndsOftenEnoughToMatter()
+    {
+        // The point of the whole change. Uniform sampling across twenty
+        // parameters regresses to mid-range, so every roll reads alike; ends are
+        // what give a roll character, and they have to actually turn up.
+        var r = Ranges();
+        r.extremeChance = 0.4f;
+        r.holdChance = 0f;
+        r.waveAmplitude = new RandomRange(0f, 5f);
+
+        int ends = 0;
+        for (int seed = 0; seed < 400; seed++)
+        {
+            float v = BackdropRandomizer.Randomize(r, BackdropParameters.Default, new System.Random(seed)).waveAmplitude;
+            if (Mathf.Approximately(v, 0f) || Mathf.Approximately(v, 5f)) ends++;
+        }
+
+        float frac = ends / 400f;
+        Assert.Greater(frac, 0.25f, $"only {frac:P0} of rolls hit an end; extremes are still too rare");
+        Assert.Less(frac, 0.6f, $"{frac:P0} of rolls hit an end; the middle of the range has been abandoned");
+    }
+
+    [Test]
+    public void Randomize_WithNoExtremeChanceIsPurelyUniform()
+    {
+        var r = Ranges();
+        r.extremeChance = 0f;
+        r.holdChance = 0f;
+        r.waveAmplitude = new RandomRange(0f, 5f);
+
+        int ends = 0;
+        for (int seed = 0; seed < 300; seed++)
+        {
+            float v = BackdropRandomizer.Randomize(r, BackdropParameters.Default, new System.Random(seed)).waveAmplitude;
+            if (Mathf.Approximately(v, 0f) || Mathf.Approximately(v, 5f)) ends++;
+        }
+        Assert.LessOrEqual(ends, 2, "extremeChance 0 should essentially never land exactly on an end");
+    }
+
+    [Test]
+    public void Randomize_MaxVsMinBiasesWhichEnd()
+    {
+        var r = Ranges();
+        r.extremeChance = 1f;
+        r.holdChance = 0f;
+        r.waveAmplitude = new RandomRange(0f, 5f);
+
+        r.maxVsMin = 1f;
+        for (int seed = 0; seed < 60; seed++)
+            Assert.AreEqual(5f,
+                BackdropRandomizer.Randomize(r, BackdropParameters.Default, new System.Random(seed)).waveAmplitude,
+                1e-4f, $"seed {seed} should have taken the maximum");
+
+        r.maxVsMin = 0f;
+        for (int seed = 0; seed < 60; seed++)
+            Assert.AreEqual(0f,
+                BackdropRandomizer.Randomize(r, BackdropParameters.Default, new System.Random(seed)).waveAmplitude,
+                1e-4f, $"seed {seed} should have taken the minimum");
+    }
+
+    [Test]
+    public void Randomize_HoldKeepsParametersFromMoving()
+    {
+        // Without this, consecutive rolls share nothing and a look can only be
+        // stumbled on rather than developed.
+        var r = Ranges();
+        r.holdChance = 1f;
+
+        var basis = BackdropParameters.Default;
+        basis.waveAmplitude = 1.234f;
+        basis.spawnCount = 456;
+
+        for (int seed = 0; seed < 40; seed++)
+        {
+            var p = BackdropRandomizer.Randomize(r, basis, new System.Random(seed));
+            Assert.AreEqual(1.234f, p.waveAmplitude, 1e-4f, $"seed {seed}");
+            Assert.AreEqual(456, p.spawnCount, $"seed {seed}");
+        }
+    }
+
+    [Test]
+    public void Randomize_HoldAppliesToDiscreteParametersToo()
+    {
+        // Domain and shading are the loudest changes on screen; flipping them on
+        // every roll drowns out whatever the continuous parameters just did.
+        var r = Ranges();
+        r.holdChance = 1f;
+
+        var basis = BackdropParameters.Default;
+        basis.domain = BackdropDomain.Hemisphere;
+        basis.shading = BackdropShadingMode.Lit;
+
+        for (int seed = 0; seed < 40; seed++)
+        {
+            var p = BackdropRandomizer.Randomize(r, basis, new System.Random(seed));
+            Assert.AreEqual(BackdropDomain.Hemisphere, p.domain, $"seed {seed}");
+            Assert.AreEqual(BackdropShadingMode.Lit, p.shading, $"seed {seed}");
+        }
+    }
+
+    [Test]
+    public void Randomize_LockingOneParameterDoesNotDisturbAnother()
+    {
+        // The draw-order invariant, now that each parameter consumes three rng
+        // values rather than one. If a locked range skipped its draws, ticking
+        // one lock would silently change everything sampled after it.
+        var a = Ranges();
+        var b = Ranges();
+        b.spawnCount = new RandomRange(a.spawnCount.min, a.spawnCount.max, locked: true);
+
+        for (int seed = 0; seed < 60; seed++)
+        {
+            var ra = BackdropRandomizer.Randomize(a, BackdropParameters.Default, new System.Random(seed));
+            var rb = BackdropRandomizer.Randomize(b, BackdropParameters.Default, new System.Random(seed));
+
+            Assert.AreEqual(ra.waveAmplitude, rb.waveAmplitude, 1e-5f, $"seed {seed} waveAmplitude");
+            Assert.AreEqual(ra.flashDecay, rb.flashDecay, 1e-5f, $"seed {seed} flashDecay");
+            Assert.AreEqual(ra.domain, rb.domain, $"seed {seed} domain");
+        }
+    }
+
+    [Test]
+    public void Randomize_StillNeverProducesAnInvisibleFieldWithExtremesOn()
+    {
+        var r = Ranges();
+        r.extremeChance = 1f;
+
+        for (int seed = 0; seed < 300; seed++)
+        {
+            var p = BackdropRandomizer.Randomize(r, BackdropParameters.Default, new System.Random(seed));
+            Assert.Greater(p.spawnCount, 0, $"seed {seed}");
+            Assert.Greater(p.scaleRange.y, 0f, $"seed {seed}");
+            Assert.LessOrEqual(p.spawnCount, BackdropParameters.MaxSpawnCount, $"seed {seed}");
+        }
     }
 }
