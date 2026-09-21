@@ -47,6 +47,10 @@ public struct CableParameters
     [Tooltip("Landing points scatter on a sphere of this radius around the target Transform.")]
     public float targetScatterRadius;
 
+    [Header("Lifetime")]
+    [Tooltip("Seconds a cable hangs after it lands before retiring. 0 means it never retires and only the cap removes it.")]
+    public float lifetime;
+
     [Header("Budget")]
     [Tooltip("Nodes per cable. Two gives a straight segment; higher resolves the sag and noise.")]
     public int nodesPerCable;
@@ -68,6 +72,7 @@ public struct CableParameters
         thickness = 0.05f,
         headScale = 1f,
         targetScatterRadius = 1.5f,
+        lifetime = 0f,
         nodesPerCable = 24,
         cableCap = 64,
         colors = new[]

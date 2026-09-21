@@ -142,4 +142,39 @@ public class CableShotTests
             Assert.AreEqual(1f, d.magnitude, 1e-3f, $"flight01 {f}");
         }
     }
+
+    [Test]
+    public void IsExpired_IsFalseWhileStillFlying()
+    {
+        var p = CableParameters.Default;
+        var s = CableShot.Create(0, Src, Tgt, p, 1);
+        s.age = s.flightDuration * 0.5f;
+        Assert.IsFalse(s.IsExpired(2f), "a cable in flight has not begun its settled life yet");
+    }
+
+    [Test]
+    public void IsExpired_CountsFromLandingNotFromFiring()
+    {
+        // The lifetime the user sets is "seconds after hitting the target".
+        // Measuring from firing would cut a slow cable short mid-flight.
+        var p = CableParameters.Default;
+        var s = CableShot.Create(0, Src, Tgt, p, 1);
+
+        s.age = s.flightDuration + 1.9f;
+        Assert.IsFalse(s.IsExpired(2f), "retired early - lifetime is being measured from firing");
+
+        s.age = s.flightDuration + 2.1f;
+        Assert.IsTrue(s.IsExpired(2f), "outlived its lifetime and was not retired");
+    }
+
+    [Test]
+    public void IsExpired_ZeroLifetimeMeansNeverRetire()
+    {
+        // The default, so adding this parameter cannot change existing scenes.
+        var p = CableParameters.Default;
+        var s = CableShot.Create(0, Src, Tgt, p, 1);
+        s.age = 10000f;
+        Assert.IsFalse(s.IsExpired(0f), "zero must mean unlimited, not instant death");
+        Assert.IsFalse(s.IsExpired(-5f), "a negative lifetime must not retire everything instantly");
+    }
 }

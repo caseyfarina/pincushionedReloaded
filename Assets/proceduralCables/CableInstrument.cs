@@ -88,11 +88,14 @@ public class CableInstrument : MonoBehaviour
         // breathing - the same integration PinDensityController does for pins.
         _drift += parameters.driftSpeed * dt;
 
-        for (int i = 0; i < _shots.Count; i++)
+        // Walk backwards so retiring a cable does not skip the next one.
+        for (int i = _shots.Count - 1; i >= 0; i--)
         {
             var s = _shots[i];
             s.age += dt;
-            _shots[i] = s;
+
+            if (s.IsExpired(parameters.lifetime)) _shots.RemoveAt(i);
+            else _shots[i] = s;
         }
 
         BuildMesh();

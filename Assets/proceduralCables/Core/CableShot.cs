@@ -75,6 +75,19 @@ public struct CableShot
     }
 
     /// <summary>
+    /// Whether this cable has outlived its settled life and should retire.
+    ///
+    /// Measured from landing, not from firing: the lifetime the performer sets
+    /// means "how long it hangs there", and a distant target must not have its
+    /// hang time eaten by a longer flight.
+    ///
+    /// Zero or less means unlimited, which is the default - so adding a
+    /// lifetime cannot silently start retiring cables in existing scenes.
+    /// </summary>
+    public bool IsExpired(float lifetime) =>
+        lifetime > 0f && age > flightDuration + lifetime;
+
+    /// <summary>
     /// Which way the plug points. While flying it aims along travel; as speed
     /// decays it blends onto the cable's end tangent, which is what makes it
     /// read as seated in a socket rather than frozen mid-flight.
