@@ -27,7 +27,7 @@ Material:
     m_Floats:
     - _BraidDepth: 0.35
     - _BraidTiling: 8
-    - _HalfWidth: 0.05
+    - _HalfWidth: 0.15
     - _Metallic: 0
     - _Smoothness: 0.45
     m_Colors: []
