@@ -134,6 +134,8 @@ public class CableInstrument : MonoBehaviour
             }
 
             Color c = colorCount > 0 ? parameters.colors[Mathf.Clamp(shot.colorIndex, 0, colorCount - 1)] : Color.white;
+            // Alpha is the width channel, not opacity - see CableRibbon.shader.
+            c.a = shot.widthScale;
             CableRibbonBuilder.Append(_nodes, nodeCount, c, uvTiling,
                 _positions, _tangents, _uvs, _colors, _indices);
 
@@ -168,7 +170,7 @@ public class CableInstrument : MonoBehaviour
         // The ribbon widens in the vertex shader, so the mesh bounds must be
         // padded by the half-width or cables cull at the screen edge.
         var b = _mesh.bounds;
-        b.Expand(parameters.thickness * 2f);
+        b.Expand(parameters.thickness * Mathf.Max(1f, parameters.thicknessVariation) * 2f);
         _mesh.bounds = b;
     }
 

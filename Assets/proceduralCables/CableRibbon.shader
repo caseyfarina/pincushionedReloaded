@@ -46,6 +46,11 @@ Shader "Pincushioned/CableRibbon"
                 float4 positionOS : POSITION;
                 float3 tangentOS  : NORMAL;   // repurposed: along-cable direction
                 float2 uv         : TEXCOORD0; // x = world length * tiling, y = 0/1 side
+                // rgb is the cable colour; A CARRIES THE PER-CABLE WIDTH
+                // MULTIPLE. The ribbon is one mesh in one draw, so a per-cable
+                // width cannot come from a material float - it has to ride in a
+                // vertex channel, and alpha was the only unused one (the pass
+                // is opaque and writes alpha 1 regardless).
                 float4 color      : COLOR;
             };
 
@@ -81,7 +86,8 @@ Shader "Pincushioned/CableRibbon"
                                      : normalize(cross(tangentWS, float3(0, 1, 0)) + float3(1e-4, 0, 0));
 
                 float sideSign = IN.uv.y * 2.0 - 1.0;
-                float3 posWS = nodeWS + side * (_HalfWidth * sideSign);
+                float widthScale = max(IN.color.a, 1e-3);
+                float3 posWS = nodeWS + side * (_HalfWidth * widthScale * sideSign);
 
                 OUT.positionWS = posWS;
                 OUT.positionCS = TransformWorldToHClip(posWS);
@@ -159,7 +165,7 @@ Shader "Pincushioned/CableRibbon"
 
             float3 _LightDirection;
 
-            struct SAttributes { float4 positionOS : POSITION; float3 tangentOS : NORMAL; float2 uv : TEXCOORD0; };
+            struct SAttributes { float4 positionOS : POSITION; float3 tangentOS : NORMAL; float2 uv : TEXCOORD0; float4 color : COLOR; };
 
             float4 shadowVert(SAttributes IN) : SV_POSITION
             {
@@ -177,7 +183,7 @@ Shader "Pincushioned/CableRibbon"
                 float sideSq = dot(side, side);
                 side = sideSq > 1e-8 ? side * rsqrt(sideSq) : float3(1, 0, 0);
 
-                float3 posWS = nodeWS + side * (_HalfWidth * (IN.uv.y * 2.0 - 1.0));
+                float3 posWS = nodeWS + side * (_HalfWidth * max(IN.color.a, 1e-3) * (IN.uv.y * 2.0 - 1.0));
                 float4 positionCS = TransformWorldToHClip(ApplyShadowBias(posWS, side, _LightDirection));
                 #if UNITY_REVERSED_Z
                     positionCS.z = min(positionCS.z, positionCS.w * UNITY_NEAR_CLIP_VALUE);

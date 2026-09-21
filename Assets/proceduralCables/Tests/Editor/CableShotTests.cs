@@ -177,4 +177,121 @@ public class CableShotTests
         Assert.IsFalse(s.IsExpired(0f), "zero must mean unlimited, not instant death");
         Assert.IsFalse(s.IsExpired(-5f), "a negative lifetime must not retire everything instantly");
     }
+
+    // ---- per-cable thickness ----
+
+    [Test]
+    public void Create_WidthScaleIsOneWhenVariationIsOne()
+    {
+        // The default, so adding variation cannot resize cables in existing scenes.
+        var p = CableParameters.Default;
+        p.thicknessVariation = 1f;
+        for (int id = 0; id < 50; id++)
+            Assert.AreEqual(1f, CableShot.Create(id, Src, Tgt, p, 1).widthScale, 1e-4f, $"id {id}");
+    }
+
+    [Test]
+    public void Create_WidthScaleStaysInsideOneToVariation()
+    {
+        var p = CableParameters.Default;
+        p.thicknessVariation = 5f;
+        for (int id = 0; id < 300; id++)
+        {
+            float w = CableShot.Create(id, Src, Tgt, p, 1).widthScale;
+            Assert.GreaterOrEqual(w, 1f - 1e-4f, $"id {id} thinner than the base thickness");
+            Assert.LessOrEqual(w, 5f + 1e-4f, $"id {id} fatter than the configured maximum");
+        }
+    }
+
+    [Test]
+    public void Create_WidthScaleActuallyVariesAndSpansTheRange()
+    {
+        var p = CableParameters.Default;
+        p.thicknessVariation = 5f;
+
+        float min = float.MaxValue, max = float.MinValue;
+        for (int id = 0; id < 300; id++)
+        {
+            float w = CableShot.Create(id, Src, Tgt, p, 1).widthScale;
+            min = Mathf.Min(min, w); max = Mathf.Max(max, w);
+        }
+        Assert.Less(min, 1.6f, "no thin cables were produced");
+        Assert.Greater(max, 4.4f, "no fat cables were produced");
+    }
+
+    // ---- circuitous flight ----
+
+    [Test]
+    public void HeadAnchor_FliesStraightWhenCurlIsZero()
+    {
+        var p = CableParameters.Default;
+        p.pathCurl = 0f;
+        p.deceleration = 0f;
+        var s = CableShot.Create(0, Src, Tgt, p, 1);
+
+        for (float x = 0.1f; x < 1f; x += 0.1f)
+        {
+            s.age = s.flightDuration * x;
+            var straight = Vector3.Lerp(s.source, s.landing, x);
+            Assert.Less(Vector3.Distance(s.HeadAnchor(p), straight), 1e-3f, $"x {x} bent with no curl");
+        }
+    }
+
+    [Test]
+    public void HeadAnchor_LeavesTheStraightLineWhenCurled()
+    {
+        var p = CableParameters.Default;
+        p.pathCurl = 6f;
+        var s = CableShot.Create(0, Src, Tgt, p, 1);
+
+        float worst = 0f;
+        for (float x = 0.1f; x < 1f; x += 0.05f)
+        {
+            s.age = s.flightDuration * x;
+            var straight = Vector3.Lerp(s.source, s.landing, x);
+            worst = Mathf.Max(worst, Vector3.Distance(s.HeadAnchor(p), straight));
+        }
+        Assert.Greater(worst, 1f, "the route never meaningfully left the straight line");
+    }
+
+    [Test]
+    public void HeadAnchor_StillHitsTheLandingPointExactlyWhenCurled()
+    {
+        // The whole point of windowing the detour. A curl that does not close
+        // means every cable misses its plug.
+        var p = CableParameters.Default;
+        p.pathCurl = 12f;
+
+        for (int id = 0; id < 40; id++)
+        {
+            var s = CableShot.Create(id, Src, Tgt, p, 1);
+
+            s.age = 0f;
+            Assert.Less(Vector3.Distance(s.HeadAnchor(p), s.source), 1e-3f, $"id {id} did not start at the source");
+
+            s.age = s.flightDuration;
+            Assert.Less(Vector3.Distance(s.HeadAnchor(p), s.landing), 1e-3f, $"id {id} missed its landing point");
+
+            s.age = s.flightDuration * 5f;
+            Assert.Less(Vector3.Distance(s.HeadAnchor(p), s.landing), 1e-3f, $"id {id} drifted after landing");
+        }
+    }
+
+    [Test]
+    public void HeadAnchor_CurlsDifferentlyPerCable()
+    {
+        var p = CableParameters.Default;
+        p.pathCurl = 8f;
+
+        var a = CableShot.Create(1, Src, Tgt, p, 1);
+        var b = CableShot.Create(2, Src, Tgt, p, 1);
+        a.age = a.flightDuration * 0.5f;
+        b.age = b.flightDuration * 0.5f;
+
+        // Compare detours from each cable's own straight line, so a different
+        // landing point alone cannot make this pass.
+        var da = a.HeadAnchor(p) - Vector3.Lerp(a.source, a.landing, 0.5f);
+        var db = b.HeadAnchor(p) - Vector3.Lerp(b.source, b.landing, 0.5f);
+        Assert.Greater(Vector3.Distance(da, db), 0.5f, "two cables took the same detour");
+    }
 }

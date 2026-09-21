@@ -16,8 +16,10 @@ public struct CableParameters
     public float cableSpeed;
     [Tooltip("Easing of the head along its path. 0 is linear; higher decelerates harder into the target. Not drag - nothing is integrated.")]
     public float deceleration;
-    [Tooltip("Wander in the head's flight path. Separate from cableNoise: this curves the route, that animates the cable once it arrives.")]
+    [Tooltip("Extra cable noise while in flight, on top of cableNoise. Makes a flying cable whip; does not bend its route - that is pathCurl.")]
     public float pathNoise;
+    [Tooltip("How far the flight detours off the straight line, in world units. 0 flies direct. The detour closes to zero at both ends, so the cable still lands exactly on its target.")]
+    public float pathCurl;
 
     [Header("Shape")]
     [Tooltip("Droop toward world down at the cable's midpoint, in world units.")]
@@ -36,8 +38,10 @@ public struct CableParameters
     public float shiverFreq;
 
     [Header("Look")]
-    [Tooltip("Ribbon half-width in world units.")]
+    [Tooltip("Ribbon half-width in world units. The base width - each cable picks its own multiple of it.")]
     public float thickness;
+    [Tooltip("Largest multiple of thickness a cable may draw. 1 makes every cable the same width; 5 means the fattest is five times the thinnest.")]
+    public float thicknessVariation;
     [Tooltip("Scale applied to the connector mesh.")]
     public float headScale;
     [Tooltip("Palette. Each cable seeds its own pick.")]
@@ -63,6 +67,7 @@ public struct CableParameters
         cableSpeed = 18f,
         deceleration = 1.5f,
         pathNoise = 1.2f,
+        pathCurl = 0f,
         slack = 1.5f,
         cableNoise = 0.35f,
         noiseScale = 2.5f,
@@ -70,6 +75,7 @@ public struct CableParameters
         shiverDecay = 3.5f,
         shiverFreq = 14f,
         thickness = 0.05f,
+        thicknessVariation = 1f,
         headScale = 1f,
         targetScatterRadius = 1.5f,
         lifetime = 0f,

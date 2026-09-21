@@ -531,9 +531,10 @@ MonoBehaviour:
   target: {fileID: 907279175}
   parameters:
     seed: 1
-    cableSpeed: 18
+    cableSpeed: 9
     deceleration: 1.5
     pathNoise: 1.2
+    pathCurl: 9
     slack: 1.5
     cableNoise: 0.35
     noiseScale: 2.5
@@ -541,6 +542,7 @@ MonoBehaviour:
     shiverDecay: 3.5
     shiverFreq: 14
     thickness: 0.15
+    thicknessVariation: 5
     headScale: 1
     colors:
     - {r: 0.9, g: 0.15, b: 0.15, a: 1}
