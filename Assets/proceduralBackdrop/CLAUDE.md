@@ -334,6 +334,62 @@ lightmaps and Forward+. Only build-time variant count is affected.
 cells it is paid eight times. A screen-space edge detect would scale far better;
 not worth doing until the mosaic case is real.
 
+## Authoring meshes for the library
+
+The scan reads what the FBX already says. Nothing here needs a sidecar file, a
+naming convention on the object, or a manual step in Unity.
+
+### Material names are the contract
+
+Unity splits a mesh into submeshes by material slot, so the material assignment
+made in Blender already carries the distinction between a shape's parts. The
+scan reads that name rather than inspecting geometry.
+
+| Blender material | Role |
+|---|---|
+| `BackdropFrame` | body — takes the main material |
+| `BackdropSphere` | accent — takes `sphereMaterial`, black by default |
+
+Matching is a **case-insensitive substring** against
+`BackdropLibrary.accentMaterialNames` (default `sphere`, `accent`), so
+`BackdropSphere`, `sphere_black` and `Sphere.001` all match — Blender's `.001`
+suffixes are harmless. Adding a role is a data change: put a new token in that
+list and name a material for it.
+
+**This replaced a geometric heuristic, and the replacement is not a refinement —
+it is a correction.** Measuring roundness found 6 of the 13 spheres. The seven it
+missed scored 0.22 to 0.33, because a squashed or half-buried sphere is still
+the sphere. Intent is not recoverable from shape. Roundness survives as an
+informational field and as a fallback for parts whose material name says
+nothing.
+
+### What the scan does and does not care about
+
+| | |
+|---|---|
+| **Scale** | Irrelevant. Each model is normalised into a one-unit box on scan, so source files need not agree. |
+| **Submeshes** | Any number. Each is its own part and its own instanced draw. |
+| **Separate objects** | Supported, and their transforms relative to the model root are preserved. Only needed when parts must move independently — for a single static shape, submeshes are simpler. |
+| **Pivot** | **Matters.** Instances rotate and spin about the mesh origin, so an off-centre pivot reads as orbiting rather than turning. Put the origin at the visual centre. |
+| **Up axis** | `+Y`. The Y scale bias is what makes towers, and shape alignment maps local `+Y` to the outward direction. |
+| **Normals** | Required — the toon shading and the outline pass both use them. |
+| **UVs** | Not needed. Nothing samples a texture. |
+| **Vertex colours** | Ignored. |
+| **Read/write** | Set automatically on scan. |
+
+### Triangle budget
+
+The current set runs 768 to 3,498 triangles per model; the scan warns above
+4,000. The number that matters is not the model but the product:
+
+```
+triangles x instances x split-screen cells x 2   (the outline pass draws again)
+```
+
+At 700 instances that is roughly 5M triangles for a 3,500-triangle model on one
+camera. Comfortable alone, worth watching across a mosaic.
+
+
 ## Traps
 
 - **`recompile_status` lies here.** `write_text_file` imports as it writes, so the compile already happened and `recompile` is a no-op reporting `up_to_date / failed: false` while real errors sit in the console. Gate on `get_console_logs --severity error`. Eight tasks hit this.
