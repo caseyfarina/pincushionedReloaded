@@ -31,6 +31,9 @@ public class CableInstrument : MonoBehaviour
     [Tooltip("Jacket repeats per world unit along the cable.")]
     public float uvTiling = 2f;
 
+    [Tooltip("Local rotation applied to the connector mesh before it is aimed. The head is aimed along its Z axis, so a plug modelled pointing up its Y axis needs (90, 0, 0) here.")]
+    public Vector3 headOrientationEuler = Vector3.zero;
+
     private readonly List<CableShot> _shots = new List<CableShot>();
     private int _nextId;
     private float _drift;
@@ -46,6 +49,8 @@ public class CableInstrument : MonoBehaviour
     // these must not be indexed against _shots.
     private readonly List<Matrix4x4> _heads = new List<Matrix4x4>();
     private readonly List<int> _headMesh = new List<int>();
+
+    private bool _warnedHeadInstancing;
 
     public int LiveCount => _shots.Count;
 
@@ -125,12 +130,22 @@ public class CableInstrument : MonoBehaviour
                                  + Mathf.Abs(CableCurve.Shiver(settleAge, parameters.shiverDecay, parameters.shiverFreq)));
             float slack = parameters.slack * (1f - flight01);
 
+            // The tail end is pinned to the live emitter, but the shot's path
+            // was flown from wherever it was fired. Fading the difference out
+            // along t reattaches the tail to a moving source without dragging
+            // the rest of the trail off the route it actually travelled.
+            Vector3 emitterDrift = SourcePos - shot.source;
+
             for (int i = 0; i < nodeCount; i++)
             {
                 float t = i / (float)(nodeCount - 1);
-                _nodes[i] = CableCurve.Position(
-                    t, SourcePos, head,
-                    slack, noiseAmp, parameters.noiseScale, _drift, shot.seed);
+
+                // The spine is the head's own history, not a chord to the head.
+                // That is what makes the cable read as a trail rather than a
+                // line pulled taut behind a moving point.
+                _nodes[i] = shot.PathPoint(t, parameters)
+                          + emitterDrift * (1f - t)
+                          + CableCurve.Offset(t, slack, noiseAmp, parameters.noiseScale, _drift, shot.seed);
             }
 
             Color c = colorCount > 0 ? parameters.colors[Mathf.Clamp(shot.colorIndex, 0, colorCount - 1)] : Color.white;
@@ -186,7 +201,11 @@ public class CableInstrument : MonoBehaviour
         Vector3 endTangent = head - _nodes[Mathf.Max(0, nodeCount - 2)];
         Vector3 dir = CableShot.HeadDirection(travel, endTangent, flight01, Vector3.forward);
 
-        return Matrix4x4.TRS(head, Quaternion.LookRotation(dir, Vector3.up), Vector3.one * parameters.headScale);
+        // The offset is applied in the mesh's own space, before the aim, so a
+        // connector modelled along any axis can be pointed down the cable
+        // without re-exporting it.
+        Quaternion aim = Quaternion.LookRotation(dir, Vector3.up) * Quaternion.Euler(headOrientationEuler);
+        return Matrix4x4.TRS(head, aim, Vector3.one * parameters.headScale);
     }
 
     private void Draw()
@@ -198,6 +217,20 @@ public class CableInstrument : MonoBehaviour
         }
 
         if (headMaterial == null || library == null || _heads.Count == 0) return;
+
+        // RenderMeshInstanced throws once per frame per batch if the material
+        // has no instancing variant, which buries the console. Check once and
+        // say what to do about it instead.
+        if (!headMaterial.enableInstancing)
+        {
+            if (!_warnedHeadInstancing)
+            {
+                _warnedHeadInstancing = true;
+                Debug.LogWarning($"CableInstrument: head material '{headMaterial.name}' has GPU Instancing off, "
+                               + "so connectors cannot be drawn. Tick Enable GPU Instancing on it.", this);
+            }
+            return;
+        }
 
         // One instanced batch per distinct connector mesh - the same call the
         // scatter system and the backdrop already use.

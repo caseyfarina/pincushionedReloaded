@@ -67,10 +67,24 @@ public static class CableCurve
         float drift, uint seed)
     {
         t = Mathf.Clamp01(t);
+        return Vector3.Lerp(anchorA, anchorB, t)
+             + Offset(t, slack, noiseAmp, noiseScale, drift, seed);
+    }
 
-        Vector3 chord = Vector3.Lerp(anchorA, anchorB, t);
+    /// <summary>
+    /// The droop and wobble hung on a cable, independent of the line it is hung
+    /// on. Separated from Position so the spine can be a traced path rather
+    /// than a chord - a cable that follows where its head actually flew needs
+    /// the same decoration, just applied to a different backbone.
+    ///
+    /// Zero at both ends, so whatever it decorates keeps its endpoints.
+    /// </summary>
+    public static Vector3 Offset(
+        float t, float slack, float noiseAmp, float noiseScale, float drift, uint seed)
+    {
+        t = Mathf.Clamp01(t);
 
-        // Sag is toward world down, not perpendicular to the chord: a cable
+        // Sag is toward world down, not perpendicular to the spine: a cable
         // droops toward the floor however its ends are oriented, and a
         // perpendicular sag would swing a near-vertical cable sideways.
         float sag = slack * 4f * t * (1f - t);
@@ -81,7 +95,7 @@ public static class CableCurve
             Noise1(u, seed, 2u),
             Noise1(u, seed, 3u));
 
-        return chord + Vector3.down * sag + n * (noiseAmp * Window(t));
+        return Vector3.down * sag + n * (noiseAmp * Window(t));
     }
 
     /// <summary>

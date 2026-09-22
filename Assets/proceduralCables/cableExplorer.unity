@@ -531,11 +531,11 @@ MonoBehaviour:
   target: {fileID: 907279175}
   parameters:
     seed: 1
-    cableSpeed: 9
+    cableSpeed: 5
     deceleration: 1.5
     pathNoise: 1.2
-    pathCurl: 9
-    slack: 1.5
+    pathCurl: 5
+    slack: 0.3
     cableNoise: 0.35
     noiseScale: 2.5
     driftSpeed: 0.25
@@ -553,12 +553,13 @@ MonoBehaviour:
     - {r: 0.55, g: 0.25, b: 0.75, a: 1}
     targetScatterRadius: 1.5
     lifetime: 2
-    nodesPerCable: 24
+    nodesPerCable: 48
     cableCap: 64
   library: {fileID: 1781433299}
   ribbonMaterial: {fileID: 2100000, guid: 79d75f6cce124bd45816f768e9a48938, type: 2}
-  headMaterial: {fileID: 2100000, guid: 79d75f6cce124bd45816f768e9a48938, type: 2}
+  headMaterial: {fileID: 2100000, guid: f61a83539a0a72b4e81ee8b56de34085, type: 2}
   uvTiling: 2
+  headOrientationEuler: {x: 90, y: 0, z: 0}
 --- !u!114 &1781433299
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -573,7 +574,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CableLibrary
   folder: Assets/proceduralCables/Meshes/Connectors
   maxTriangles: 20000
-  meshes: []
+  meshes:
+  - {fileID: 5860937743488226217, guid: 8ddb22033b5d26745899570010bd3d50, type: 3}
 --- !u!4 &1781433300
 Transform:
   m_ObjectHideFlags: 0

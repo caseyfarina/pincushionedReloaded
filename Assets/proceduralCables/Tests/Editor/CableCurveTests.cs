@@ -144,4 +144,35 @@ public class CableCurveTests
                 Assert.IsFalse(float.IsInfinity(v), $"Inf at decay {decay} freq {freq}");
             }
     }
+
+    [Test]
+    public void Offset_IsZeroAtBothEnds()
+    {
+        // The sag-and-noise decoration, separated from the spine so the spine
+        // can be a traced path instead of a chord.
+        Assert.Less(CableCurve.Offset(0f, 5f, 10f, 3f, 2f, 7u).magnitude, Eps);
+        Assert.Less(CableCurve.Offset(1f, 5f, 10f, 3f, 2f, 7u).magnitude, Eps);
+    }
+
+    [Test]
+    public void Offset_SagsStraightDownAndPeaksInTheMiddle()
+    {
+        var mid = CableCurve.Offset(0.5f, 3f, 0f, 3f, 0f, 1u);
+        Assert.AreEqual(-3f, mid.y, Eps);
+        Assert.AreEqual(0f, mid.x, Eps);
+        Assert.AreEqual(0f, mid.z, Eps);
+        Assert.Greater(-CableCurve.Offset(0.5f, 3f, 0f, 3f, 0f, 1u).y,
+                       -CableCurve.Offset(0.25f, 3f, 0f, 3f, 0f, 1u).y);
+    }
+
+    [Test]
+    public void Position_IsStillTheChordPlusTheOffset()
+    {
+        // Guards the refactor: Position must keep meaning exactly what it did.
+        for (float t = 0f; t <= 1f; t += 0.125f)
+        {
+            var expected = Vector3.Lerp(A, B, t) + CableCurve.Offset(t, 2f, 1f, 3f, 0.5f, 4u);
+            Assert.Less(Vector3.Distance(CableCurve.Position(t, A, B, 2f, 1f, 3f, 0.5f, 4u), expected), 1e-5f, $"t {t}");
+        }
+    }
 }

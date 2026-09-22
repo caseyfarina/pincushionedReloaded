@@ -71,14 +71,35 @@ public struct CableShot
     /// same expression - the cable has "arrived" simply because this stops
     /// moving, which is why there is no handoff and no pop at impact.
     /// </summary>
-    public Vector3 HeadAnchor(in CableParameters p)
+    public Vector3 HeadAnchor(in CableParameters p) => AnchorAtFraction(Progress, p);
+
+    /// <summary>How far through its flight this cable is, 0 to 1. Clamps once it has landed.</summary>
+    public float Progress => Mathf.Clamp01(age / Mathf.Max(MinFlight, flightDuration));
+
+    /// <summary>Where the head is, or was, at a given fraction of its flight.</summary>
+    private Vector3 AnchorAtFraction(float x, in CableParameters p)
     {
-        float x = Mathf.Clamp01(age / Mathf.Max(MinFlight, flightDuration));
+        x = Mathf.Clamp01(x);
         Vector3 straight = Vector3.Lerp(source, landing, CableCurve.Ease(x, p.deceleration));
 
         if (p.pathCurl <= 0f) return straight;
         return straight + Detour(x, p.pathCurl);
     }
+
+    /// <summary>
+    /// A point along the cable's body, t running 0 at the source to 1 at the head.
+    ///
+    /// The body is the head's own history: the point at t is where the head was
+    /// when it was t of the way through the flight it has completed so far. So
+    /// the cable lies along the route it actually travelled instead of snapping
+    /// taut behind the head, and a landed cable keeps that route forever rather
+    /// than collapsing onto the chord.
+    ///
+    /// This needs no history buffer because the head's path is a pure function
+    /// of its flight fraction - the trail is simply that function, resampled.
+    /// </summary>
+    public Vector3 PathPoint(float t, in CableParameters p) =>
+        AnchorAtFraction(Progress * Mathf.Clamp01(t), p);
 
     /// <summary>
     /// How far off the straight line the head is at normalised time x.
@@ -110,13 +131,19 @@ public struct CableShot
 
         Vector3 perpB = Vector3.Cross(dir, perpA);
 
+        // Three sine lobes, each exactly zero at x=0 and x=1, so however wide
+        // the swerve the cable still leaves its source and reaches its plug.
+        // The third lobe is what turns a single bulge into a serpentine route.
         float lobe1 = Mathf.Sin(Mathf.PI * x);
         float lobe2 = Mathf.Sin(2f * Mathf.PI * x);
+        float lobe3 = Mathf.Sin(3f * Mathf.PI * x);
 
         // Signed so the swerve is not always the same handedness.
         float swing = CableCurve.Rand01((int)seed, seed, 34u) * 2f - 1f;
+        float twist = CableCurve.Rand01((int)seed, seed, 35u) * 2f - 1f;
 
-        return (perpA * lobe1 + perpB * (lobe2 * swing)) * curl;
+        return (perpA * (lobe1 + lobe3 * twist * 0.7f)
+              + perpB * (lobe2 * swing + lobe3 * 0.5f)) * curl;
     }
 
     /// <summary>

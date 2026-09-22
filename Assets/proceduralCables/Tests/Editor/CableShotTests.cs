@@ -294,4 +294,91 @@ public class CableShotTests
         var db = b.HeadAnchor(p) - Vector3.Lerp(b.source, b.landing, 0.5f);
         Assert.Greater(Vector3.Distance(da, db), 0.5f, "two cables took the same detour");
     }
+
+    // ---- the cable follows the head's path, rather than snapping taut behind it ----
+
+    [Test]
+    public void PathPoint_StartsAtTheSourceAndEndsAtTheHead()
+    {
+        var p = CableParameters.Default;
+        p.pathCurl = 10f;
+        var s = CableShot.Create(0, Src, Tgt, p, 1);
+        s.age = s.flightDuration * 0.6f;
+
+        Assert.Less(Vector3.Distance(s.PathPoint(0f, p), s.source), 1e-3f, "the tail left the source");
+        Assert.Less(Vector3.Distance(s.PathPoint(1f, p), s.HeadAnchor(p)), 1e-3f, "the near end is not at the head");
+    }
+
+    [Test]
+    public void PathPoint_TracesWhereTheHeadActuallyWent()
+    {
+        // The whole claim: the body is the head's own history, so sampling the
+        // spine at t must equal where the head was when its flight was t.
+        var p = CableParameters.Default;
+        p.pathCurl = 10f;
+
+        var landed = CableShot.Create(3, Src, Tgt, p, 1);
+        landed.age = landed.flightDuration * 3f;   // long since arrived
+
+        for (float t = 0f; t <= 1f; t += 0.1f)
+        {
+            var probe = CableShot.Create(3, Src, Tgt, p, 1);
+            probe.age = probe.flightDuration * t;
+            Assert.Less(Vector3.Distance(landed.PathPoint(t, p), probe.HeadAnchor(p)), 1e-3f,
+                $"spine at t {t} is not where the head was");
+        }
+    }
+
+    [Test]
+    public void PathPoint_KeepsTheWindingRouteAfterLanding()
+    {
+        // The bug this fixes: a landed cable used to collapse onto the straight
+        // source-to-landing chord, throwing away the route it flew.
+        var p = CableParameters.Default;
+        p.pathCurl = 10f;
+        var s = CableShot.Create(5, Src, Tgt, p, 1);
+        s.age = s.flightDuration * 10f;
+
+        float worst = 0f;
+        for (float t = 0.1f; t < 1f; t += 0.05f)
+        {
+            var chord = Vector3.Lerp(s.source, s.landing, t);
+            worst = Mathf.Max(worst, Vector3.Distance(s.PathPoint(t, p), chord));
+        }
+        Assert.Greater(worst, 1f, "a landed cable snapped back to a straight line");
+    }
+
+    [Test]
+    public void PathPoint_IsStraightWhenThereIsNoCurl()
+    {
+        var p = CableParameters.Default;
+        p.pathCurl = 0f;
+        p.deceleration = 0f;
+        var s = CableShot.Create(0, Src, Tgt, p, 1);
+        s.age = s.flightDuration * 5f;
+
+        for (float t = 0f; t <= 1f; t += 0.1f)
+        {
+            var chord = Vector3.Lerp(s.source, s.landing, t);
+            Assert.Less(Vector3.Distance(s.PathPoint(t, p), chord), 1e-3f, $"t {t} bent with no curl");
+        }
+    }
+
+    [Test]
+    public void PathPoint_GrowsOutOfTheSourceWhileFlying()
+    {
+        // Early in flight the whole body must be short and near the source,
+        // not already stretched to the target.
+        var p = CableParameters.Default;
+        p.pathCurl = 10f;
+        var s = CableShot.Create(0, Src, Tgt, p, 1);
+        s.age = s.flightDuration * 0.1f;
+
+        float reach = 0f;
+        for (float t = 0f; t <= 1f; t += 0.1f)
+            reach = Mathf.Max(reach, Vector3.Distance(s.PathPoint(t, p), s.source));
+
+        Assert.Less(reach, Vector3.Distance(s.source, s.landing) * 0.6f,
+            "the cable was already most of the way to the target at 10% of its flight");
+    }
 }
