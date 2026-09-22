@@ -65,6 +65,7 @@ public class CableInstrument : MonoBehaviour
     private readonly HashSet<string> _warnedInstancing = new HashSet<string>();
     private readonly List<Matrix4x4> _batch = new List<Matrix4x4>();
     private readonly List<Matrix4x4> _partBatch = new List<Matrix4x4>();
+    private bool[] _occupied;
 
     public int LiveCount => _shots.Count;
 
@@ -78,10 +79,49 @@ public class CableInstrument : MonoBehaviour
         while (_shots.Count >= cap) _shots.RemoveAt(0);
 
         int meshCount = library != null ? library.Count : 0;
-        _shots.Add(CableShot.Create(_nextId++, SourcePos, TargetPos, parameters, meshCount));
+        int id = _nextId++;
+
+        int ports = CablePatchBay.PortCount(parameters.patchColumns, parameters.patchRows);
+        int port = CablePatchBay.PickPort(id, parameters.seed, ports, Occupancy(ports));
+
+        var shot = CableShot.Create(id, SourcePos, PortWorld(port), parameters, meshCount);
+        shot.portIndex = port;
+
+        // Remember where it plugged in relative to the target, not in world
+        // coordinates, so the whole bay rides that one transform afterwards.
+        shot.landingLocal = target != null ? target.InverseTransformPoint(shot.landing) : shot.landing;
+
+        _shots.Add(shot);
     }
 
     public void Clear() => _shots.Clear();
+
+    /// <summary>
+    /// Which ports currently have something plugged into them. Derived from the
+    /// live cables rather than tracked separately, so a cable retiring frees its
+    /// port with no bookkeeping to get out of step.
+    /// </summary>
+    private bool[] Occupancy(int ports)
+    {
+        if (ports <= 0) return null;
+        if (_occupied == null || _occupied.Length < ports) _occupied = new bool[ports];
+
+        System.Array.Clear(_occupied, 0, _occupied.Length);
+        foreach (var s in _shots)
+            if (s.portIndex >= 0 && s.portIndex < ports) _occupied[s.portIndex] = true;
+
+        return _occupied;
+    }
+
+    /// <summary>World position of a port, via the target transform.</summary>
+    private Vector3 PortWorld(int port)
+    {
+        Vector3 local = CablePatchBay.PortLocal(
+            port, parameters.patchColumns, parameters.patchRows,
+            parameters.columnSpacing, parameters.rowSpacing);
+
+        return target != null ? target.TransformPoint(local) : TargetPos + local;
+    }
 
     public void RerollSeed()
     {
@@ -90,6 +130,28 @@ public class CableInstrument : MonoBehaviour
         // arbitrary value, so take it from the clock and hash it.
         parameters.seed = CableCurve.Hash((uint)System.DateTime.Now.Ticks);
         Clear();
+    }
+
+    /// <summary>
+    /// Draws the bay so it can be placed by eye. Without this the ports are
+    /// invisible until a cable lands in one, which makes aiming the target
+    /// guesswork.
+    /// </summary>
+    private void OnDrawGizmosSelected()
+    {
+        int ports = CablePatchBay.PortCount(parameters.patchColumns, parameters.patchRows);
+        if (ports <= 0) return;
+
+        float r = Mathf.Max(0.02f, parameters.thickness * 2f);
+        Gizmos.color = new Color(0.3f, 0.8f, 1f, 0.9f);
+        for (int i = 0; i < ports; i++) Gizmos.DrawWireSphere(PortWorld(i), r);
+
+        if (target != null)
+        {
+            // The axis plugs seat along.
+            Gizmos.color = new Color(0.3f, 0.8f, 1f, 0.35f);
+            Gizmos.DrawLine(target.position, target.position + target.forward * 2f);
+        }
     }
 
     private void OnDisable()
@@ -112,6 +174,9 @@ public class CableInstrument : MonoBehaviour
         {
             var s = _shots[i];
             s.age += dt;
+
+            // The bay may have moved or turned since this cable was fired.
+            if (target != null) s.landing = target.TransformPoint(s.landingLocal);
 
             if (s.IsExpired(parameters.lifetime)) _shots.RemoveAt(i);
             else _shots[i] = s;

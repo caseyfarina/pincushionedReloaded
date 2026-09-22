@@ -475,13 +475,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 907279174}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 12, y: 1, z: 0}
+  m_LocalRotation: {x: -0, y: 0.74353015, z: -0, w: 0.6687024}
+  m_LocalPosition: {x: 19.22, y: 7.66, z: 0.63}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 96.066, z: 0}
 --- !u!1 &1781433296
 GameObject:
   m_ObjectHideFlags: 0
@@ -551,7 +551,11 @@ MonoBehaviour:
     - {r: 0.2, g: 0.7, b: 0.3, a: 1}
     - {r: 0.15, g: 0.4, b: 0.85, a: 1}
     - {r: 0.55, g: 0.25, b: 0.75, a: 1}
-    targetScatterRadius: 1.5
+    patchColumns: 10
+    patchRows: 3
+    columnSpacing: 1.2
+    rowSpacing: 1.2
+    targetScatterRadius: 0
     lifetime: 2
     nodesPerCable: 48
     cableCap: 64

@@ -47,6 +47,16 @@ public struct CableParameters
     [Tooltip("Palette. Each cable seeds its own pick.")]
     public Color[] colors;
 
+    [Header("Patch bay")]
+    [Tooltip("Ports across the bay.")]
+    public int patchColumns;
+    [Tooltip("Ports down the bay.")]
+    public int patchRows;
+    [Tooltip("Distance between ports across, in the target's local units.")]
+    public float columnSpacing;
+    [Tooltip("Distance between ports down, in the target's local units.")]
+    public float rowSpacing;
+
     [Header("Targeting")]
     [Tooltip("Landing points scatter on a sphere of this radius around the target Transform.")]
     public float targetScatterRadius;
@@ -77,6 +87,10 @@ public struct CableParameters
         thickness = 0.05f,
         thicknessVariation = 1f,
         headScale = 1f,
+        patchColumns = 10,
+        patchRows = 3,
+        columnSpacing = 1.5f,
+        rowSpacing = 1.2f,
         targetScatterRadius = 1.5f,
         lifetime = 0f,
         nodesPerCable = 24,

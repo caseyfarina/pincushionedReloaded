@@ -19,6 +19,17 @@ public struct CableShot
     /// <summary>Index into CableLibrary, or -1 when no connectors are imported.</summary>
     public int meshIndex;
 
+    /// <summary>Which patch bay port this cable is plugged into, or -1 for none.</summary>
+    public int portIndex;
+
+    /// <summary>
+    /// The landing point in the TARGET's local space. landing is re-resolved
+    /// from this every frame, which is what lets one transform carry the whole
+    /// bay: move or rotate the target and every plugged cable follows, rather
+    /// than staying at the world point it was fired at.
+    /// </summary>
+    public Vector3 landingLocal;
+
     private const float MinFlight = 1e-3f;
     private const float Eps = 1e-10f;
 
