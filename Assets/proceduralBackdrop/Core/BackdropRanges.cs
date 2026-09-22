@@ -64,8 +64,8 @@ public class BackdropRanges : ScriptableObject
     public bool randomiseSolidFill = true;
 
     [Header("Per-instance variation")]
-    public RandomRange scaleMin = new RandomRange(0.8f, 4f);
-    public RandomRange scaleMax = new RandomRange(3f, 10f);
+    public RandomRange scaleMin = new RandomRange(0.7f, 6f);
+    public RandomRange scaleMax = new RandomRange(4f, 30f);
     [Tooltip("How far the dominant axis is stretched when a roll decides the field is not uniform. One range, not three: the axis is chosen separately, so this is the magnitude of whatever proportion was picked.")]
     public RandomRange scaleBias = new RandomRange(1.5f, 8f);
 

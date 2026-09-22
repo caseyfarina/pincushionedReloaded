@@ -18,7 +18,7 @@ Shader "Custom/URP_NoiseDisplacement_Toon"
         [Header(Outline)]
         [Toggle(_OUTLINE_ON)] _EnableOutline ("Enable Outline", Float) = 1
         _OutlineColor ("Outline Color", Color) = (0, 0, 0, 1)
-        _OutlineWidth ("Outline Width", Range(0, 10)) = 2.0
+        _OutlineWidth ("Outline Width", Range(0, 20)) = 4.0
 
         [Header(Shading Mode)]
         // 0 = Toon, 1 = Fresnel Toon, 2 = Lit. Matches BackdropShadingMode.
@@ -108,12 +108,17 @@ Shader "Custom/URP_NoiseDisplacement_Toon"
                 half _OcclusionStrength;
             CBUFFER_END
 
-            // Per-instance flash, written as a float array by BackdropInstrument.
-            // Defaults to 0, so anything not driving it - the dancer - is
+            // Backdrop flash, as scalars rather than a per-instance array.
+            // Seconds since the flash fired, not an absolute timestamp, so the
+            // shader clock and the C# clock never have to agree - which they do
+            // not in edit mode, where the instrument reads editor time.
+            // All default to 0, so anything not driving them - the dancer - is
             // unaffected.
-            UNITY_INSTANCING_BUFFER_START(BackdropProps)
-                UNITY_DEFINE_INSTANCED_PROP(float, _Flash)
-            UNITY_INSTANCING_BUFFER_END(BackdropProps)
+            float _BackdropFlashAge;
+            float _BackdropFlashDecay;
+            float _BackdropFlashRipple;
+            float _BackdropFlashIntensity;
+            float _BackdropInstanceCount;
 
             TEXTURE2D(_DisplacementMap); SAMPLER(sampler_DisplacementMap);
 
@@ -244,12 +249,17 @@ Shader "Custom/URP_NoiseDisplacement_Toon"
                 half _OcclusionStrength;
             CBUFFER_END
 
-            // Per-instance flash, written as a float array by BackdropInstrument.
-            // Defaults to 0, so anything not driving it - the dancer - is
+            // Backdrop flash, as scalars rather than a per-instance array.
+            // Seconds since the flash fired, not an absolute timestamp, so the
+            // shader clock and the C# clock never have to agree - which they do
+            // not in edit mode, where the instrument reads editor time.
+            // All default to 0, so anything not driving them - the dancer - is
             // unaffected.
-            UNITY_INSTANCING_BUFFER_START(BackdropProps)
-                UNITY_DEFINE_INSTANCED_PROP(float, _Flash)
-            UNITY_INSTANCING_BUFFER_END(BackdropProps)
+            float _BackdropFlashAge;
+            float _BackdropFlashDecay;
+            float _BackdropFlashRipple;
+            float _BackdropFlashIntensity;
+            float _BackdropInstanceCount;
 
             TEXTURE2D(_BaseMap);            SAMPLER(sampler_BaseMap);
             TEXTURE2D(_BumpMap);            SAMPLER(sampler_BumpMap);
@@ -324,7 +334,7 @@ Shader "Custom/URP_NoiseDisplacement_Toon"
                 // by lerping the same term rather than branching to a separate
                 // PBR path, so shadow colour, specular and the light loop stay
                 // shared and the three modes cannot drift apart.
-                half smoothLit = saturate(NdotL * 0.5 + 0.5);
+                half smoothLit = saturate(NdotL);
                 lightIntensity = lerp(lightIntensity, smoothLit, step(1.5, _ShadingMode));
 
                 // Lerp between shadow color and lit albedo
@@ -471,10 +481,22 @@ Shader "Custom/URP_NoiseDisplacement_Toon"
                 #endif
 
                 // ---- Backdrop flash ----
-                // Per-instance, and additive on top of every mode so a pad press
-                // reads the same whichever shading is live. Zero for anything
-                // that does not drive it.
-                color += _EmissionColor.rgb * UNITY_ACCESS_INSTANCED_PROP(BackdropProps, _Flash);
+                // Additive on top of every mode, so a pad press reads the same
+                // whichever shading is live. The idNorm term staggers the onset
+                // so the flash sweeps the field rather than blinking flat.
+                if (_BackdropFlashIntensity > 0.0)
+                {
+                    #if defined(INSTANCING_ON) || defined(UNITY_INSTANCING_ENABLED)
+                        float idNorm = (float)unity_InstanceID / max(_BackdropInstanceCount, 1.0);
+                    #else
+                        float idNorm = 0.0;
+                    #endif
+
+                    float since = _BackdropFlashAge - idNorm * _BackdropFlashRipple;
+                    float flash = since < 0.0 ? 0.0
+                        : exp(-since * max(_BackdropFlashDecay, 0.01)) * _BackdropFlashIntensity;
+                    color += _EmissionColor.rgb * flash;
+                }
 
                 // ---- Fog ----
                 color = MixFog(color, input.fogFactor);
@@ -533,12 +555,17 @@ Shader "Custom/URP_NoiseDisplacement_Toon"
                 half _OcclusionStrength;
             CBUFFER_END
 
-            // Per-instance flash, written as a float array by BackdropInstrument.
-            // Defaults to 0, so anything not driving it - the dancer - is
+            // Backdrop flash, as scalars rather than a per-instance array.
+            // Seconds since the flash fired, not an absolute timestamp, so the
+            // shader clock and the C# clock never have to agree - which they do
+            // not in edit mode, where the instrument reads editor time.
+            // All default to 0, so anything not driving them - the dancer - is
             // unaffected.
-            UNITY_INSTANCING_BUFFER_START(BackdropProps)
-                UNITY_DEFINE_INSTANCED_PROP(float, _Flash)
-            UNITY_INSTANCING_BUFFER_END(BackdropProps)
+            float _BackdropFlashAge;
+            float _BackdropFlashDecay;
+            float _BackdropFlashRipple;
+            float _BackdropFlashIntensity;
+            float _BackdropInstanceCount;
 
             TEXTURE2D(_DisplacementMap); SAMPLER(sampler_DisplacementMap);
 
@@ -638,12 +665,17 @@ Shader "Custom/URP_NoiseDisplacement_Toon"
                 half _OcclusionStrength;
             CBUFFER_END
 
-            // Per-instance flash, written as a float array by BackdropInstrument.
-            // Defaults to 0, so anything not driving it - the dancer - is
+            // Backdrop flash, as scalars rather than a per-instance array.
+            // Seconds since the flash fired, not an absolute timestamp, so the
+            // shader clock and the C# clock never have to agree - which they do
+            // not in edit mode, where the instrument reads editor time.
+            // All default to 0, so anything not driving them - the dancer - is
             // unaffected.
-            UNITY_INSTANCING_BUFFER_START(BackdropProps)
-                UNITY_DEFINE_INSTANCED_PROP(float, _Flash)
-            UNITY_INSTANCING_BUFFER_END(BackdropProps)
+            float _BackdropFlashAge;
+            float _BackdropFlashDecay;
+            float _BackdropFlashRipple;
+            float _BackdropFlashIntensity;
+            float _BackdropInstanceCount;
 
             TEXTURE2D(_DisplacementMap); SAMPLER(sampler_DisplacementMap);
 
@@ -729,12 +761,17 @@ Shader "Custom/URP_NoiseDisplacement_Toon"
                 half _OcclusionStrength;
             CBUFFER_END
 
-            // Per-instance flash, written as a float array by BackdropInstrument.
-            // Defaults to 0, so anything not driving it - the dancer - is
+            // Backdrop flash, as scalars rather than a per-instance array.
+            // Seconds since the flash fired, not an absolute timestamp, so the
+            // shader clock and the C# clock never have to agree - which they do
+            // not in edit mode, where the instrument reads editor time.
+            // All default to 0, so anything not driving them - the dancer - is
             // unaffected.
-            UNITY_INSTANCING_BUFFER_START(BackdropProps)
-                UNITY_DEFINE_INSTANCED_PROP(float, _Flash)
-            UNITY_INSTANCING_BUFFER_END(BackdropProps)
+            float _BackdropFlashAge;
+            float _BackdropFlashDecay;
+            float _BackdropFlashRipple;
+            float _BackdropFlashIntensity;
+            float _BackdropInstanceCount;
 
             TEXTURE2D(_DisplacementMap); SAMPLER(sampler_DisplacementMap);
 

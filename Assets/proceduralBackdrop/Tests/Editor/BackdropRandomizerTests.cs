@@ -210,46 +210,49 @@ public class BackdropRandomizerTests
     }
 
     [Test]
-    public void Randomize_ProportionIsOneDecision_NotThree()
+    public void Randomize_LeavesProportionsUndistorted()
     {
-        // Three independent axis draws almost never produce a decisive shape -
-        // you get 1.3 / 2.1 / 0.8, which reads as mush. Every roll must now come
-        // out either uniform or stretched on exactly one axis.
+        // The library holds designed shapes, not generic boxes. Stretching an
+        // axis turns an ellipse into an egg and a cross into a crucifix, so the
+        // randomiser must never touch the bias - size varies through the uniform
+        // scale range instead.
         var r = Ranges();
 
-        for (int seed = 0; seed < 300; seed++)
+        for (int seed = 0; seed < 400; seed++)
         {
             var b = BackdropRandomizer.Randomize(r, BackdropParameters.Default, new System.Random(seed)).scaleAxisBias;
-
-            int stretched = 0;
-            if (!Mathf.Approximately(b.x, 1f)) stretched++;
-            if (!Mathf.Approximately(b.y, 1f)) stretched++;
-            if (!Mathf.Approximately(b.z, 1f)) stretched++;
-
-            Assert.LessOrEqual(stretched, 1,
-                $"seed {seed} stretched {stretched} axes at once ({b}); proportion should be one decision");
+            Assert.AreEqual(Vector3.one, b, $"seed {seed} distorted the proportions to {b}");
         }
     }
 
     [Test]
-    public void Randomize_ReachesUniformAndAllThreeProportions()
+    public void Randomize_StillVariesSizeThroughTheScaleRange()
     {
+        // Pinning the bias must not leave every roll the same size.
         var r = Ranges();
-        bool uniform = false, tall = false, wide = false, deep = false;
 
-        for (int seed = 0; seed < 600; seed++)
+        float lo = float.MaxValue, hi = float.MinValue;
+        for (int seed = 0; seed < 300; seed++)
         {
-            var b = BackdropRandomizer.Randomize(r, BackdropParameters.Default, new System.Random(seed)).scaleAxisBias;
-            if (Mathf.Approximately(b.x, 1f) && Mathf.Approximately(b.y, 1f) && Mathf.Approximately(b.z, 1f)) uniform = true;
-            else if (!Mathf.Approximately(b.y, 1f)) tall = true;
-            else if (!Mathf.Approximately(b.x, 1f)) wide = true;
-            else deep = true;
+            var p = BackdropRandomizer.Randomize(r, BackdropParameters.Default, new System.Random(seed));
+            lo = Mathf.Min(lo, p.scaleRange.y);
+            hi = Mathf.Max(hi, p.scaleRange.y);
         }
 
-        Assert.IsTrue(uniform, "never produced a uniform field");
-        Assert.IsTrue(tall, "never produced towers");
-        Assert.IsTrue(wide, "never produced slabs");
-        Assert.IsTrue(deep, "never produced fins");
+        Assert.Greater(hi - lo, 5f, $"scale barely varied across 300 rolls: {lo:0.0} to {hi:0.0}");
+    }
+
+    [Test]
+    public void Mutate_AlsoLeavesProportionsAlone()
+    {
+        var r = Ranges();
+        var basis = BackdropParameters.Default;
+        basis.scaleAxisBias = Vector3.one;
+
+        for (int seed = 0; seed < 60; seed++)
+            Assert.AreEqual(Vector3.one,
+                BackdropRandomizer.Mutate(r, basis, 0.4f, new System.Random(seed)).scaleAxisBias,
+                $"seed {seed}");
     }
 
     [Test]
@@ -286,23 +289,6 @@ public class BackdropRandomizerTests
 
         Assert.Greater(aligned, 40, "almost never aligned");
         Assert.Less(aligned, 360, "almost always aligned");
-    }
-
-    [Test]
-    public void Mutate_KeepsTheProportionAxisAndOnlyChangesItsMagnitude()
-    {
-        // Re-picking the axis would be a jump out of the region, which is what
-        // Randomize is for.
-        var r = Ranges();
-        var basis = BackdropParameters.Default;
-        basis.scaleAxisBias = new Vector3(1f, 6f, 1f);
-
-        for (int seed = 0; seed < 60; seed++)
-        {
-            var b = BackdropRandomizer.Mutate(r, basis, 0.3f, new System.Random(seed)).scaleAxisBias;
-            Assert.Greater(b.y, b.x, $"seed {seed}: Y should still dominate");
-            Assert.Greater(b.y, b.z, $"seed {seed}: Y should still dominate");
-        }
     }
 
     [Test]

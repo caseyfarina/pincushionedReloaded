@@ -55,7 +55,11 @@ public class BackdropInstrument : MonoBehaviour
     /// </summary>
     public int Revision { get; private set; }
 
-    private static readonly int IdFlash = Shader.PropertyToID("_Flash");
+    private static readonly int IdFlashAge = Shader.PropertyToID("_BackdropFlashAge");
+    private static readonly int IdFlashDecay = Shader.PropertyToID("_BackdropFlashDecay");
+    private static readonly int IdFlashRipple = Shader.PropertyToID("_BackdropFlashRipple");
+    private static readonly int IdFlashIntensity = Shader.PropertyToID("_BackdropFlashIntensity");
+    private static readonly int IdInstanceCount = Shader.PropertyToID("_BackdropInstanceCount");
 
     private Matrix4x4[] matrices = new Matrix4x4[BackdropParameters.MaxSpawnCount];
     private Matrix4x4[] partMatrices = new Matrix4x4[BackdropParameters.MaxSpawnCount];
@@ -248,7 +252,15 @@ public class BackdropInstrument : MonoBehaviour
         else { var b = TransformedBounds(effective); rp.worldBounds = b; rpSphere.worldBounds = b; }
 
         if (mpb == null) mpb = new MaterialPropertyBlock();
-        mpb.SetFloatArray(IdFlash, flashValues);
+
+        // Age, not a timestamp: the shader clock and NowTime disagree in edit
+        // mode, and a difference of seconds is all the decay needs.
+        mpb.SetFloat(IdFlashAge, Mathf.Max(0f, NowTime - flashTime));
+        mpb.SetFloat(IdFlashDecay, effective.flashDecay);
+        mpb.SetFloat(IdFlashRipple, effective.flashRipple);
+        mpb.SetFloat(IdFlashIntensity, effective.flashIntensity);
+        mpb.SetFloat(IdInstanceCount, liveCount);
+
         rp.matProps = mpb;
         rpSphere.matProps = mpb;
 

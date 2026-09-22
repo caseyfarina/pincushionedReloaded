@@ -95,28 +95,12 @@ public static class BackdropRandomizer
         p.scaleRange     = new Vector2(Mathf.Min(sMin, sMax), Mathf.Max(sMin, sMax));
         p.offsetJitter   = new Vector3(jitter, jitter, jitter);
 
-        // Proportion: uniform, or one axis stretched. Y is weighted heaviest
-        // because standing forms read as architecture where a stretched X or Z
-        // reads as debris - but all three stay reachable.
-        if (mutate)
-        {
-            // Mutation scales whatever proportion is already there rather than
-            // re-picking the axis, which would be a jump out of the region.
-            float cur = MaxComponent(basis.scaleAxisBias);
-            p.scaleAxisBias = cur > 1e-4f
-                ? basis.scaleAxisBias * (biasMag / cur)
-                : Vector3.one;
-        }
-        else if (proportionRoll < r.uniformProportionChance)
-        {
-            p.scaleAxisBias = Vector3.one;
-        }
-        else
-        {
-            p.scaleAxisBias = axisRoll < 0.55f ? new Vector3(1f, biasMag, 1f)
-                            : axisRoll < 0.80f ? new Vector3(biasMag, 1f, 1f)
-                                               : new Vector3(1f, 1f, biasMag);
-        }
+        // Proportion is left alone. The library holds designed shapes rather
+        // than generic boxes, and stretching one axis destroys the proportions
+        // they were drawn with - an ellipse becomes an egg, a cross becomes a
+        // crucifix. Size varies through scaleRange instead, which is uniform and
+        // preserves the form. The MIDI bias knobs still reach it by hand.
+        p.scaleAxisBias = Vector3.one;
 
         // Orientation: aligned to the shape, or tumbled on all three axes. The
         // in-between - one axis jittered, the others not - is what made every

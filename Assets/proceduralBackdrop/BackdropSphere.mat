@@ -51,7 +51,7 @@ Material:
     - _EnableOutline: 1
     - _FresnelPower: 3
     - _OcclusionStrength: 1
-    - _OutlineWidth: 1.5
+    - _OutlineWidth: 3
     - _ShadingMode: 0
     - _ShadowSmoothness: 0.02
     - _ShadowThreshold: 0.5

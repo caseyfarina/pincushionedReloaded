@@ -359,12 +359,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BackdropInstrument
   parameters:
     layoutSeed: 1
-    spawnCount: 700
-    domain: 2
+    spawnCount: 2748
+    domain: 6
     domainSize: {x: 60, y: 30, z: 22}
     fitToCamera: 1
     fitMargin: {x: 1.1, y: 1.1}
-    fitDistance: 26
+    fitDistance: 17.1
     frameOffset: {x: 0, y: 0}
     archInnerRadius: 0.4
     colonnadeCount: 6
@@ -373,21 +373,21 @@ MonoBehaviour:
     skylineRoughness: 0.35
     skylineInverted: 0
     solidFill: 0
-    occupancy: 1
+    occupancy: 0.292
     driftDirection: {x: 0, y: 0, z: 0}
     driftAmount: 0
     occupancyNoiseScale: 0
-    scaleRange: {x: 0.7, y: 2.4}
-    scaleAxisBias: {x: 1, y: 3, z: 1}
-    accentFraction: 0.1
+    scaleRange: {x: 0.7, y: 20}
+    scaleAxisBias: {x: 1, y: 1, z: 1}
+    accentFraction: 0.106919095
     accentRatio: 1.618034
-    accentSteps: 1
+    accentSteps: 3
     offsetJitter: {x: 0.5, y: 0.5, z: 0.5}
     rotationJitter: {x: 0, y: 180, z: 0}
     alignToShape: 0
     spinRateRange: {x: -8, y: 8}
     spinAxis: {x: 0, y: 1, z: 0}
-    motion: 0
+    motion: 1
     waveAxis: {x: 0, y: 1, z: 0}
     waveAmplitude: 0.75
     waveFrequency: 0.15
@@ -395,11 +395,11 @@ MonoBehaviour:
     wavePhaseSpread: 1
     shading: 0
     emissionColor: {r: 1, g: 1, b: 1, a: 1}
-    flashDecay: 4
-    flashIntensity: 8
+    flashDecay: 3.72
+    flashIntensity: 1
     flashRipple: 0.3
   library: {fileID: 11400000, guid: a59926589d5c21c4b8177bf0a1a01d1c, type: 2}
-  meshIndex: 0
+  meshIndex: 5
   material: {fileID: 2100000, guid: 158373d9a2cebac4fa6ab48e9f517d42, type: 2}
   sphereMaterial: {fileID: 2100000, guid: f2e70381b0ee7ac4b8a44d92f81bd28e, type: 2}
   shadows: 0
@@ -415,7 +415,7 @@ Transform:
   m_GameObject: {fileID: 1882672237}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.99939084, z: 0.034899496, w: -0}
-  m_LocalPosition: {x: 0, y: 3.4190106, z: -48.09013}
+  m_LocalPosition: {x: 0, y: 4.039843, z: -56.96845}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

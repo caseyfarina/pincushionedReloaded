@@ -52,7 +52,7 @@ Material:
     - _FresnelPower: 3
     - _Metallic: 0
     - _OcclusionStrength: 1
-    - _OutlineWidth: 2
+    - _OutlineWidth: 4
     - _ShadingMode: 0
     - _ShadowSmoothness: 0.02
     - _ShadowThreshold: 0.5
