@@ -25,11 +25,11 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _BraidDepth: 0.35
+    - _BraidDepth: 0.883
     - _BraidTiling: 8
     - _HalfWidth: 0.15
-    - _Metallic: 0
-    - _Smoothness: 0.45
+    - _Metallic: 0.13
+    - _Smoothness: 0.093
     m_Colors: []
   m_BuildTextureStacks: []
   m_AllowLocking: 1

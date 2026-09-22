@@ -29,8 +29,17 @@ public class CableInstrument : MonoBehaviour
 
     public CableParameters parameters = CableParameters.Default;
 
-    [Tooltip("Connector meshes. Leave empty and cables render headless.")]
+    [Tooltip("Connector meshes. Leave empty and cables render headless. If unset, a CableLibrary on this same object is used.")]
     public CableLibrary library;
+
+    /// <summary>
+    /// The library actually drawn from. Falls back to one on this GameObject,
+    /// because an unset reference here is invisible - cables keep rendering
+    /// perfectly and only the plugs quietly vanish, which reads as a broken
+    /// connector rather than a missing link.
+    /// </summary>
+    private CableLibrary ResolvedLibrary =>
+        library != null ? library : GetComponent<CableLibrary>();
 
     [Tooltip("Uses Pincushioned/CableRibbon.")]
     public Material ribbonMaterial;
@@ -69,6 +78,12 @@ public class CableInstrument : MonoBehaviour
 
     public int LiveCount => _shots.Count;
 
+    private void Reset()
+    {
+        library = GetComponent<CableLibrary>();
+        source = transform;
+    }
+
     private Vector3 SourcePos => source != null ? source.position : transform.position;
     private Vector3 TargetPos => target != null ? target.position : transform.position + transform.forward * 10f;
 
@@ -78,7 +93,8 @@ public class CableInstrument : MonoBehaviour
         int cap = Mathf.Max(1, parameters.cableCap);
         while (_shots.Count >= cap) _shots.RemoveAt(0);
 
-        int meshCount = library != null ? library.Count : 0;
+        var lib = ResolvedLibrary;
+        int meshCount = lib != null ? lib.Count : 0;
         int id = _nextId++;
 
         int ports = CablePatchBay.PortCount(parameters.patchColumns, parameters.patchRows);
@@ -233,7 +249,7 @@ public class CableInstrument : MonoBehaviour
             CableRibbonBuilder.Append(_nodes, nodeCount, c, uvTiling,
                 _positions, _tangents, _uvs, _colors, _indices);
 
-            if (shot.meshIndex >= 0 && library != null)
+            if (shot.meshIndex >= 0 && ResolvedLibrary != null)
             {
                 _heads.Add(HeadMatrix(shot, head, flight01, nodeCount));
                 _headMesh.Add(shot.meshIndex);
@@ -302,15 +318,16 @@ public class CableInstrument : MonoBehaviour
             Graphics.RenderMesh(new RenderParams(ribbonMaterial), _mesh, 0, Matrix4x4.identity);
         }
 
-        if (library == null || _heads.Count == 0) return;
+        var lib = ResolvedLibrary;
+        if (lib == null || _heads.Count == 0) return;
 
         // One instanced batch per part, not per connector. An instanced draw
         // renders exactly one submesh, so a plug modelled as a rubber boot plus
         // a metal barrel has to be submitted twice - submit only part zero and
         // the barrel silently never appears.
-        for (int c = 0; c < library.Count; c++)
+        for (int c = 0; c < lib.Count; c++)
         {
-            var connector = library.Get(c);
+            var connector = lib.Get(c);
             if (connector == null) continue;
 
             _batch.Clear();
