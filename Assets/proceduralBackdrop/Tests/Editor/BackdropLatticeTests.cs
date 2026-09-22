@@ -586,6 +586,101 @@ public class BackdropLatticeTests
     }
 
     [Test]
+    public void ModelSubset_PicksDistinctIndicesInRange()
+    {
+        // Repeats would waste a slot and silently reduce the variety asked for.
+        var dst = new int[32];
+        var scratch = new int[64];
+
+        foreach (int libCount in new[] { 1, 3, 10, 16 })
+        foreach (int want in new[] { 1, 2, 5, 10, 32 })
+        for (uint seed = 1; seed < 20; seed++)
+        {
+            int n = BackdropLattice.BuildModelSubset(dst, scratch, libCount, want, seed);
+
+            Assert.AreEqual(Mathf.Min(want, libCount), n, $"lib {libCount} want {want}");
+
+            var seen = new System.Collections.Generic.HashSet<int>();
+            for (int i = 0; i < n; i++)
+            {
+                Assert.GreaterOrEqual(dst[i], 0);
+                Assert.Less(dst[i], libCount, $"lib {libCount} seed {seed}");
+                Assert.IsTrue(seen.Add(dst[i]), $"index {dst[i]} repeated (lib {libCount} want {want} seed {seed})");
+            }
+        }
+    }
+
+    [Test]
+    public void ModelSubset_CoversTheWholeLibraryWhenAskedForAllOfIt()
+    {
+        var dst = new int[32];
+        var scratch = new int[64];
+
+        int n = BackdropLattice.BuildModelSubset(dst, scratch, 10, 10, 7u);
+        Assert.AreEqual(10, n);
+
+        var seen = new System.Collections.Generic.HashSet<int>();
+        for (int i = 0; i < n; i++) seen.Add(dst[i]);
+        Assert.AreEqual(10, seen.Count, "asking for the whole library should return every index once");
+    }
+
+    [Test]
+    public void ModelSubset_IsReproducibleAndSeedDependent()
+    {
+        var a = new int[32]; var b = new int[32]; var scratch = new int[64];
+
+        BackdropLattice.BuildModelSubset(a, scratch, 16, 5, 3u);
+        BackdropLattice.BuildModelSubset(b, scratch, 16, 5, 3u);
+        for (int i = 0; i < 5; i++) Assert.AreEqual(a[i], b[i], $"slot {i} not reproducible");
+
+        BackdropLattice.BuildModelSubset(b, scratch, 16, 5, 4u);
+        bool same = true;
+        for (int i = 0; i < 5; i++) if (a[i] != b[i]) same = false;
+        Assert.IsFalse(same, "two seeds produced the same subset");
+    }
+
+    [Test]
+    public void ModelForInstance_SpreadsAcrossTheSubset()
+    {
+        // A field that leaned on one letter would read as a mistake rather than
+        // as a word.
+        var subset = new int[] { 2, 5, 7, 9 };
+        var hits = new int[4];
+
+        for (int i = 0; i < 800; i++)
+        {
+            int m = BackdropLattice.ModelForInstance(i, 11u, subset, 4);
+            int slot = System.Array.IndexOf(subset, m);
+            Assert.GreaterOrEqual(slot, 0, $"instance {i} got {m}, which is not in the subset");
+            hits[slot]++;
+        }
+
+        foreach (int h in hits)
+            Assert.Greater(h, 800 / 4 / 3, $"a model was starved: {hits[0]},{hits[1]},{hits[2]},{hits[3]}");
+    }
+
+    [Test]
+    public void ModelForInstance_HoldsStillAcrossUnrelatedParameters()
+    {
+        // Its own hash stream, so dialling scale or position does not reshuffle
+        // which glyph each instance shows.
+        var subset = new int[] { 0, 1, 2 };
+        for (int i = 0; i < 200; i++)
+            Assert.AreEqual(
+                BackdropLattice.ModelForInstance(i, 5u, subset, 3),
+                BackdropLattice.ModelForInstance(i, 5u, subset, 3),
+                $"instance {i} is not stable");
+    }
+
+    [Test]
+    public void ModelForInstance_SingleSubsetAlwaysReturnsThatModel()
+    {
+        var subset = new int[] { 6 };
+        for (int i = 0; i < 100; i++)
+            Assert.AreEqual(6, BackdropLattice.ModelForInstance(i, 2u, subset, 1), $"instance {i}");
+    }
+
+    [Test]
     public void Occupancy_ThinsTheFieldWithoutMovingWhatRemains()
     {
         // The property that makes occupancy usable as a performance control: it

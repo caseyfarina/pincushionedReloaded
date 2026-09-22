@@ -23,8 +23,11 @@ public class BackdropInstrument : MonoBehaviour
     [Tooltip("The live parameter set. Edit here, or drive it from a driver or preset.")]
     [SerializeField] private BackdropParameters parameters = BackdropParameters.Default;
 
-    [Tooltip("Mesh set the mesh-swap function cycles through.")]
+    [Tooltip("Shape set the mesh-swap function cycles through.")]
     [SerializeField] private BackdropLibrary library;
+
+    [Tooltip("Letter set, used instead of the shape set while useLetters is on. Kept as a second asset rather than merged so the two never contaminate each other and the letters can keep their relative sizes.")]
+    [SerializeField] private BackdropLibrary letterLibrary;
 
     [Tooltip("Index into the library. Out of range falls back to a built-in cube.")]
     [SerializeField] private int meshIndex = 0;
@@ -45,7 +48,13 @@ public class BackdropInstrument : MonoBehaviour
     [SerializeField] private int cycleSeed = 20260911;
 
     public BackdropParameters Current => parameters;
-    public BackdropLibrary Library => library;
+
+    /// <summary>The library the field is currently drawing from.</summary>
+    public BackdropLibrary Library =>
+        parameters.useLetters && letterLibrary != null ? letterLibrary : library;
+
+    public BackdropLibrary ShapeLibrary => library;
+    public BackdropLibrary LetterLibrary => letterLibrary;
     public int MeshIndex => meshIndex;
 
     /// <summary>
@@ -63,6 +72,9 @@ public class BackdropInstrument : MonoBehaviour
 
     private Matrix4x4[] matrices = new Matrix4x4[BackdropParameters.MaxSpawnCount];
     private Matrix4x4[] partMatrices = new Matrix4x4[BackdropParameters.MaxSpawnCount];
+    private Matrix4x4[] gathered = new Matrix4x4[BackdropParameters.MaxSpawnCount];
+    private readonly int[] instanceModel = new int[BackdropParameters.MaxSpawnCount];
+    private int instanceAssignedFor = -1;
     private float[] flashValues = new float[BackdropParameters.MaxSpawnCount];
     private MaterialPropertyBlock mpb;
     private RenderParams rp;
@@ -71,6 +83,15 @@ public class BackdropInstrument : MonoBehaviour
 
     private float flashTime = -1000f;
     private int liveCount;
+
+    // Model selection buffers, caller-owned so Update never allocates.
+    private readonly int[] modelSubset = new int[32];
+    private readonly int[] subsetScratch = new int[64];
+    private int subsetCount;
+    private uint subsetBuiltFor = uint.MaxValue;
+    private int subsetBuiltSize = -1;
+    private int subsetBuiltLibrary = -1;
+    private int subsetBuiltMode = -1;
 
     private ShuffleBag shadingBag;
     private ShuffleBag meshBag;
@@ -154,13 +175,14 @@ public class BackdropInstrument : MonoBehaviour
     {
         EnsureCyclers();
 
-        if (library == null || library.Count == 0)
+        var lib = Library;
+        if (lib == null || lib.Count == 0)
         {
             if (!warnedNoLibrary)
             {
                 warnedNoLibrary = true;
                 Debug.LogWarning(
-                    $"[BackdropInstrument] '{name}' has no meshes, so the mesh pad does nothing. " +
+                    $"[BackdropInstrument] '{name}' has no meshes in the active library, so the mesh pad does nothing. " +
                     "Assign a BackdropLibrary and press Scan Folder on it.", this);
             }
             return;
@@ -236,8 +258,7 @@ public class BackdropInstrument : MonoBehaviour
 
     private void Update()
     {
-        var model = ResolveModel();
-        if (model == null || material == null) return;
+        if (material == null) return;
 
         // Fit is applied to a copy, not written back through Apply: the frame can
         // change every frame, and folding that into the stored parameters would
@@ -264,10 +285,50 @@ public class BackdropInstrument : MonoBehaviour
         rp.matProps = mpb;
         rpSphere.matProps = mpb;
 
-        // One instanced draw per part. A part is one submesh of one mesh, which
-        // is what an instanced draw renders - so a model carrying two submeshes
-        // needs two calls, and submitting only the first is what left these
-        // shapes looking half-built.
+        var lib = Library;
+        EnsureSubset(lib, effective);
+
+        // Draw once per model in play, gathering that model's instances into the
+        // scratch buffer first. Instances cannot be interleaved across models in
+        // one instanced call, so the field is bucketed rather than sorted -
+        // cheap at these counts, and it keeps the lattice order untouched.
+        for (int slot = 0; slot < subsetCount; slot++)
+        {
+            int modelIndex = modelSubset[slot];
+            var model = lib != null ? lib.Get(modelIndex) : null;
+            if (model == null) model = FallbackModel();
+
+            DrawModel(model, slot);
+        }
+    }
+
+    /// <summary>
+    /// Gathers the instances assigned to one selection slot and submits a draw
+    /// per part. A part is one submesh of one mesh, which is what an instanced
+    /// draw renders - a model carrying two submeshes needs two calls.
+    /// </summary>
+    private void DrawModel(BackdropModel model, int slot)
+    {
+        // Single selection means every instance belongs to the one slot, so the
+        // gather is skipped and the lattice matrices are used directly.
+        int count;
+        Matrix4x4[] src;
+
+        if (subsetCount == 1)
+        {
+            count = liveCount;
+            src = matrices;
+        }
+        else
+        {
+            count = 0;
+            for (int i = 0; i < liveCount; i++)
+                if (instanceModel[i] == slot) gathered[count++] = matrices[i];
+            src = gathered;
+        }
+
+        if (count == 0) return;
+
         float ns = model.normalizeScale;
         for (int part = 0; part < model.parts.Count; part++)
         {
@@ -280,13 +341,72 @@ public class BackdropInstrument : MonoBehaviour
             // skip the copy entirely - that is the common case.
             bool identity = offset.isIdentity;
             if (!identity)
-                for (int i = 0; i < liveCount; i++) partMatrices[i] = matrices[i] * offset;
+                for (int i = 0; i < count; i++) partMatrices[i] = src[i] * offset;
 
             var pass = bp.isSphere && sphereMaterial != null ? rpSphere : rp;
             Graphics.RenderMeshInstanced(pass, bp.mesh, bp.subMesh,
-                                         identity ? matrices : partMatrices, liveCount);
+                                         identity ? src : partMatrices, count);
         }
     }
+
+    /// <summary>
+    /// Rebuilds the model selection when anything it depends on changes, and
+    /// assigns each instance to a slot. Rebuilding every frame would be wasted
+    /// work and would also reshuffle which instance shows which letter.
+    /// </summary>
+    private void EnsureSubset(BackdropLibrary lib, in BackdropParameters p)
+    {
+        int libCount = lib != null ? lib.Count : 0;
+        int mode = (int)p.modelSelection;
+
+        int want = p.modelSelection switch
+        {
+            BackdropModelSelection.Single => 1,
+            BackdropModelSelection.Subset => Mathf.Clamp(p.subsetSize, 1, Mathf.Max(libCount, 1)),
+            _ => Mathf.Max(libCount, 1),
+        };
+
+        bool stale = subsetBuiltFor != p.layoutSeed
+                  || subsetBuiltSize != want
+                  || subsetBuiltLibrary != libCount
+                  || subsetBuiltMode != mode;
+
+        if (stale)
+        {
+            if (p.modelSelection == BackdropModelSelection.Single)
+            {
+                modelSubset[0] = meshIndex;
+                subsetCount = 1;
+            }
+            else
+            {
+                subsetCount = BackdropLattice.BuildModelSubset(
+                    modelSubset, subsetScratch, Mathf.Max(libCount, 1), want, p.layoutSeed);
+            }
+
+            subsetBuiltFor = p.layoutSeed;
+            subsetBuiltSize = want;
+            subsetBuiltLibrary = libCount;
+            subsetBuiltMode = mode;
+            instanceAssignedFor = -1;
+        }
+
+        // Instance-to-slot assignment, refreshed when the count or the selection
+        // moves. Keyed on the slot rather than the model index so the gather can
+        // compare against the loop variable.
+        if (subsetCount > 1 && (instanceAssignedFor != liveCount || stale))
+        {
+            for (int i = 0; i < liveCount; i++)
+            {
+                int k = Mathf.Min((int)(BackdropLattice.Rand01(i, p.layoutSeed, 929u) * subsetCount),
+                                  subsetCount - 1);
+                instanceModel[i] = k;
+            }
+            instanceAssignedFor = liveCount;
+        }
+    }
+
+    private BackdropModel FallbackModel() => ResolveModel();
 
     private void RebuildRenderParams(in BackdropParameters effective)
     {
@@ -338,7 +458,7 @@ public class BackdropInstrument : MonoBehaviour
 
     private BackdropModel ResolveModel()
     {
-        var m = library != null ? library.Get(meshIndex) : null;
+        var m = Library != null ? Library.Get(meshIndex) : null;
         if (m != null) return m;
 
         // A built-in cube keeps the backdrop visible while a library is being
@@ -372,7 +492,7 @@ public class BackdropInstrument : MonoBehaviour
         int shadingCount = System.Enum.GetValues(typeof(BackdropShadingMode)).Length;
         if (shadingBag == null) shadingBag = new ShuffleBag(shadingCount, cycleSeed);
 
-        int libCount = library != null ? library.Count : 0;
+        int libCount = Library != null ? Library.Count : 0;
         if (meshBag == null) meshBag = new ShuffleBag(libCount, cycleSeed + 1);
         else if (meshBag.Count != libCount) meshBag.Resize(libCount);
     }

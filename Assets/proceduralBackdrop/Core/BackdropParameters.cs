@@ -34,6 +34,23 @@ public enum BackdropDomain
 /// </summary>
 public enum BackdropShadingMode { Toon = 0, FresnelToon = 1, Lit = 2 }
 
+/// <summary>
+/// How many of a library's models appear in the field at once.
+///
+/// The field used to be one model repeated. That is right for a shape set, where
+/// the repetition is the pattern, and wrong for the letters, where the whole
+/// point is that several appear together.
+/// </summary>
+public enum BackdropModelSelection
+{
+    /// <summary>Every instance uses the same model - the mesh pad picks which.</summary>
+    Single = 0,
+    /// <summary>Instances draw from a seeded handful of the library.</summary>
+    Subset = 1,
+    /// <summary>Instances draw from the whole library.</summary>
+    All = 2,
+}
+
 /// <summary>How instances move between their lattice point and wherever they are now.</summary>
 public enum BackdropMotion
 {
@@ -104,6 +121,16 @@ public struct BackdropParameters
     [Tooltip("Cube domain only: fill the volume rather than the shell.")]
     public bool solidFill;
 
+    [Header("Model selection")]
+    [Tooltip("Swap the shape library for the letter library. Both are assigned on the instrument; this chooses which one the field draws from.")]
+    public bool useLetters;
+
+    [Tooltip("Single repeats one model, Subset draws from a seeded handful, All uses the whole library. Each distinct model in play is its own instanced draw, so this is also the draw-call dial.")]
+    public BackdropModelSelection modelSelection;
+
+    [Tooltip("How many models Subset draws from. Clamped to the library size.")]
+    [Range(1, 32)] public int subsetSize;
+
     [Header("Occupancy")]
     [Tooltip("Fraction of lattice slots that actually get an instance. Below 1 opens gaps. A fully populated lattice always reads as a grid; holes are what make it read as structure. Thinning filters a fixed lattice rather than rebuilding a smaller one, so lowering this removes instances without moving the ones that remain.")]
     [Range(0f, 1f)] public float occupancy;
@@ -170,6 +197,10 @@ public struct BackdropParameters
         domain          = BackdropDomain.Cube,
         domainSize      = new Vector3(60f, 30f, 22f),
         solidFill       = false,
+
+        useLetters          = false,
+        modelSelection      = BackdropModelSelection.Single,
+        subsetSize          = 3,
 
         occupancy           = 1f,
         occupancyNoiseScale = 0f,
@@ -261,6 +292,8 @@ public struct BackdropParameters
         c.skylineHeight    = Mathf.Clamp01(c.skylineHeight);
         c.skylineRoughness = Mathf.Max(0.001f, c.skylineRoughness);
         c.driftAmount      = Mathf.Clamp01(c.driftAmount);
+
+        c.subsetSize = Mathf.Clamp(c.subsetSize, 1, 32);
 
         c.occupancy           = Mathf.Clamp01(c.occupancy);
         c.occupancyNoiseScale = Mathf.Max(0f, c.occupancyNoiseScale);

@@ -350,6 +350,53 @@ public static class BackdropLattice
     }
 
     /// <summary>
+    /// Fills <paramref name="dst"/> with a seeded selection of distinct model
+    /// indices, and returns how many were written.
+    ///
+    /// Partial Fisher-Yates over a scratch permutation: distinct by construction,
+    /// where rejection sampling would stall as the subset approaches the library
+    /// size. Caller-owned buffers so this can run on a parameter change without
+    /// allocating.
+    /// </summary>
+    public static int BuildModelSubset(int[] dst, int[] scratch, int modelCount, int subsetSize, uint seed)
+    {
+        if (modelCount <= 0 || dst == null || dst.Length == 0) return 0;
+
+        int want = Mathf.Clamp(subsetSize, 1, Mathf.Min(modelCount, dst.Length));
+
+        int n = Mathf.Min(modelCount, scratch.Length);
+        for (int i = 0; i < n; i++) scratch[i] = i;
+
+        for (int i = 0; i < want; i++)
+        {
+            // Draw from the untouched tail, then swap the pick into place.
+            int j = i + (int)(Rand01(i, seed, 811u) * (n - i));
+            if (j >= n) j = n - 1;
+            (scratch[i], scratch[j]) = (scratch[j], scratch[i]);
+            dst[i] = scratch[i];
+        }
+
+        return want;
+    }
+
+    /// <summary>
+    /// Which model an instance draws, as an index into <paramref name="subset"/>.
+    ///
+    /// Its own hash stream, so the assignment holds still while position, scale
+    /// and rotation are dialled - a letter that jumped to a different glyph every
+    /// time the scale moved would be unusable.
+    /// </summary>
+    public static int ModelForInstance(int id, uint seed, int[] subset, int subsetCount)
+    {
+        if (subset == null || subsetCount <= 0) return 0;
+        if (subsetCount == 1) return subset[0];
+
+        int k = (int)(Rand01(id, seed, 929u) * subsetCount);
+        if (k >= subsetCount) k = subsetCount - 1;
+        return subset[k];
+    }
+
+    /// <summary>
     /// Scale multiplier for one instance: 1 for most, or accentRatio raised to a
     /// step for the accented minority.
     ///
