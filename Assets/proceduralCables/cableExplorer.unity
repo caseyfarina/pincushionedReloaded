@@ -542,7 +542,7 @@ MonoBehaviour:
     shiverDecay: 3.5
     shiverFreq: 14
     thickness: 0.15
-    thicknessVariation: 5
+    thicknessVariation: 1
     headScale: 1
     colors:
     - {r: 0.9, g: 0.15, b: 0.15, a: 1}
@@ -560,6 +560,7 @@ MonoBehaviour:
   headMaterial: {fileID: 2100000, guid: f61a83539a0a72b4e81ee8b56de34085, type: 2}
   uvTiling: 2
   headOrientationEuler: {x: 90, y: 0, z: 0}
+  headAim: 0
 --- !u!114 &1781433299
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -574,8 +575,35 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CableLibrary
   folder: Assets/proceduralCables/Meshes/Connectors
   maxTriangles: 20000
-  meshes:
-  - {fileID: 5860937743488226217, guid: 8ddb22033b5d26745899570010bd3d50, type: 3}
+  connectors:
+  - name: quarterInchPlug
+    parts:
+    - mesh: {fileID: 5860937743488226217, guid: 8ddb22033b5d26745899570010bd3d50, type: 3}
+      subMesh: 0
+      material: {fileID: 2100000, guid: a69c4701f4a310c43b7fd6ba15ef95c5, type: 2}
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0, w: 1}
+      localScale: {x: 1, y: 1, z: 1}
+    - mesh: {fileID: 5860937743488226217, guid: 8ddb22033b5d26745899570010bd3d50, type: 3}
+      subMesh: 1
+      material: {fileID: 2100000, guid: 4712986acef2dbe43a1876f1ff9bde28, type: 2}
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0, w: 1}
+      localScale: {x: 1, y: 1, z: 1}
+  - name: XLRplug
+    parts:
+    - mesh: {fileID: 5849979746036404207, guid: ac81beae7b407aa4dab74327eb425c0b, type: 3}
+      subMesh: 0
+      material: {fileID: 2100000, guid: b1319dca47c8cc94dbd27cf9b5af5161, type: 2}
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0, w: 1}
+      localScale: {x: 1, y: 1, z: 1}
+    - mesh: {fileID: 5849979746036404207, guid: ac81beae7b407aa4dab74327eb425c0b, type: 3}
+      subMesh: 1
+      material: {fileID: 2100000, guid: c71d505dbaaeea1408995d18cce5d22d, type: 2}
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0, w: 1}
+      localScale: {x: 1, y: 1, z: 1}
 --- !u!4 &1781433300
 Transform:
   m_ObjectHideFlags: 0

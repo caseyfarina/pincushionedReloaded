@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 8ddb22033b5d26745899570010bd3d50
+guid: ac81beae7b407aa4dab74327eb425c0b
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
@@ -8,12 +8,12 @@ ModelImporter:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
       name: black rubber
-    second: {fileID: 2100000, guid: a69c4701f4a310c43b7fd6ba15ef95c5, type: 2}
+    second: {fileID: 2100000, guid: b1319dca47c8cc94dbd27cf9b5af5161, type: 2}
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
       name: metal
-    second: {fileID: 2100000, guid: 4712986acef2dbe43a1876f1ff9bde28, type: 2}
+    second: {fileID: 2100000, guid: c71d505dbaaeea1408995d18cce5d22d, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

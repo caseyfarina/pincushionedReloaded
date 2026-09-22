@@ -1,6 +1,15 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>What a landed connector aims along.</summary>
+public enum CableHeadAim
+{
+    /// <summary>Parallel to the target transform's Z axis - every plug seated the same way.</summary>
+    TargetAxis,
+    /// <summary>Along its own cable's end tangent - each plug at its own angle.</summary>
+    CableTangent,
+}
+
 /// <summary>
 /// Owns every live cable and issues every draw. Drivers call Fire() and know
 /// nothing else - the same instrument/driver split as PinDensityController and
@@ -34,6 +43,9 @@ public class CableInstrument : MonoBehaviour
     [Tooltip("Local rotation applied to the connector mesh before it is aimed. The head is aimed along its Z axis, so a plug modelled pointing up its Y axis needs (90, 0, 0) here.")]
     public Vector3 headOrientationEuler = Vector3.zero;
 
+    [Tooltip("What a landed plug points along. Target Axis seats every plug parallel to the target's Z axis, so rotating the target aims them all together. Cable Tangent lets each plug follow its own cable, which reads as a random angle per plug.")]
+    public CableHeadAim headAim = CableHeadAim.TargetAxis;
+
     private readonly List<CableShot> _shots = new List<CableShot>();
     private int _nextId;
     private float _drift;
@@ -50,7 +62,9 @@ public class CableInstrument : MonoBehaviour
     private readonly List<Matrix4x4> _heads = new List<Matrix4x4>();
     private readonly List<int> _headMesh = new List<int>();
 
-    private bool _warnedHeadInstancing;
+    private readonly HashSet<string> _warnedInstancing = new HashSet<string>();
+    private readonly List<Matrix4x4> _batch = new List<Matrix4x4>();
+    private readonly List<Matrix4x4> _partBatch = new List<Matrix4x4>();
 
     public int LiveCount => _shots.Count;
 
@@ -198,8 +212,15 @@ public class CableInstrument : MonoBehaviour
         prev.age = Mathf.Max(0f, shot.age - step);
         Vector3 travel = head - prev.HeadAnchor(parameters);
 
-        Vector3 endTangent = head - _nodes[Mathf.Max(0, nodeCount - 2)];
-        Vector3 dir = CableShot.HeadDirection(travel, endTangent, flight01, Vector3.forward);
+        // What the plug settles onto once it stops moving. Following its own
+        // cable gives every plug a different angle, which reads as scattered;
+        // seating them all on the target's Z axis makes the nest look plugged
+        // into something, and leaves aiming them a single transform rotation.
+        Vector3 settled = headAim == CableHeadAim.TargetAxis && target != null
+            ? target.forward
+            : head - _nodes[Mathf.Max(0, nodeCount - 2)];
+
+        Vector3 dir = CableShot.HeadDirection(travel, settled, flight01, Vector3.forward);
 
         // The offset is applied in the mesh's own space, before the aim, so a
         // connector modelled along any axis can be pointed down the cable
@@ -216,35 +237,57 @@ public class CableInstrument : MonoBehaviour
             Graphics.RenderMesh(new RenderParams(ribbonMaterial), _mesh, 0, Matrix4x4.identity);
         }
 
-        if (headMaterial == null || library == null || _heads.Count == 0) return;
+        if (library == null || _heads.Count == 0) return;
 
-        // RenderMeshInstanced throws once per frame per batch if the material
-        // has no instancing variant, which buries the console. Check once and
-        // say what to do about it instead.
-        if (!headMaterial.enableInstancing)
+        // One instanced batch per part, not per connector. An instanced draw
+        // renders exactly one submesh, so a plug modelled as a rubber boot plus
+        // a metal barrel has to be submitted twice - submit only part zero and
+        // the barrel silently never appears.
+        for (int c = 0; c < library.Count; c++)
         {
-            if (!_warnedHeadInstancing)
-            {
-                _warnedHeadInstancing = true;
-                Debug.LogWarning($"CableInstrument: head material '{headMaterial.name}' has GPU Instancing off, "
-                               + "so connectors cannot be drawn. Tick Enable GPU Instancing on it.", this);
-            }
-            return;
-        }
+            var connector = library.Get(c);
+            if (connector == null) continue;
 
-        // One instanced batch per distinct connector mesh - the same call the
-        // scatter system and the backdrop already use.
-        for (int m = 0; m < library.Count; m++)
-        {
-            Mesh mesh = library.Get(m);
-            if (mesh == null) continue;
-
-            var batch = new List<Matrix4x4>();
+            _batch.Clear();
             for (int i = 0; i < _heads.Count; i++)
-                if (_headMesh[i] == m) batch.Add(_heads[i]);
+                if (_headMesh[i] == c) _batch.Add(_heads[i]);
 
-            if (batch.Count > 0)
-                Graphics.RenderMeshInstanced(new RenderParams(headMaterial), mesh, 0, batch);
+            if (_batch.Count == 0) continue;
+
+            foreach (var part in connector.parts)
+            {
+                if (part.mesh == null) continue;
+
+                Material mat = part.material != null ? part.material : headMaterial;
+                if (mat == null) continue;
+
+                if (!mat.enableInstancing)
+                {
+                    WarnInstancing(mat);
+                    continue;
+                }
+
+                // The part's own offset inside the connector, applied after the
+                // head's aim, so a multi-piece plug stays assembled.
+                _partBatch.Clear();
+                for (int i = 0; i < _batch.Count; i++)
+                    _partBatch.Add(_batch[i] * part.Local);
+
+                Graphics.RenderMeshInstanced(new RenderParams(mat), part.mesh, part.subMesh, _partBatch);
+            }
         }
+    }
+
+    /// <summary>
+    /// RenderMeshInstanced throws once per frame per batch if the material has
+    /// no instancing variant, which buries the console. Say it once, naming the
+    /// material and the fix.
+    /// </summary>
+    private void WarnInstancing(Material mat)
+    {
+        if (_warnedInstancing.Contains(mat.name)) return;
+        _warnedInstancing.Add(mat.name);
+        Debug.LogWarning($"CableInstrument: connector material '{mat.name}' has GPU Instancing off, "
+                       + "so that part cannot be drawn. Re-run the library Scan, or tick Enable GPU Instancing on it.", this);
     }
 }
