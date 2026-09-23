@@ -30,6 +30,13 @@ public struct CableShot
     /// </summary>
     public Vector3 landingLocal;
 
+    /// <summary>
+    /// World direction the plug travels as it seats - the target's Z, refreshed
+    /// each frame by the instrument. A world vector rather than a Transform,
+    /// because Core must stay free of Unity object types to stay testable.
+    /// </summary>
+    public Vector3 insertAxis;
+
     private const float MinFlight = 1e-3f;
     private const float Eps = 1e-10f;
 
@@ -91,10 +98,45 @@ public struct CableShot
     private Vector3 AnchorAtFraction(float x, in CableParameters p)
     {
         x = Mathf.Clamp01(x);
-        Vector3 straight = Vector3.Lerp(source, landing, CableCurve.Ease(x, p.deceleration));
 
+        float k = p.insertion01;
+        if (k > 0f && p.insertionDepth > 0f)
+        {
+            k = Mathf.Clamp(k, 1e-4f, 0.5f);
+            Vector3 standoff = landing - SeatAxis * p.insertionDepth;
+
+            // The last stretch is a straight push along the port axis, so the
+            // plug enters nose-first instead of sliding in sideways off the end
+            // of its curve.
+            if (x >= 1f - k)
+                return Vector3.Lerp(standoff, landing, (x - (1f - k)) / k);
+
+            // The approach is the ordinary curve, re-aimed to finish lined up
+            // in front of the port. Detour's lobes are zero at the end of the
+            // approach, so it arrives on the standoff exactly and there is no
+            // seam at the handover.
+            return Curved(x / (1f - k), source, standoff, p);
+        }
+
+        return Curved(x, source, landing, p);
+    }
+
+    private Vector3 Curved(float x, Vector3 from, Vector3 to, in CableParameters p)
+    {
+        Vector3 straight = Vector3.Lerp(from, to, CableCurve.Ease(x, p.deceleration));
         if (p.pathCurl <= 0f) return straight;
         return straight + Detour(x, p.pathCurl);
+    }
+
+    /// <summary>The seating direction, falling back to the chord if none was supplied.</summary>
+    private Vector3 SeatAxis
+    {
+        get
+        {
+            if (insertAxis.sqrMagnitude > Eps) return insertAxis.normalized;
+            Vector3 chord = landing - source;   // the swerve plane, from the shot's overall run
+            return chord.sqrMagnitude > Eps ? chord.normalized : Vector3.forward;
+        }
     }
 
     /// <summary>

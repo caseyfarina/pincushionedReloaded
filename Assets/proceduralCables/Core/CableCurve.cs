@@ -99,6 +99,22 @@ public static class CableCurve
     }
 
     /// <summary>
+    /// How much sag and noise a point still carries, given how much of the
+    /// flight is spent inserting.
+    ///
+    /// Decoration has to be gone by the time the straight push begins, not
+    /// merely by the plug itself. Offset is already zero at t=1, but at t=0.96
+    /// it is not, and that residue is enough to make a "straight" insertion
+    /// visibly wobble.
+    /// </summary>
+    public static float DecorationFade(float t, float insertion01)
+    {
+        if (insertion01 <= 0f) return 1f;
+        float k = Mathf.Clamp(insertion01, 1e-4f, 0.5f);
+        return Mathf.Clamp01((1f - Mathf.Clamp01(t)) / k);
+    }
+
+    /// <summary>
     /// Flight easing. x is normalised age along the flight.
     ///
     /// deceleration 0 is linear; higher values make the head cover ground early

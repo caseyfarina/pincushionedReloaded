@@ -21,6 +21,12 @@ public struct CableParameters
     [Tooltip("How far the flight detours off the straight line, in world units. 0 flies direct. The detour closes to zero at both ends, so the cable still lands exactly on its target.")]
     public float pathCurl;
 
+    [Header("Insertion")]
+    [Tooltip("Fraction of the flight spent pushing straight into the port. 0 disables it and the plug arrives along its curve. 0.03-0.05 reads as a deliberate final push.")]
+    public float insertion01;
+    [Tooltip("How far in front of the port the plug lines up before that push, in the target's local units. Should be at least the visible length of the plug barrel.")]
+    public float insertionDepth;
+
     [Header("Shape")]
     [Tooltip("Droop toward world down at the cable's midpoint, in world units.")]
     public float slack;
@@ -78,6 +84,8 @@ public struct CableParameters
         deceleration = 1.5f,
         pathNoise = 1.2f,
         pathCurl = 0f,
+        insertion01 = 0f,
+        insertionDepth = 0f,
         slack = 1.5f,
         cableNoise = 0.35f,
         noiseScale = 2.5f,

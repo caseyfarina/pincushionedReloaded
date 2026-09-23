@@ -381,4 +381,110 @@ public class CableShotTests
         Assert.Less(reach, Vector3.Distance(s.source, s.landing) * 0.6f,
             "the cable was already most of the way to the target at 10% of its flight");
     }
+
+    // ---- the last stretch is a straight push along the port axis ----
+
+    private static CableShot Inserting(out CableParameters p, float depth = 2f, float k = 0.05f)
+    {
+        p = CableParameters.Default;
+        p.pathCurl = 6f;
+        p.insertionDepth = depth;
+        p.insertion01 = k;
+
+        var s = CableShot.Create(0, Src, Tgt, p, 1);
+        s.insertAxis = Vector3.forward;
+        return s;
+    }
+
+    [Test]
+    public void HeadAnchor_StillLandsExactlyOnTheLandingPointWhenInserting()
+    {
+        var s = Inserting(out var p);
+        s.age = s.flightDuration;
+        Assert.Less(Vector3.Distance(s.HeadAnchor(p), s.landing), 1e-3f, "insertion overshot or undershot the plug");
+
+        s.age = s.flightDuration * 6f;
+        Assert.Less(Vector3.Distance(s.HeadAnchor(p), s.landing), 1e-3f, "a seated plug drifted");
+    }
+
+    [Test]
+    public void HeadAnchor_ApproachEndsAtTheStandoffPoint()
+    {
+        var s = Inserting(out var p, depth: 2f, k: 0.05f);
+        s.age = s.flightDuration * 0.95f;
+
+        var standoff = s.landing - Vector3.forward * 2f;
+        Assert.Less(Vector3.Distance(s.HeadAnchor(p), standoff), 1e-3f,
+            "the approach did not arrive lined up in front of the port");
+    }
+
+    [Test]
+    public void HeadAnchor_InsertionRunsStraightAlongThePortAxis()
+    {
+        // The whole point: no sideways slide over the last stretch.
+        var s = Inserting(out var p, depth: 2f, k: 0.05f);
+
+        for (float x = 0.95f; x <= 1f; x += 0.005f)
+        {
+            s.age = s.flightDuration * x;
+            Vector3 toLanding = s.landing - s.HeadAnchor(p);
+            if (toLanding.sqrMagnitude < 1e-8f) continue;
+
+            float off = Vector3.Cross(toLanding.normalized, Vector3.forward).magnitude;
+            Assert.Less(off, 1e-3f, $"x {x} was off the port axis");
+        }
+    }
+
+    [Test]
+    public void HeadAnchor_InsertionOnlyEverMovesTowardThePlug()
+    {
+        var s = Inserting(out var p);
+        float prev = float.MaxValue;
+        for (float x = 0.95f; x <= 1f; x += 0.005f)
+        {
+            s.age = s.flightDuration * x;
+            float d = Vector3.Distance(s.HeadAnchor(p), s.landing);
+            Assert.LessOrEqual(d, prev + 1e-4f, $"the plug backed out at x {x}");
+            prev = d;
+        }
+    }
+
+    [Test]
+    public void HeadAnchor_DoesNotJumpAtTheHandover()
+    {
+        // A discontinuity here would read as the plug teleporting into the socket.
+        var s = Inserting(out var p);
+
+        s.age = s.flightDuration * 0.9490f;
+        var before = s.HeadAnchor(p);
+        s.age = s.flightDuration * 0.9510f;
+        var after = s.HeadAnchor(p);
+
+        Assert.Less(Vector3.Distance(before, after), 0.25f, "the head jumped as insertion began");
+    }
+
+    [Test]
+    public void HeadAnchor_DepthAloneDoesNotEngageInsertion()
+    {
+        // Both knobs are required, so a depth left in the parameters cannot
+        // silently reshape flights that never asked for an insertion.
+        var withDepth = CableParameters.Default;
+        withDepth.pathCurl = 6f;
+        withDepth.insertion01 = 0f;
+        withDepth.insertionDepth = 2f;
+
+        var bare = withDepth;
+        bare.insertionDepth = 0f;
+
+        var a = CableShot.Create(0, Src, Tgt, withDepth, 1); a.insertAxis = Vector3.forward;
+        var b = CableShot.Create(0, Src, Tgt, bare, 1);      b.insertAxis = Vector3.forward;
+
+        for (float x = 0f; x <= 1f; x += 0.1f)
+        {
+            a.age = a.flightDuration * x;
+            b.age = b.flightDuration * x;
+            Assert.Less(Vector3.Distance(a.HeadAnchor(withDepth), b.HeadAnchor(bare)), 1e-5f, $"x {x}");
+        }
+    }
+
 }

@@ -188,6 +188,8 @@ MonoBehaviour:
     deceleration: 1.5
     pathNoise: 1.2
     pathCurl: 5
+    insertion01: 0.04
+    insertionDepth: 2
     slack: 0.3
     cableNoise: 0.35
     noiseScale: 2.5
@@ -707,6 +709,8 @@ MonoBehaviour:
     deceleration: 1.5
     pathNoise: 1.2
     pathCurl: 5
+    insertion01: 0
+    insertionDepth: 0
     slack: 0.3
     cableNoise: 0.35
     noiseScale: 2.5

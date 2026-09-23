@@ -110,6 +110,7 @@ public class CableInstrument : MonoBehaviour
         // Remember where it plugged in relative to the target, not in world
         // coordinates, so the whole bay rides that one transform afterwards.
         shot.landingLocal = target != null ? target.InverseTransformPoint(shot.landing) : shot.landing;
+        shot.insertAxis = PortAxis;
 
         _shots.Add(shot);
     }
@@ -216,7 +217,11 @@ public class CableInstrument : MonoBehaviour
             s.age += dt;
 
             // The bay may have moved or turned since this cable was fired.
-            if (target != null) s.landing = target.TransformPoint(s.landingLocal);
+            if (target != null)
+            {
+                s.landing = target.TransformPoint(s.landingLocal);
+                s.insertAxis = target.forward;
+            }
 
             if (s.IsExpired(parameters.lifetime)) _shots.RemoveAt(i);
             else _shots[i] = s;
@@ -262,9 +267,12 @@ public class CableInstrument : MonoBehaviour
                 // The spine is the head's own history, not a chord to the head.
                 // That is what makes the cable read as a trail rather than a
                 // line pulled taut behind a moving point.
+                float fade = CableCurve.DecorationFade(t, parameters.insertion01);
+
                 _nodes[i] = shot.PathPoint(t, parameters)
                           + emitterDrift * (1f - t)
-                          + CableCurve.Offset(t, slack, noiseAmp, parameters.noiseScale, _drift, shot.seed);
+                          + CableCurve.Offset(t, slack * fade, noiseAmp * fade,
+                                              parameters.noiseScale, _drift, shot.seed);
             }
 
             Color c = colorCount > 0 ? parameters.colors[Mathf.Clamp(shot.colorIndex, 0, colorCount - 1)] : Color.white;

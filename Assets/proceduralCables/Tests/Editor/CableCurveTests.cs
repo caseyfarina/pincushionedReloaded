@@ -175,4 +175,22 @@ public class CableCurveTests
             Assert.Less(Vector3.Distance(CableCurve.Position(t, A, B, 2f, 1f, 3f, 0.5f, 4u), expected), 1e-5f, $"t {t}");
         }
     }
+
+    [Test]
+    public void DecorationFade_IsOneUntilInsertionBeginsThenReachesZero()
+    {
+        // Sag and noise have to be gone before the straight push starts, or the
+        // "straight" insertion visibly wobbles.
+        Assert.AreEqual(1f, CableCurve.DecorationFade(0.5f, 0.05f), Eps);
+        Assert.AreEqual(1f, CableCurve.DecorationFade(0.95f, 0.05f), Eps, "faded early");
+        Assert.AreEqual(0f, CableCurve.DecorationFade(1f, 0.05f), Eps, "still decorating at the plug");
+        Assert.Less(CableCurve.DecorationFade(0.99f, 0.05f), 0.5f, "did not fade across the insertion window");
+    }
+
+    [Test]
+    public void DecorationFade_IsOneEverywhereWhenInsertionIsOff()
+    {
+        for (float t = 0f; t <= 1f; t += 0.25f)
+            Assert.AreEqual(1f, CableCurve.DecorationFade(t, 0f), Eps, $"t {t}");
+    }
 }
