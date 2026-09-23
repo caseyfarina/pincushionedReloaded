@@ -72,8 +72,15 @@ public class CableConnector
 ///
 /// An empty library is a supported state: cables render headless rather than
 /// throwing, so the system is usable before any plug has been modelled.
+///
+/// A ScriptableObject rather than a component, because the calibrated seat
+/// depths have to be the same numbers in the calibration scene, the explorer
+/// and eventually the show scene. Per-scene component data would mean
+/// calibrating in one place and the rig never seeing it - the same reason
+/// BackdropLibrary is an asset.
 /// </summary>
-public class CableLibrary : MonoBehaviour
+[CreateAssetMenu(menuName = "Performance/Cable Library", fileName = "CableLibrary")]
+public class CableLibrary : ScriptableObject
 {
     [Tooltip("Folder scanned by the Scan button. Every model found becomes one selectable connector.")]
     public string folder = "Assets/proceduralCables/Meshes/Connectors";

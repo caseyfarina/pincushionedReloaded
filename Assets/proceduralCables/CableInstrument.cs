@@ -29,17 +29,10 @@ public class CableInstrument : MonoBehaviour
 
     public CableParameters parameters = CableParameters.Default;
 
-    [Tooltip("Connector meshes. Leave empty and cables render headless. If unset, a CableLibrary on this same object is used.")]
+    [Tooltip("The CableLibrary asset holding the plugs and the port. Leave empty and cables render headless.")]
     public CableLibrary library;
 
-    /// <summary>
-    /// The library actually drawn from. Falls back to one on this GameObject,
-    /// because an unset reference here is invisible - cables keep rendering
-    /// perfectly and only the plugs quietly vanish, which reads as a broken
-    /// connector rather than a missing link.
-    /// </summary>
-    private CableLibrary ResolvedLibrary =>
-        library != null ? library : GetComponent<CableLibrary>();
+    private CableLibrary ResolvedLibrary => library;
 
     [Tooltip("Uses Pincushioned/CableRibbon.")]
     public Material ribbonMaterial;
@@ -78,11 +71,7 @@ public class CableInstrument : MonoBehaviour
 
     public int LiveCount => _shots.Count;
 
-    private void Reset()
-    {
-        library = GetComponent<CableLibrary>();
-        source = transform;
-    }
+    private void Reset() => source = transform;
 
     /// <summary>The direction a plug travels as it seats. The target's Z.</summary>
     public Vector3 PortAxis => target != null ? target.forward : transform.forward;

@@ -20,7 +20,7 @@ public class CableBayView : MonoBehaviour
     [Tooltip("Where the ports are. Defaults to the instrument on this object.")]
     public CableInstrument instrument;
 
-    [Tooltip("Library holding the universal port. Defaults to the one on this object.")]
+    [Tooltip("The CableLibrary asset holding the universal port. Usually the same asset the instrument uses.")]
     public CableLibrary library;
 
     [Tooltip("Scale applied to the port mesh. Match the rig's Head Scale so ports and plugs are calibrated at the same size.")]
@@ -57,11 +57,13 @@ public class CableBayView : MonoBehaviour
     private void Reset()
     {
         instrument = GetComponent<CableInstrument>();
-        library = GetComponent<CableLibrary>();
+        if (instrument != null) library = instrument.library;
     }
 
     private CableInstrument Inst => instrument != null ? instrument : GetComponent<CableInstrument>();
-    private CableLibrary Lib => library != null ? library : GetComponent<CableLibrary>();
+
+    /// <summary>Falls back to whatever the instrument is drawing plugs from, so the panel and the plugs cannot disagree about which library is in play.</summary>
+    private CableLibrary Lib => library != null ? library : (Inst != null ? Inst.library : null);
 
     private static readonly int EmissionId = Shader.PropertyToID("_EmissionColor");
     private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");

@@ -33,6 +33,9 @@ public class CablePlugCalibrator : MonoBehaviour
     [Tooltip("Local rotation applied to the plug mesh before it is aimed, matching CableInstrument.")]
     public Vector3 headOrientationEuler = new Vector3(90f, 0f, 0f);
 
+    [Tooltip("Local rotation applied to the port mesh, matching CableBayView. Both corrections must match the rig or the depth measured here is measured against a differently-oriented port.")]
+    public Vector3 portOrientationEuler = new Vector3(90f, 0f, 0f);
+
     /// <summary>The depth that would be captured right now.</summary>
     public float MeasuredDepth => plug != null ? plug.localPosition.z : 0f;
 
@@ -44,7 +47,9 @@ public class CablePlugCalibrator : MonoBehaviour
         if (library == null) return;
 
         DrawConnector(library.Port, Matrix4x4.TRS(
-            transform.position, transform.rotation, Vector3.one * headScale));
+            transform.position,
+            transform.rotation * Quaternion.Euler(portOrientationEuler),
+            Vector3.one * headScale));
 
         var plugConnector = Current;
         if (plugConnector == null || plug == null) return;
