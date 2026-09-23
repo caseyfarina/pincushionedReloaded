@@ -132,6 +132,7 @@ GameObject:
   - component: {fileID: 186576649}
   - component: {fileID: 186576648}
   - component: {fileID: 186576647}
+  - component: {fileID: 186576652}
   m_Layer: 0
   m_Name: Cable Rig (1)
   m_TagString: Untagged
@@ -205,8 +206,8 @@ MonoBehaviour:
     - {r: 0.55, g: 0.25, b: 0.75, a: 1}
     patchColumns: 10
     patchRows: 3
-    columnSpacing: 1.2
-    rowSpacing: 1.2
+    columnSpacing: 3.1
+    rowSpacing: 3.1
     targetScatterRadius: 0
     lifetime: 2
     nodesPerCable: 48
@@ -231,35 +232,67 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CableLibrary
   folder: Assets/proceduralCables/Meshes/Connectors
   maxTriangles: 20000
+  portModel: {fileID: 919132149155446097, guid: 7c375b54c8518274abfb2ac427337def, type: 3}
   connectors:
   - name: quarterInchPlug
     parts:
-    - mesh: {fileID: 5860937743488226217, guid: 8ddb22033b5d26745899570010bd3d50, type: 3}
+    - name: quarterInchPlug
+      mesh: {fileID: 5860937743488226217, guid: 8ddb22033b5d26745899570010bd3d50, type: 3}
       subMesh: 0
       material: {fileID: 2100000, guid: a69c4701f4a310c43b7fd6ba15ef95c5, type: 2}
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
-    - mesh: {fileID: 5860937743488226217, guid: 8ddb22033b5d26745899570010bd3d50, type: 3}
+    - name: quarterInchPlug
+      mesh: {fileID: 5860937743488226217, guid: 8ddb22033b5d26745899570010bd3d50, type: 3}
       subMesh: 1
       material: {fileID: 2100000, guid: 4712986acef2dbe43a1876f1ff9bde28, type: 2}
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+    seatOffset: 0
   - name: XLRplug
     parts:
-    - mesh: {fileID: 5849979746036404207, guid: ac81beae7b407aa4dab74327eb425c0b, type: 3}
+    - name: XLRplug
+      mesh: {fileID: 5849979746036404207, guid: ac81beae7b407aa4dab74327eb425c0b, type: 3}
       subMesh: 0
       material: {fileID: 2100000, guid: b1319dca47c8cc94dbd27cf9b5af5161, type: 2}
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
-    - mesh: {fileID: 5849979746036404207, guid: ac81beae7b407aa4dab74327eb425c0b, type: 3}
+    - name: XLRplug
+      mesh: {fileID: 5849979746036404207, guid: ac81beae7b407aa4dab74327eb425c0b, type: 3}
       subMesh: 1
       material: {fileID: 2100000, guid: c71d505dbaaeea1408995d18cce5d22d, type: 2}
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+    seatOffset: 0
+  port:
+    name: housing
+    parts:
+    - name: housing
+      mesh: {fileID: 3118357350476920488, guid: 7c375b54c8518274abfb2ac427337def, type: 3}
+      subMesh: 0
+      material: {fileID: 2100000, guid: 4712986acef2dbe43a1876f1ff9bde28, type: 2}
+      localPosition: {x: 0, y: -0.00000016233355, z: 0}
+      localRotation: {x: 0, y: 0, z: 0, w: 1}
+      localScale: {x: 0.99999994, y: 0.99999994, z: 0.99999994}
+    - name: light
+      mesh: {fileID: -3958770277684823056, guid: 7c375b54c8518274abfb2ac427337def, type: 3}
+      subMesh: 0
+      material: {fileID: 2100000, guid: a8e87e1d7e696cb499f79adacd417a05, type: 2}
+      localPosition: {x: 0, y: -2.9547358, z: -1.8180466}
+      localRotation: {x: 0, y: 0, z: 0, w: 1}
+      localScale: {x: 0.4835573, y: 0.4835573, z: 0.4835573}
+    - name: port
+      mesh: {fileID: 1384170444187117848, guid: 7c375b54c8518274abfb2ac427337def, type: 3}
+      subMesh: 0
+      material: {fileID: 2100000, guid: a69c4701f4a310c43b7fd6ba15ef95c5, type: 2}
+      localPosition: {x: 0, y: -2.263771, z: -0.0078003067}
+      localRotation: {x: 0, y: 0, z: 0, w: 1}
+      localScale: {x: 2.5230858, y: 2.5230858, z: 2.5230858}
+    seatOffset: 0
 --- !u!4 &186576651
 Transform:
   m_ObjectHideFlags: 0
@@ -275,6 +308,26 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &186576652
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 186576646}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37f538de23c3c484988ad9e733132d76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CableBayView
+  instrument: {fileID: 186576649}
+  library: {fileID: 186576650}
+  portScale: 1
+  portOrientationEuler: {x: 90, y: 0, z: 0}
+  draw: 1
+  lightPartName: light
+  freeColor: {r: 2.2, g: 0.08, b: 0.06, a: 1}
+  occupiedColor: {r: 0.1, g: 2.2, b: 0.25, a: 1}
 --- !u!1 &234594215
 GameObject:
   m_ObjectHideFlags: 0
@@ -335,7 +388,7 @@ Camera:
     height: 1
   near clip plane: 0.3
   far clip plane: 1000
-  field of view: 50.7
+  field of view: 102.1
   orthographic: 0
   orthographic size: 5
   m_Depth: -1
@@ -362,7 +415,7 @@ Transform:
   m_GameObject: {fileID: 234594215}
   serializedVersion: 2
   m_LocalRotation: {x: 0.06975647, y: 0, z: 0, w: 0.9975641}
-  m_LocalPosition: {x: 0, y: 6, z: -22}
+  m_LocalPosition: {x: 0, y: 25, z: -22}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -698,35 +751,46 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CableLibrary
   folder: Assets/proceduralCables/Meshes/Connectors
   maxTriangles: 20000
+  portModel: {fileID: 0}
   connectors:
   - name: quarterInchPlug
     parts:
-    - mesh: {fileID: 5860937743488226217, guid: 8ddb22033b5d26745899570010bd3d50, type: 3}
+    - name: 
+      mesh: {fileID: 5860937743488226217, guid: 8ddb22033b5d26745899570010bd3d50, type: 3}
       subMesh: 0
       material: {fileID: 2100000, guid: a69c4701f4a310c43b7fd6ba15ef95c5, type: 2}
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
-    - mesh: {fileID: 5860937743488226217, guid: 8ddb22033b5d26745899570010bd3d50, type: 3}
+    - name: 
+      mesh: {fileID: 5860937743488226217, guid: 8ddb22033b5d26745899570010bd3d50, type: 3}
       subMesh: 1
       material: {fileID: 2100000, guid: 4712986acef2dbe43a1876f1ff9bde28, type: 2}
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+    seatOffset: 0
   - name: XLRplug
     parts:
-    - mesh: {fileID: 5849979746036404207, guid: ac81beae7b407aa4dab74327eb425c0b, type: 3}
+    - name: 
+      mesh: {fileID: 5849979746036404207, guid: ac81beae7b407aa4dab74327eb425c0b, type: 3}
       subMesh: 0
       material: {fileID: 2100000, guid: b1319dca47c8cc94dbd27cf9b5af5161, type: 2}
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
-    - mesh: {fileID: 5849979746036404207, guid: ac81beae7b407aa4dab74327eb425c0b, type: 3}
+    - name: 
+      mesh: {fileID: 5849979746036404207, guid: ac81beae7b407aa4dab74327eb425c0b, type: 3}
       subMesh: 1
       material: {fileID: 2100000, guid: c71d505dbaaeea1408995d18cce5d22d, type: 2}
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
+    seatOffset: 0
+  port:
+    name: 
+    parts: []
+    seatOffset: 0
 --- !u!4 &1781433300
 Transform:
   m_ObjectHideFlags: 0

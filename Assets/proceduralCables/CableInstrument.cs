@@ -84,6 +84,9 @@ public class CableInstrument : MonoBehaviour
         source = transform;
     }
 
+    /// <summary>The direction a plug travels as it seats. The target's Z.</summary>
+    public Vector3 PortAxis => target != null ? target.forward : transform.forward;
+
     private Vector3 SourcePos => source != null ? source.position : transform.position;
     private Vector3 TargetPos => target != null ? target.position : transform.position + transform.forward * 10f;
 
@@ -102,6 +105,18 @@ public class CableInstrument : MonoBehaviour
 
         var shot = CableShot.Create(id, SourcePos, PortWorld(port), parameters, meshCount);
         shot.portIndex = port;
+
+        // Each plug type sinks a different distance into the universal port, so
+        // the landing point is the port plus that plug's calibrated depth along
+        // the seating axis. Measured in the calibration scene, not guessed.
+        var connector = lib != null ? lib.Get(shot.meshIndex) : null;
+        if (connector != null && connector.seatOffset != 0f)
+        {
+            Vector3 seat = target != null
+                ? target.TransformVector(Vector3.forward * connector.seatOffset)
+                : PortAxis * connector.seatOffset;
+            shot.landing += seat;
+        }
 
         // Remember where it plugged in relative to the target, not in world
         // coordinates, so the whole bay rides that one transform afterwards.
@@ -129,8 +144,28 @@ public class CableInstrument : MonoBehaviour
         return _occupied;
     }
 
-    /// <summary>World position of a port, via the target transform.</summary>
-    private Vector3 PortWorld(int port)
+    /// <summary>
+    /// Whether anything is currently plugged into a port. Read per frame by the
+    /// panel to colour its indicator lights, and derived from the live cables
+    /// like the rest of occupancy, so a retiring cable frees its light in the
+    /// same instant it frees its port.
+    /// </summary>
+    public bool IsPortOccupied(int port)
+    {
+        foreach (var s in _shots)
+            if (s.portIndex == port) return true;
+        return false;
+    }
+
+    /// <summary>How many ports the bay has.</summary>
+    public int PortCount => CablePatchBay.PortCount(parameters.patchColumns, parameters.patchRows);
+
+    /// <summary>
+    /// World position of a port, via the target transform. Public so a panel
+    /// renderer draws its port meshes from the same numbers cables plug into -
+    /// two sources of truth here would show as plugs floating beside their holes.
+    /// </summary>
+    public Vector3 PortWorld(int port)
     {
         Vector3 local = CablePatchBay.PortLocal(
             port, parameters.patchColumns, parameters.patchRows,
