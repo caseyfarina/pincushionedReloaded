@@ -236,7 +236,7 @@ Transform:
   m_GameObject: {fileID: 1472204567}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -2}
+  m_LocalPosition: {x: 0, y: 0, z: -3.55}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -399,7 +399,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CablePlugCalibrator
   library: {fileID: 11400000, guid: 60b4088f7b82bbc4d9057678e1737ef5, type: 2}
-  connectorIndex: 0
+  connectorIndex: 1
   plug: {fileID: 1472204568}
   headScale: 1
   headOrientationEuler: {x: 90, y: 0, z: 0}

@@ -32,7 +32,7 @@ MonoBehaviour:
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
-    seatOffset: 0
+    seatOffset: -3.55
   - name: XLRplug
     parts:
     - name: XLRplug
@@ -57,21 +57,21 @@ MonoBehaviour:
       mesh: {fileID: 3118357350476920488, guid: 7c375b54c8518274abfb2ac427337def, type: 3}
       subMesh: 0
       material: {fileID: 2100000, guid: 4712986acef2dbe43a1876f1ff9bde28, type: 2}
-      localPosition: {x: 0, y: -0.00000016233355, z: 0}
+      localPosition: {x: 0, y: -0.000000081166775, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 0.99999994, y: 0.99999994, z: 0.99999994}
     - name: light
       mesh: {fileID: -3958770277684823056, guid: 7c375b54c8518274abfb2ac427337def, type: 3}
       subMesh: 0
       material: {fileID: 2100000, guid: a8e87e1d7e696cb499f79adacd417a05, type: 2}
-      localPosition: {x: 0, y: -2.9547358, z: -1.8180466}
+      localPosition: {x: 0, y: -1.4773679, z: -0.9090233}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 0.4835573, y: 0.4835573, z: 0.4835573}
     - name: port
       mesh: {fileID: 1384170444187117848, guid: 7c375b54c8518274abfb2ac427337def, type: 3}
       subMesh: 0
       material: {fileID: 2100000, guid: a69c4701f4a310c43b7fd6ba15ef95c5, type: 2}
-      localPosition: {x: 0, y: -2.263771, z: -0.0078003067}
+      localPosition: {x: 0, y: -1.1318855, z: -0.0039001533}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 2.5230858, y: 2.5230858, z: 2.5230858}
     seatOffset: 0
