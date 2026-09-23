@@ -298,7 +298,7 @@ public class BackdropInstrument : MonoBehaviour
             var model = lib != null ? lib.Get(modelIndex) : null;
             if (model == null) model = FallbackModel();
 
-            DrawModel(model, slot);
+            DrawModel(model, slot, lib != null ? lib.modelRotationEuler : Vector3.zero);
         }
     }
 
@@ -307,7 +307,7 @@ public class BackdropInstrument : MonoBehaviour
     /// per part. A part is one submesh of one mesh, which is what an instanced
     /// draw renders - a model carrying two submeshes needs two calls.
     /// </summary>
-    private void DrawModel(BackdropModel model, int slot)
+    private void DrawModel(BackdropModel model, int slot, Vector3 libraryRotation)
     {
         // Single selection means every instance belongs to the one slot, so the
         // gather is skipped and the lattice matrices are used directly.
@@ -330,12 +330,20 @@ public class BackdropInstrument : MonoBehaviour
         if (count == 0) return;
 
         float ns = model.normalizeScale;
+
+        // The library orientation is applied outside the part transform, so a
+        // multi-part model turns as one piece rather than each part spinning
+        // about its own origin.
+        Matrix4x4 libRot = libraryRotation == Vector3.zero
+            ? Matrix4x4.identity
+            : Matrix4x4.Rotate(Quaternion.Euler(libraryRotation));
+
         for (int part = 0; part < model.parts.Count; part++)
         {
             var bp = model.parts[part];
             if (bp.mesh == null) continue;
 
-            Matrix4x4 offset = Matrix4x4.Scale(new Vector3(ns, ns, ns)) * bp.Local;
+            Matrix4x4 offset = libRot * Matrix4x4.Scale(new Vector3(ns, ns, ns)) * bp.Local;
 
             // A single-part model at unit scale needs no per-part transform, so
             // skip the copy entirely - that is the common case.

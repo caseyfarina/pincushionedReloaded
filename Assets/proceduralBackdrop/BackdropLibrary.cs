@@ -98,6 +98,9 @@ public class BackdropLibrary : ScriptableObject
     [Tooltip("Fallback only, for parts whose material name says nothing. Roundness is a poor proxy for intent - it misses squashed and half-buried spheres - so the name wins wherever there is one.")]
     [Range(0.5f, 1f)] public float sphereThreshold = 0.9f;
 
+    [Tooltip("Rotation applied to every model in this library before it is instanced. The backdrop faces the camera, which means looking at a model's -Z side - fine for a symmetric shape, and mirrored for anything with handedness. Letters need (0, 180, 0) to read the right way round.")]
+    public Vector3 modelRotationEuler;
+
     public List<BackdropModel> models = new List<BackdropModel>();
 
     public int Count => models.Count;

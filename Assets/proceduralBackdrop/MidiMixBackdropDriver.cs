@@ -44,6 +44,9 @@ public enum BackdropParam
     SkylineHeight, SkylineRoughness,
     DriftAmount, DriftDirectionX, DriftDirectionY,
 
+    // How many models appear at once, when the selection mode is Subset.
+    SubsetSize,
+
     // Size variation across the field, as a fraction of the largest instance.
     // More musical than a raw scale minimum, which is meaningless without
     // knowing the maximum.
@@ -95,7 +98,7 @@ public class MidiMixBackdropDriver : MonoBehaviour
     [Tooltip("How close a control must come to the live value to take it over, 0-1.")]
     [SerializeField, Range(0.005f, 0.2f)] private float takeoverTolerance = 0.02f;
 
-    [Tooltip("Mute 1-7 select the domain and 8 flashes; solo 1-3 select shading and 4 toggles solid fill; rec-arm 1 flips sine against noise motion.")]
+    [Tooltip("Mute 1-7 select the domain and 8 flashes; solo 1-3 select shading, 4 toggles solid fill, 5 swaps shapes for letters, 6 cycles single/subset/all; rec-arm 1 flips sine against noise motion.")]
     [SerializeField] private bool muteRowSelectsModes = true;
 
     [SerializeField] private List<MixBinding> bindings = new List<MixBinding>();
@@ -187,6 +190,12 @@ public class MidiMixBackdropDriver : MonoBehaviour
 
         if (channel >= 1 && channel <= shadingCount) p.shading = (BackdropShadingMode)(channel - 1);
         else if (channel == 4)                       p.solidFill = !p.solidFill;
+        else if (channel == 5)                       p.useLetters = !p.useLetters;
+        else if (channel == 6)
+        {
+            int modes = System.Enum.GetValues(typeof(BackdropModelSelection)).Length;
+            p.modelSelection = (BackdropModelSelection)(((int)p.modelSelection + 1) % modes);
+        }
         else return;
 
         instrument.Apply(p);
@@ -353,6 +362,7 @@ public class MidiMixBackdropDriver : MonoBehaviour
             case BackdropParam.ColonnadeWidth:      return p.colonnadeWidth;
             case BackdropParam.SkylineHeight:       return p.skylineHeight;
             case BackdropParam.SkylineRoughness:    return p.skylineRoughness;
+            case BackdropParam.SubsetSize:          return p.subsetSize;
             case BackdropParam.DriftAmount:         return p.driftAmount;
             case BackdropParam.DriftDirectionX:     return p.driftDirection.x;
             case BackdropParam.DriftDirectionY:     return p.driftDirection.y;
@@ -427,6 +437,7 @@ public class MidiMixBackdropDriver : MonoBehaviour
             case BackdropParam.ColonnadeWidth:   p.colonnadeWidth = value; return;
             case BackdropParam.SkylineHeight:    p.skylineHeight = value; return;
             case BackdropParam.SkylineRoughness: p.skylineRoughness = value; return;
+            case BackdropParam.SubsetSize:       p.subsetSize = Mathf.RoundToInt(value); return;
             case BackdropParam.DriftAmount:      p.driftAmount = value; return;
             case BackdropParam.DriftDirectionX:  p.driftDirection.x = value; return;
             case BackdropParam.DriftDirectionY:  p.driftDirection.y = value; return;
@@ -493,7 +504,7 @@ public class MidiMixBackdropDriver : MonoBehaviour
     ///    1 | Spawn Count       | Fit Margin X  Fit Margin Y  Frame Offset X
     ///    2 | Scale             | Bias X        Bias Y        Skyline Height
     ///    3 | Offset Amount     | Offset X      Offset Y      Colonnade Width
-    ///    4 | Rotation Amount   | Rot X         Rot Y         Drift Amount
+    ///    4 | Rotation Amount   | Rot X         Rot Y         Subset Size
     ///    5 | Spin Rate         | Axis X        Axis Y        Arch Radius
     ///    6 | Wave Amplitude    | Axis X        Axis Y        Colonnade Count
     ///    7 | Wave Frequency    | Phase         Noise Scale   Scale Spread
@@ -505,6 +516,7 @@ public class MidiMixBackdropDriver : MonoBehaviour
     ///   master: Occupancy
     ///   mute 1-7: domain select      mute 8: flash
     ///   solo 1-3: shading            solo 4: solid fill
+    ///   solo 5: shapes / letters     solo 6: single / subset / all
     ///   rec-arm 1: sine / noise motion
     ///
     /// Channels are ordered by how much a small move changes the image: count
@@ -540,7 +552,7 @@ public class MidiMixBackdropDriver : MonoBehaviour
         F(4, BackdropParam.RotationAmount, 0f, 180f),
         K(4, 1, BackdropParam.RotationJitterX, 0f, 180f),
         K(4, 2, BackdropParam.RotationJitterY, 0f, 180f),
-        K(4, 3, BackdropParam.DriftAmount, 0f, 1f),
+        K(4, 3, BackdropParam.SubsetSize, 1f, 16f),
 
         // 5 - Spin: rate on the fader, axis on the knobs.
         F(5, BackdropParam.SpinRateMagnitude, 0f, 90f),

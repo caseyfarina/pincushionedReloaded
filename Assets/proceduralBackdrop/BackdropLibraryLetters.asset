@@ -1,0 +1,143 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4f101eb488df8824b855cac11e398bf4, type: 3}
+  m_Name: BackdropLibraryLetters
+  m_EditorClassIdentifier: Assembly-CSharp::BackdropLibrary
+  scanFolder: Assets/proceduralBackdrop/LetterMeshes
+  triangleWarnThreshold: 4000
+  normalizeScale: 0
+  accentMaterialNames:
+  - sphere
+  - accent
+  sphereThreshold: 0.9
+  modelRotationEuler: {x: 0, y: 180, z: 0}
+  models:
+  - name: letter_C
+    parts:
+    - mesh: {fileID: -2733022551112343008, guid: 2a8f31b4ae29abd48867af19113e77ad, type: 3}
+      subMesh: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0, w: 1}
+      localScale: {x: 1, y: 1, z: 1}
+      materialName: Lit
+      isSphere: 0
+      sphericity: 0.25644436
+    normalizeScale: 1
+    triangles: 676
+  - name: letter_D
+    parts:
+    - mesh: {fileID: -6022480726935957588, guid: 599f7e6b894ccdf41b78c863ec47e193, type: 3}
+      subMesh: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0, w: 1}
+      localScale: {x: 1, y: 1, z: 1}
+      materialName: Lit
+      isSphere: 0
+      sphericity: 0.31038123
+    normalizeScale: 1
+    triangles: 428
+  - name: letter_E
+    parts:
+    - mesh: {fileID: 6891163445282995317, guid: 0353f76bac9754e488eebe3b28356efe, type: 3}
+      subMesh: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0, w: 1}
+      localScale: {x: 1, y: 1, z: 1}
+      materialName: Lit
+      isSphere: 0
+      sphericity: 0.2628977
+    normalizeScale: 1
+    triangles: 52
+  - name: letter_H
+    parts:
+    - mesh: {fileID: -6644776031972555410, guid: 42f5f63452761934aac1a368b00fe434, type: 3}
+      subMesh: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0, w: 1}
+      localScale: {x: 1, y: 1, z: 1}
+      materialName: Lit
+      isSphere: 0
+      sphericity: 0.30960009
+    normalizeScale: 1
+    triangles: 60
+  - name: letter_I
+    parts:
+    - mesh: {fileID: 7699840614461643883, guid: d1ed936ef4e50fd43a1f0b2d092c95ad, type: 3}
+      subMesh: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0, w: 1}
+      localScale: {x: 1, y: 1, z: 1}
+      materialName: Lit
+      isSphere: 0
+      sphericity: 0.25581095
+    normalizeScale: 1
+    triangles: 44
+  - name: letter_N
+    parts:
+    - mesh: {fileID: -6744592793051625063, guid: 00828d919f7a3624f866b5c332416fb0, type: 3}
+      subMesh: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0, w: 1}
+      localScale: {x: 1, y: 1, z: 1}
+      materialName: Lit
+      isSphere: 0
+      sphericity: 0.13022466
+    normalizeScale: 1
+    triangles: 314
+  - name: letter_O
+    parts:
+    - mesh: {fileID: 8389584257724856910, guid: 59d86f44a86e369499b1c15ff13242ae, type: 3}
+      subMesh: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0, w: 1}
+      localScale: {x: 1, y: 1, z: 1}
+      materialName: Lit
+      isSphere: 0
+      sphericity: 0.2573849
+    normalizeScale: 1
+    triangles: 768
+  - name: letter_P
+    parts:
+    - mesh: {fileID: 2480699148092720133, guid: 44124a37e8ae8634b9fcec5738208e49, type: 3}
+      subMesh: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0, w: 1}
+      localScale: {x: 1, y: 1, z: 1}
+      materialName: Lit
+      isSphere: 0
+      sphericity: 0.19202138
+    normalizeScale: 1
+    triangles: 320
+  - name: letter_S
+    parts:
+    - mesh: {fileID: 2435649294885693677, guid: 2ed71910d892f2b4fb105147cfb7631b, type: 3}
+      subMesh: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0, w: 1}
+      localScale: {x: 1, y: 1, z: 1}
+      materialName: Lit
+      isSphere: 0
+      sphericity: 0.25878155
+    normalizeScale: 1
+    triangles: 988
+  - name: letter_U
+    parts:
+    - mesh: {fileID: -7055954875849934096, guid: 260a294d2c6f20d4a832cede906b8d30, type: 3}
+      subMesh: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0, w: 1}
+      localScale: {x: 1, y: 1, z: 1}
+      materialName: Lit
+      isSphere: 0
+      sphericity: 0.17978501
+    normalizeScale: 1
+    triangles: 308
