@@ -61,6 +61,20 @@ public struct CableParameters
     [Tooltip("Flash colours. Each cable seeds its own pick, independently of its cable colour.")]
     [ColorUsage(false, true)] public Color[] flashColors;
 
+    [Header("Origins")]
+    [Tooltip("How cable origins are spread around the emitter. Point fires every cable from the emitter itself.")]
+    public CableOriginShape originShape;
+    [Tooltip("Grid: cells across.")]
+    public int originColumns;
+    [Tooltip("Grid: cells down.")]
+    public int originRows;
+    [Tooltip("Grid: distance between cells across, in the emitter's local units.")]
+    public float originColumnSpacing;
+    [Tooltip("Grid: distance between cells down, in the emitter's local units.")]
+    public float originRowSpacing;
+    [Tooltip("Disc and Sphere: how far origins spread from the emitter, in its local units.")]
+    public float originRadius;
+
     [Header("Patch bay")]
     [Tooltip("Ports across the bay.")]
     public int patchColumns;
@@ -111,6 +125,12 @@ public struct CableParameters
         thickness = 0.05f,
         thicknessVariation = 1f,
         headScale = 1f,
+        originShape = CableOriginShape.Point,
+        originColumns = 6,
+        originRows = 3,
+        originColumnSpacing = 1.5f,
+        originRowSpacing = 1.5f,
+        originRadius = 4f,
         patchColumns = 10,
         patchRows = 3,
         columnSpacing = 1.5f,

@@ -212,6 +212,12 @@ MonoBehaviour:
     - {r: 1, g: 1, b: 1, a: 1}
     - {r: 0.4, g: 0.85, b: 1, a: 1}
     - {r: 1, g: 0.75, b: 0.3, a: 1}
+    originShape: 1
+    originColumns: 6
+    originRows: 3
+    originColumnSpacing: 2.2
+    originRowSpacing: 2.2
+    originRadius: 5
     patchColumns: 10
     patchRows: 3
     columnSpacing: 3.1
@@ -740,6 +746,12 @@ MonoBehaviour:
     - {r: 1, g: 1, b: 1, a: 1}
     - {r: 0.4, g: 0.85, b: 1, a: 1}
     - {r: 1, g: 0.75, b: 0.3, a: 1}
+    originShape: 0
+    originColumns: 6
+    originRows: 3
+    originColumnSpacing: 1.5
+    originRowSpacing: 1.5
+    originRadius: 4
     patchColumns: 10
     patchRows: 3
     columnSpacing: 1.2

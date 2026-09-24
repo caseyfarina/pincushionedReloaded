@@ -78,6 +78,18 @@ public class CableInstrument : MonoBehaviour
     public Vector3 PortAxis => target != null ? target.forward : transform.forward;
 
     private Vector3 SourcePos => source != null ? source.position : transform.position;
+
+    /// <summary>Where a given cable leaves from, spread into the configured shape around the emitter.</summary>
+    private Vector3 OriginWorld(int id)
+    {
+        Vector3 local = CableOriginField.OriginLocal(id, parameters.seed, parameters);
+        if (local == Vector3.zero) return SourcePos;
+        return source != null ? source.TransformPoint(local) : SourcePos + local;
+    }
+
+    /// <summary>Where that cable's origin is right now, after the emitter may have moved.</summary>
+    private Vector3 LiveOrigin(in CableShot shot) =>
+        source != null ? source.TransformPoint(shot.sourceLocal) : shot.source;
     private Vector3 TargetPos => target != null ? target.position : transform.position + transform.forward * 10f;
 
     /// <summary>Fire one cable. At the cap the oldest retires.</summary>
@@ -93,8 +105,11 @@ public class CableInstrument : MonoBehaviour
         int ports = CablePatchBay.PortCount(parameters.patchColumns, parameters.patchRows);
         int port = CablePatchBay.PickPort(id, parameters.seed, ports, Occupancy(ports));
 
-        var shot = CableShot.Create(id, SourcePos, PortWorld(port), parameters, meshCount);
+        Vector3 origin = OriginWorld(id);
+
+        var shot = CableShot.Create(id, origin, PortWorld(port), parameters, meshCount);
         shot.portIndex = port;
+        shot.sourceLocal = source != null ? source.InverseTransformPoint(origin) : origin;
 
         // Each plug type sinks a different distance into the universal port, so
         // the landing point is the port plus that plug's calibrated depth along
@@ -194,6 +209,41 @@ public class CableInstrument : MonoBehaviour
             Gizmos.color = new Color(0.3f, 0.8f, 1f, 0.35f);
             Gizmos.DrawLine(target.position, target.position + target.forward * 2f);
         }
+
+        DrawOriginGizmo();
+    }
+
+    /// <summary>
+    /// Shows where cables will leave from. Invisible otherwise until one fires,
+    /// which makes placing and sizing the emitter guesswork.
+    /// </summary>
+    private void DrawOriginGizmo()
+    {
+        if (parameters.originShape == CableOriginShape.Point) return;
+
+        Gizmos.color = new Color(1f, 0.8f, 0.3f, 0.85f);
+        float r = Mathf.Max(0.05f, parameters.thickness * 2f);
+
+        if (parameters.originShape == CableOriginShape.Grid)
+        {
+            int cells = CablePatchBay.PortCount(parameters.originColumns, parameters.originRows);
+            for (int i = 0; i < cells; i++)
+            {
+                Vector3 local = CablePatchBay.PortLocal(i, parameters.originColumns, parameters.originRows,
+                                                        parameters.originColumnSpacing, parameters.originRowSpacing);
+                Gizmos.DrawWireSphere(source != null ? source.TransformPoint(local) : SourcePos + local, r);
+            }
+            return;
+        }
+
+        // Disc and sphere: sample the shape itself rather than drawing an
+        // idealised outline, so what is drawn is what will actually be fired.
+        var p = parameters;
+        for (int i = 0; i < 64; i++)
+        {
+            Vector3 local = CableOriginField.OriginLocal(i, p.seed, p);
+            Gizmos.DrawWireSphere(source != null ? source.TransformPoint(local) : SourcePos + local, r * 0.6f);
+        }
     }
 
     private void OnDisable()
@@ -260,7 +310,7 @@ public class CableInstrument : MonoBehaviour
             // was flown from wherever it was fired. Fading the difference out
             // along t reattaches the tail to a moving source without dragging
             // the rest of the trail off the route it actually travelled.
-            Vector3 emitterDrift = SourcePos - shot.source;
+            Vector3 emitterDrift = LiveOrigin(shot) - shot.source;
 
             for (int i = 0; i < nodeCount; i++)
             {

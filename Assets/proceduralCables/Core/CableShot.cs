@@ -39,6 +39,14 @@ public struct CableShot
     /// </summary>
     public Vector3 insertAxis;
 
+    /// <summary>
+    /// Where this cable left from, in the EMITTER's local space. source stays
+    /// the frozen launch point - a cable in flight travels from where it was
+    /// fired - while this is re-resolved to keep the trailing end attached to
+    /// an emitter that has since moved.
+    /// </summary>
+    public Vector3 sourceLocal;
+
     private const float MinFlight = 1e-3f;
     private const float Eps = 1e-10f;
 
