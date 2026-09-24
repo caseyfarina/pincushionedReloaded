@@ -18,15 +18,16 @@ public static class CableRibbonBuilder
     public static int IndexCount(int nodes) => nodes < 2 ? 0 : (nodes - 1) * 6;
 
     /// <summary>
-    /// Append one cable. uvTiling is repeats per world unit, so u is
+    /// Append one cable. emission is the cable's contact flash, written flat
+    /// across both its vertices. uvTiling is repeats per world unit, so u is
     /// proportional to the cable's actual length rather than to t - otherwise a
     /// short cable and a long one get the same repeat count and the texel
     /// density mismatch gives the ribbon away.
     /// </summary>
     public static void Append(
-        Vector3[] nodes, int nodeCount, Color color, float uvTiling,
+        Vector3[] nodes, int nodeCount, Color color, Color emission, float uvTiling,
         List<Vector3> positions, List<Vector3> tangents, List<Vector2> uvs,
-        List<Color> colors, List<int> indices)
+        List<Color> colors, List<Vector4> emissions, List<int> indices)
     {
         if (nodes == null || nodeCount < 2) return;
 
@@ -56,6 +57,12 @@ public static class CableRibbonBuilder
             tangents.Add(tangent); tangents.Add(tangent);
             uvs.Add(new Vector2(u, 0f)); uvs.Add(new Vector2(u, 1f));
             colors.Add(color); colors.Add(color);
+
+            // Emission rides its own channel: vertex colour's alpha is already
+            // the per-cable width multiplier, and packing a flash into the rgb
+            // would distort a bright cable's own colour when it clipped.
+            var e = new Vector4(emission.r, emission.g, emission.b, 0f);
+            emissions.Add(e); emissions.Add(e);
         }
 
         for (int i = 0; i < nodeCount - 1; i++)

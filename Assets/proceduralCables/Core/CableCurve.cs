@@ -99,6 +99,20 @@ public static class CableCurve
     }
 
     /// <summary>
+    /// Brightness of the contact flash, 1 at the instant a cable lands and
+    /// falling away after.
+    ///
+    /// The same decaying exponential as Shiver without the oscillation - a
+    /// flash is a strike, not a ringing. Clamped to [0,1] so a pathological
+    /// decay cannot drive emission negative or unbounded.
+    /// </summary>
+    public static float Flash01(float settleAge, float decay)
+    {
+        if (settleAge <= 0f) return settleAge < 0f ? 0f : 1f;
+        return Mathf.Clamp01(Mathf.Exp(-Mathf.Max(0f, decay) * settleAge));
+    }
+
+    /// <summary>
     /// How much sag and noise a point still carries, given how much of the
     /// flight is spent inserting.
     ///

@@ -52,6 +52,9 @@ Shader "Pincushioned/CableRibbon"
                 // vertex channel, and alpha was the only unused one (the pass
                 // is opaque and writes alpha 1 regardless).
                 float4 color      : COLOR;
+                // The contact flash, in its own channel because COLOR's alpha
+                // is already the width multiplier.
+                float4 emission   : TEXCOORD1;
             };
 
             struct Varyings
@@ -62,6 +65,7 @@ Shader "Pincushioned/CableRibbon"
                 float3 sideWS     : TEXCOORD2;
                 float2 uv         : TEXCOORD3;
                 float4 color      : COLOR;
+                float3 emission   : TEXCOORD5;
                 float  fogCoord   : TEXCOORD4;
             };
 
@@ -95,6 +99,7 @@ Shader "Pincushioned/CableRibbon"
                 OUT.sideWS     = side;
                 OUT.uv         = IN.uv;
                 OUT.color      = IN.color;
+                OUT.emission   = IN.emission.rgb;
                 OUT.fogCoord   = ComputeFogFactor(OUT.positionCS.z);
                 return OUT;
             }
@@ -135,6 +140,7 @@ Shader "Pincushioned/CableRibbon"
                 surfaceData.smoothness = _Smoothness;
                 surfaceData.occlusion = 1.0;
                 surfaceData.normalTS = float3(0, 0, 1);
+                surfaceData.emission = IN.emission;
 
                 half4 col = UniversalFragmentPBR(inputData, surfaceData);
                 col.rgb = MixFog(col.rgb, IN.fogCoord);

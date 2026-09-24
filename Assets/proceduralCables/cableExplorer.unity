@@ -206,6 +206,12 @@ MonoBehaviour:
     - {r: 0.2, g: 0.7, b: 0.3, a: 1}
     - {r: 0.15, g: 0.4, b: 0.85, a: 1}
     - {r: 0.55, g: 0.25, b: 0.75, a: 1}
+    flashIntensity: 6
+    flashDecay: 5
+    flashColors:
+    - {r: 1, g: 1, b: 1, a: 1}
+    - {r: 0.4, g: 0.85, b: 1, a: 1}
+    - {r: 1, g: 0.75, b: 0.3, a: 1}
     patchColumns: 10
     patchRows: 3
     columnSpacing: 3.1
@@ -330,6 +336,7 @@ MonoBehaviour:
   lightPartName: light
   freeColor: {r: 2.2, g: 0.08, b: 0.06, a: 1}
   occupiedColor: {r: 0.1, g: 2.2, b: 0.25, a: 1}
+  connectFlashColor: {r: 3.5, g: 3.5, b: 3.5, a: 1}
 --- !u!1 &234594215
 GameObject:
   m_ObjectHideFlags: 0
@@ -727,6 +734,12 @@ MonoBehaviour:
     - {r: 0.2, g: 0.7, b: 0.3, a: 1}
     - {r: 0.15, g: 0.4, b: 0.85, a: 1}
     - {r: 0.55, g: 0.25, b: 0.75, a: 1}
+    flashIntensity: 0
+    flashDecay: 6
+    flashColors:
+    - {r: 1, g: 1, b: 1, a: 1}
+    - {r: 0.4, g: 0.85, b: 1, a: 1}
+    - {r: 1, g: 0.75, b: 0.3, a: 1}
     patchColumns: 10
     patchRows: 3
     columnSpacing: 1.2

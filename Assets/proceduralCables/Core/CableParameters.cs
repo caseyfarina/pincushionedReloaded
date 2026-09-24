@@ -53,6 +53,14 @@ public struct CableParameters
     [Tooltip("Palette. Each cable seeds its own pick.")]
     public Color[] colors;
 
+    [Header("Contact flash")]
+    [Tooltip("How bright the cable flashes as it plugs in. 0 disables the flash entirely.")]
+    public float flashIntensity;
+    [Tooltip("How fast that flash dies away. Higher is snappier.")]
+    public float flashDecay;
+    [Tooltip("Flash colours. Each cable seeds its own pick, independently of its cable colour.")]
+    [ColorUsage(false, true)] public Color[] flashColors;
+
     [Header("Patch bay")]
     [Tooltip("Ports across the bay.")]
     public int patchColumns;
@@ -92,6 +100,14 @@ public struct CableParameters
         driftSpeed = 0.25f,
         shiverDecay = 3.5f,
         shiverFreq = 14f,
+        flashIntensity = 0f,
+        flashDecay = 6f,
+        flashColors = new[]
+        {
+            new Color(1.00f, 1.00f, 1.00f),
+            new Color(0.40f, 0.85f, 1.00f),
+            new Color(1.00f, 0.75f, 0.30f),
+        },
         thickness = 0.05f,
         thicknessVariation = 1f,
         headScale = 1f,

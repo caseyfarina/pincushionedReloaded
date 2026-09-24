@@ -17,10 +17,14 @@ public class CableRibbonBuilderTests
         public readonly List<Vector3> tan = new List<Vector3>();
         public readonly List<Vector2> uv = new List<Vector2>();
         public readonly List<Color> col = new List<Color>();
+        public readonly List<Vector4> emit = new List<Vector4>();
         public readonly List<int> idx = new List<int>();
 
         public void Append(Vector3[] nodes, int count, Color c, float tiling) =>
-            CableRibbonBuilder.Append(nodes, count, c, tiling, pos, tan, uv, col, idx);
+            CableRibbonBuilder.Append(nodes, count, c, Color.black, tiling, pos, tan, uv, col, emit, idx);
+
+        public void Append(Vector3[] nodes, int count, Color c, Color emission, float tiling) =>
+            CableRibbonBuilder.Append(nodes, count, c, emission, tiling, pos, tan, uv, col, emit, idx);
     }
 
     [Test]
@@ -190,5 +194,43 @@ public class CableRibbonBuilderTests
         s.Append(Line(4), 0, Color.white, 1f);
         Assert.AreEqual(0, s.pos.Count, "fewer than two nodes cannot form a ribbon");
         Assert.AreEqual(0, s.idx.Count);
+    }
+
+    [Test]
+    public void Append_GivesEveryVertexTheCablesFlashColour()
+    {
+        // Flash lives in its own channel because vertex colour alpha is already
+        // the per-cable width multiplier.
+        var s = new Sink();
+        var flash = new Color(2f, 0.5f, 0.25f, 1f);
+        s.Append(Line(5), 5, Color.white, flash, 1f);
+
+        Assert.AreEqual(10, s.emit.Count, "emission must stay in lockstep with the vertices");
+        foreach (var e in s.emit)
+        {
+            Assert.AreEqual(flash.r, e.x, 1e-5f);
+            Assert.AreEqual(flash.g, e.y, 1e-5f);
+            Assert.AreEqual(flash.b, e.z, 1e-5f);
+        }
+    }
+
+    [Test]
+    public void Append_KeepsEachCablesFlashSeparate()
+    {
+        var s = new Sink();
+        s.Append(Line(4), 4, Color.white, new Color(1f, 0f, 0f), 1f);
+        s.Append(Line(4), 4, Color.white, new Color(0f, 0f, 1f), 1f);
+
+        Assert.AreEqual(16, s.emit.Count);
+        for (int i = 0; i < 8; i++) Assert.AreEqual(1f, s.emit[i].x, 1e-5f, $"first cable vertex {i}");
+        for (int i = 8; i < 16; i++) Assert.AreEqual(1f, s.emit[i].z, 1e-5f, $"second cable vertex {i}");
+    }
+
+    [Test]
+    public void Append_EmitsNoEmissionForADegenerateCable()
+    {
+        var s = new Sink();
+        s.Append(Line(4), 1, Color.white, Color.red, 1f);
+        Assert.AreEqual(0, s.emit.Count);
     }
 }

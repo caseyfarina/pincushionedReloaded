@@ -42,10 +42,14 @@ public class CableBayView : MonoBehaviour
     [Tooltip("Emission for a port with a cable in it.")]
     [ColorUsage(false, true)] public Color occupiedColor = new Color(0.1f, 2.2f, 0.25f);
 
+    [Tooltip("Emission a port's light strikes as a cable arrives in it, fading to the occupied colour.")]
+    [ColorUsage(false, true)] public Color connectFlashColor = new Color(3.5f, 3.5f, 3.5f);
+
     private readonly List<Matrix4x4> _batch = new List<Matrix4x4>();
     private readonly List<Matrix4x4> _partBatch = new List<Matrix4x4>();
     private readonly List<Matrix4x4> _freeBatch = new List<Matrix4x4>();
     private readonly List<Matrix4x4> _busyBatch = new List<Matrix4x4>();
+    private readonly List<Matrix4x4> _flashBatch = new List<Matrix4x4>();
     private readonly HashSet<string> _warned = new HashSet<string>();
 
     // One block per state rather than per instance: an instanced batch shares
@@ -53,6 +57,7 @@ public class CableBayView : MonoBehaviour
     // why the light is a separate mesh part from the housing.
     private MaterialPropertyBlock _freeBlock;
     private MaterialPropertyBlock _busyBlock;
+    private MaterialPropertyBlock _flashBlock;
 
     private void Reset()
     {
@@ -121,10 +126,17 @@ public class CableBayView : MonoBehaviour
             // glance: red is a socket going spare, green is one in use.
             _freeBatch.Clear();
             _busyBatch.Clear();
+            _flashBatch.Clear();
+            float flashSum = 0f;
+
             for (int i = 0; i < _batch.Count; i++)
             {
                 var m = _batch[i] * part.Local;
-                if (inst.IsPortOccupied(i)) _busyBatch.Add(m); else _freeBatch.Add(m);
+
+                float f = inst.PortFlash01(i);
+                if (f > 0.01f) { _flashBatch.Add(m); flashSum += f; }
+                else if (inst.IsPortOccupied(i)) _busyBatch.Add(m);
+                else _freeBatch.Add(m);
             }
 
             if (_freeBatch.Count > 0)
@@ -134,6 +146,22 @@ public class CableBayView : MonoBehaviour
             if (_busyBatch.Count > 0)
                 Graphics.RenderMeshInstanced(
                     new RenderParams(part.material) { matProps = _busyBlock }, part.mesh, part.subMesh, _busyBatch);
+
+            if (_flashBatch.Count > 0)
+            {
+                // One batch shares its properties, so ports flashing together
+                // share a brightness - the mean. With cables landing seconds
+                // apart that is almost always a single port, and the averaging
+                // only shows when two arrive in the same instant.
+                float mean = flashSum / _flashBatch.Count;
+                _flashBlock ??= new MaterialPropertyBlock();
+                Color lit = Color.Lerp(occupiedColor, connectFlashColor, mean);
+                _flashBlock.SetColor(EmissionId, lit);
+                _flashBlock.SetColor(BaseColorId, lit * 0.25f);
+
+                Graphics.RenderMeshInstanced(
+                    new RenderParams(part.material) { matProps = _flashBlock }, part.mesh, part.subMesh, _flashBatch);
+            }
         }
     }
 

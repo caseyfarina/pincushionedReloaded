@@ -14,6 +14,8 @@ public struct CableShot
     public float age;
     public float flightDuration;
     public int colorIndex;
+    /// <summary>Which flash colour this cable strikes with. Drawn separately from colorIndex so the flash does not echo the cable.</summary>
+    public int flashColorIndex;
     /// <summary>Multiple of CableParameters.thickness this cable draws at.</summary>
     public float widthScale;
     /// <summary>Index into CableLibrary, or -1 when no connectors are imported.</summary>
@@ -65,6 +67,7 @@ public struct CableShot
 
         float speed = Mathf.Max(1e-3f, p.cableSpeed);
         int colors = (p.colors != null && p.colors.Length > 0) ? p.colors.Length : 1;
+        int flashes = (p.flashColors != null && p.flashColors.Length > 0) ? p.flashColors.Length : 0;
 
         return new CableShot
         {
@@ -75,11 +78,17 @@ public struct CableShot
             flightDuration = Mathf.Max(MinFlight, Vector3.Distance(source, landing) / speed),
             colorIndex = Mathf.FloorToInt(CableCurve.Rand01(id, s, 21u) * colors) % colors,
             widthScale = Mathf.Lerp(1f, Mathf.Max(1f, p.thicknessVariation), CableCurve.Rand01(id, s, 23u)),
+            flashColorIndex = flashes > 0
+                ? Mathf.FloorToInt(CableCurve.Rand01(id, s, 24u) * flashes) % flashes
+                : 0,
             meshIndex = meshCount > 0
                 ? Mathf.FloorToInt(CableCurve.Rand01(id, s, 22u) * meshCount) % meshCount
                 : -1,
         };
     }
+
+    /// <summary>Seconds since this cable landed. Negative while it is still in flight.</summary>
+    public float SettleAge => age - flightDuration;
 
     /// <summary>1 the instant it is fired, 0 once it has landed. Never negative.</summary>
     public float Flight01 => 1f - Mathf.Clamp01(age / Mathf.Max(MinFlight, flightDuration));

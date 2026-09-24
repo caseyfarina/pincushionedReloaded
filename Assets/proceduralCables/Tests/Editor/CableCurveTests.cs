@@ -193,4 +193,43 @@ public class CableCurveTests
         for (float t = 0f; t <= 1f; t += 0.25f)
             Assert.AreEqual(1f, CableCurve.DecorationFade(t, 0f), Eps, $"t {t}");
     }
+
+    [Test]
+    public void Flash01_IsDarkUntilTheMomentOfContact()
+    {
+        Assert.AreEqual(0f, CableCurve.Flash01(-1f, 6f), Eps, "lit before it had landed");
+        Assert.AreEqual(1f, CableCurve.Flash01(0f, 6f), Eps, "no flash at the instant of contact");
+    }
+
+    [Test]
+    public void Flash01_DecaysAwayToNothing()
+    {
+        Assert.Less(CableCurve.Flash01(2f, 6f), 0.01f, "still lit long after landing");
+        Assert.Greater(CableCurve.Flash01(0.05f, 6f), 0.5f, "died out too fast to be seen");
+    }
+
+    [Test]
+    public void Flash01_FallsMonotonically()
+    {
+        float prev = 2f;
+        for (float t = 0f; t < 3f; t += 0.05f)
+        {
+            float v = CableCurve.Flash01(t, 6f);
+            Assert.LessOrEqual(v, prev + 1e-5f, $"brightened again at {t}");
+            prev = v;
+        }
+    }
+
+    [Test]
+    public void Flash01_StaysInRangeForPathologicalDecay()
+    {
+        foreach (float decay in new[] { 0f, -5f, 1e6f })
+            foreach (float t in new[] { 0f, 0.5f, 50f })
+            {
+                float v = CableCurve.Flash01(t, decay);
+                Assert.IsFalse(float.IsNaN(v), $"NaN at decay {decay} t {t}");
+                Assert.GreaterOrEqual(v, 0f, $"negative at decay {decay} t {t}");
+                Assert.LessOrEqual(v, 1f, $"over one at decay {decay} t {t}");
+            }
+    }
 }

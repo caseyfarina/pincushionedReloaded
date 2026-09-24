@@ -487,4 +487,35 @@ public class CableShotTests
         }
     }
 
+    [Test]
+    public void Create_PicksAFlashColourInRange()
+    {
+        var p = CableParameters.Default;
+        for (int id = 0; id < 200; id++)
+        {
+            var s = CableShot.Create(id, Src, Tgt, p, 1);
+            Assert.GreaterOrEqual(s.flashColorIndex, 0, $"id {id}");
+            Assert.Less(s.flashColorIndex, p.flashColors.Length, $"id {id}");
+        }
+    }
+
+    [Test]
+    public void Create_SpreadsFlashColoursAndDoesNotTrackTheCableColour()
+    {
+        // Drawn from its own stream, so a red cable is not always the one that
+        // flashes red.
+        var p = CableParameters.Default;
+        var seen = new System.Collections.Generic.HashSet<int>();
+        int matchesCableColour = 0;
+
+        for (int id = 0; id < 200; id++)
+        {
+            var s = CableShot.Create(id, Src, Tgt, p, 1);
+            seen.Add(s.flashColorIndex);
+            if (s.flashColorIndex == s.colorIndex % p.flashColors.Length) matchesCableColour++;
+        }
+
+        Assert.AreEqual(p.flashColors.Length, seen.Count, "some flash colours never came up");
+        Assert.Less(matchesCableColour, 150, "the flash colour is following the cable colour");
+    }
 }

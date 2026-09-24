@@ -58,6 +58,7 @@ public class CableInstrument : MonoBehaviour
     private readonly List<Vector3> _tangents = new List<Vector3>();
     private readonly List<Vector2> _uvs = new List<Vector2>();
     private readonly List<Color> _colors = new List<Color>();
+    private readonly List<Vector4> _emissions = new List<Vector4>();
     private readonly List<int> _indices = new List<int>();
     // Parallel lists. A cable with no connector contributes to neither, so
     // these must not be indexed against _shots.
@@ -233,7 +234,8 @@ public class CableInstrument : MonoBehaviour
 
     private void BuildMesh()
     {
-        _positions.Clear(); _tangents.Clear(); _uvs.Clear(); _colors.Clear(); _indices.Clear();
+        _positions.Clear(); _tangents.Clear(); _uvs.Clear(); _colors.Clear();
+        _emissions.Clear(); _indices.Clear();
         _heads.Clear(); _headMesh.Clear();
 
         int nodeCount = Mathf.Max(2, parameters.nodesPerCable);
@@ -278,8 +280,9 @@ public class CableInstrument : MonoBehaviour
             Color c = colorCount > 0 ? parameters.colors[Mathf.Clamp(shot.colorIndex, 0, colorCount - 1)] : Color.white;
             // Alpha is the width channel, not opacity - see CableRibbon.shader.
             c.a = shot.widthScale;
-            CableRibbonBuilder.Append(_nodes, nodeCount, c, uvTiling,
-                _positions, _tangents, _uvs, _colors, _indices);
+
+            CableRibbonBuilder.Append(_nodes, nodeCount, c, FlashColor(shot), uvTiling,
+                _positions, _tangents, _uvs, _colors, _emissions, _indices);
 
             if (shot.meshIndex >= 0 && ResolvedLibrary != null)
             {
@@ -307,6 +310,7 @@ public class CableInstrument : MonoBehaviour
         _mesh.SetNormals(_tangents);
         _mesh.SetUVs(0, _uvs);
         _mesh.SetColors(_colors);
+        _mesh.SetUVs(1, _emissions);
         _mesh.SetTriangles(_indices, 0, true);
 
         // The ribbon widens in the vertex shader, so the mesh bounds must be
@@ -314,6 +318,42 @@ public class CableInstrument : MonoBehaviour
         var b = _mesh.bounds;
         b.Expand(parameters.thickness * Mathf.Max(1f, parameters.thicknessVariation) * 2f);
         _mesh.bounds = b;
+    }
+
+    /// <summary>
+    /// The cable's contact flash right now: its seeded flash colour, scaled by
+    /// a decay from the instant it landed. Black once it has faded, and black
+    /// throughout when the intensity is zero, so the feature costs nothing
+    /// until it is turned up.
+    /// </summary>
+    private Color FlashColor(in CableShot shot)
+    {
+        if (parameters.flashIntensity <= 0f) return Color.black;
+
+        int n = parameters.flashColors != null ? parameters.flashColors.Length : 0;
+        if (n == 0) return Color.black;
+
+        float f = CableCurve.Flash01(shot.SettleAge, parameters.flashDecay);
+        if (f <= 0f) return Color.black;
+
+        return parameters.flashColors[Mathf.Clamp(shot.flashColorIndex, 0, n - 1)]
+             * (f * parameters.flashIntensity);
+    }
+
+    /// <summary>
+    /// How brightly the port's own light should be flashing, 0 to 1. Read by
+    /// the panel so the socket lights up as a cable arrives in it.
+    /// </summary>
+    public float PortFlash01(int port)
+    {
+        if (parameters.flashIntensity <= 0f) return 0f;
+
+        float best = 0f;
+        foreach (var s in _shots)
+            if (s.portIndex == port)
+                best = Mathf.Max(best, CableCurve.Flash01(s.SettleAge, parameters.flashDecay));
+
+        return best;
     }
 
     private Matrix4x4 HeadMatrix(in CableShot shot, Vector3 head, float flight01, int nodeCount)
