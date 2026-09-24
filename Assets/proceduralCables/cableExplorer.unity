@@ -428,6 +428,7 @@ GameObject:
   - component: {fileID: 1781433297}
   - component: {fileID: 1781433301}
   - component: {fileID: 1781433302}
+  - component: {fileID: 1781433303}
   m_Layer: 0
   m_Name: Cable Rig
   m_TagString: Untagged
@@ -462,6 +463,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CableInstrument
   source: {fileID: 1800804398}
   target: {fileID: 907279175}
+  portMode: 0
+  proximityPorts: {fileID: 1781433303}
   parameters:
     seed: 1
     cableSpeed: 14.57
@@ -486,7 +489,7 @@ MonoBehaviour:
     - {r: 0.2, g: 0.7, b: 0.3, a: 1}
     - {r: 0.15, g: 0.4, b: 0.85, a: 1}
     - {r: 0.55, g: 0.25, b: 0.75, a: 1}
-    flashIntensity: 0
+    flashIntensity: 3.15
     flashDecay: 6
     flashColors:
     - {r: 1, g: 1, b: 1, a: 1}
@@ -646,8 +649,30 @@ MonoBehaviour:
   draw: 1
   lightPartName: light
   freeColor: {r: 2.2, g: 0.08, b: 0.06, a: 1}
+  reservedColor: {r: 2.2, g: 1.6, b: 0.1, a: 1}
   occupiedColor: {r: 0.1, g: 2.2, b: 0.25, a: 1}
   connectFlashColor: {r: 3.5, g: 3.5, b: 3.5, a: 1}
+--- !u!114 &1781433303
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1781433296}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74858103e0c52ef46a07915b32808f0e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CableProximityPorts
+  searchRadius: 45
+  maxAttempts: 32
+  upLimit: 0.25
+  minFacing: 0.3
+  minPortSpacing: 2.5
+  surfaces:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  portCap: 64
 --- !u!1 &1800804397
 GameObject:
   m_ObjectHideFlags: 0

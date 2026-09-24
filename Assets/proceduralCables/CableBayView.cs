@@ -39,6 +39,9 @@ public class CableBayView : MonoBehaviour
     [Tooltip("Emission for a port with nothing plugged into it.")]
     [ColorUsage(false, true)] public Color freeColor = new Color(2.2f, 0.08f, 0.06f);
 
+    [Tooltip("Emission for a port a cable has been fired at but has not reached yet.")]
+    [ColorUsage(false, true)] public Color reservedColor = new Color(2.2f, 1.6f, 0.1f);
+
     [Tooltip("Emission for a port with a cable in it.")]
     [ColorUsage(false, true)] public Color occupiedColor = new Color(0.1f, 2.2f, 0.25f);
 
@@ -49,6 +52,7 @@ public class CableBayView : MonoBehaviour
     private readonly List<Matrix4x4> _partBatch = new List<Matrix4x4>();
     private readonly List<Matrix4x4> _freeBatch = new List<Matrix4x4>();
     private readonly List<Matrix4x4> _busyBatch = new List<Matrix4x4>();
+    private readonly List<Matrix4x4> _heldBatch = new List<Matrix4x4>();
     private readonly List<Matrix4x4> _flashBatch = new List<Matrix4x4>();
     private readonly HashSet<string> _warned = new HashSet<string>();
 
@@ -57,6 +61,7 @@ public class CableBayView : MonoBehaviour
     // why the light is a separate mesh part from the housing.
     private MaterialPropertyBlock _freeBlock;
     private MaterialPropertyBlock _busyBlock;
+    private MaterialPropertyBlock _heldBlock;
     private MaterialPropertyBlock _flashBlock;
 
     private void Reset()
@@ -87,14 +92,20 @@ public class CableBayView : MonoBehaviour
         int count = inst.PortCount;
         if (count <= 0) return;
 
-        // Every port shares one orientation: the bay's own. Ports are holes in a
-        // panel, not independently aimed props.
-        Quaternion rot = Quaternion.LookRotation(inst.PortAxis, Vector3.up)
-                       * Quaternion.Euler(portOrientationEuler);
+        // Each port is asked for its own seating axis. On the bay they all
+        // return the same one; in the room every port faces out of whatever
+        // surface it was found on.
+        var tweak = Quaternion.Euler(portOrientationEuler);
 
         _batch.Clear();
         for (int i = 0; i < count; i++)
-            _batch.Add(Matrix4x4.TRS(inst.PortWorld(i), rot, Vector3.one * portScale));
+        {
+            Vector3 axis = inst.PortSeatAxis(i);
+            if (axis.sqrMagnitude < 1e-10f) axis = Vector3.forward;
+
+            Vector3 up = Mathf.Abs(Vector3.Dot(axis.normalized, Vector3.up)) > 0.99f ? Vector3.forward : Vector3.up;
+            _batch.Add(Matrix4x4.TRS(inst.PortWorld(i), Quaternion.LookRotation(axis, up) * tweak, Vector3.one * portScale));
+        }
 
         EnsureBlocks();
 
@@ -125,6 +136,7 @@ public class CableBayView : MonoBehaviour
             // Split the lights by what is plugged in, so the panel reads at a
             // glance: red is a socket going spare, green is one in use.
             _freeBatch.Clear();
+            _heldBatch.Clear();
             _busyBatch.Clear();
             _flashBatch.Clear();
             float flashSum = 0f;
@@ -134,14 +146,23 @@ public class CableBayView : MonoBehaviour
                 var m = _batch[i] * part.Local;
 
                 float f = inst.PortFlash01(i);
-                if (f > 0.01f) { _flashBatch.Add(m); flashSum += f; }
-                else if (inst.IsPortOccupied(i)) _busyBatch.Add(m);
-                else _freeBatch.Add(m);
+                if (f > 0.01f) { _flashBatch.Add(m); flashSum += f; continue; }
+
+                switch (inst.PortState(i))
+                {
+                    case CablePortState.Occupied: _busyBatch.Add(m); break;
+                    case CablePortState.Reserved: _heldBatch.Add(m); break;
+                    default:                      _freeBatch.Add(m); break;
+                }
             }
 
             if (_freeBatch.Count > 0)
                 Graphics.RenderMeshInstanced(
                     new RenderParams(part.material) { matProps = _freeBlock }, part.mesh, part.subMesh, _freeBatch);
+
+            if (_heldBatch.Count > 0)
+                Graphics.RenderMeshInstanced(
+                    new RenderParams(part.material) { matProps = _heldBlock }, part.mesh, part.subMesh, _heldBatch);
 
             if (_busyBatch.Count > 0)
                 Graphics.RenderMeshInstanced(
@@ -175,5 +196,9 @@ public class CableBayView : MonoBehaviour
         _freeBlock.SetColor(BaseColorId, freeColor * 0.25f);
         _busyBlock.SetColor(EmissionId, occupiedColor);
         _busyBlock.SetColor(BaseColorId, occupiedColor * 0.25f);
+
+        _heldBlock ??= new MaterialPropertyBlock();
+        _heldBlock.SetColor(EmissionId, reservedColor);
+        _heldBlock.SetColor(BaseColorId, reservedColor * 0.25f);
     }
 }

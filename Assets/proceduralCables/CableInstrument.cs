@@ -1,6 +1,26 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>Where a cable's ports come from.</summary>
+public enum CablePortMode
+{
+    /// <summary>A grid laid out on the target transform.</summary>
+    PatchBay,
+    /// <summary>Found on real surfaces near the source, by probing the room.</summary>
+    Proximity,
+}
+
+/// <summary>What a port is doing.</summary>
+public enum CablePortState
+{
+    /// <summary>Nothing plugged in and nothing on its way.</summary>
+    Free,
+    /// <summary>A cable has been fired at it and is still in the air.</summary>
+    Reserved,
+    /// <summary>A plug is seated in it.</summary>
+    Occupied,
+}
+
 /// <summary>What a landed connector aims along.</summary>
 public enum CableHeadAim
 {
@@ -26,6 +46,12 @@ public class CableInstrument : MonoBehaviour
     public Transform source;
     [Tooltip("What cables are fired at. Landing points scatter around it.")]
     public Transform target;
+
+    [Tooltip("Where ports come from: a grid on the target, or surfaces found near the source.")]
+    public CablePortMode portMode = CablePortMode.PatchBay;
+
+    [Tooltip("Used when Port Mode is Proximity. Probes the room for patchable surfaces.")]
+    public CableProximityPorts proximityPorts;
 
     public CableParameters parameters = CableParameters.Default;
 
@@ -102,10 +128,22 @@ public class CableInstrument : MonoBehaviour
         int meshCount = lib != null ? lib.Count : 0;
         int id = _nextId++;
 
-        int ports = CablePatchBay.PortCount(parameters.patchColumns, parameters.patchRows);
-        int port = CablePatchBay.PickPort(id, parameters.seed, ports, Occupancy(ports));
-
         Vector3 origin = OriginWorld(id);
+
+        int port;
+        if (portMode == CablePortMode.Proximity)
+        {
+            // Probing can come up empty - a source out in the open with no
+            // surface in reach. Firing anyway would send a cable at nothing, so
+            // the beat is simply skipped.
+            port = proximityPorts != null ? proximityPorts.FindPort(id, origin, parameters.seed) : -1;
+            if (port < 0) return;
+        }
+        else
+        {
+            int ports = CablePatchBay.PortCount(parameters.patchColumns, parameters.patchRows);
+            port = CablePatchBay.PickPort(id, parameters.seed, ports, Occupancy(ports));
+        }
 
         var shot = CableShot.Create(id, origin, PortWorld(port), parameters, meshCount);
         shot.portIndex = port;
@@ -125,8 +163,14 @@ public class CableInstrument : MonoBehaviour
 
         // Remember where it plugged in relative to the target, not in world
         // coordinates, so the whole bay rides that one transform afterwards.
-        shot.landingLocal = target != null ? target.InverseTransformPoint(shot.landing) : shot.landing;
-        shot.insertAxis = PortAxis;
+        // On the bay the landing is kept relative to the target so the whole
+        // grid rides one transform. A port found in the room belongs to the
+        // room, so it is kept in world space.
+        shot.landingLocal = (portMode == CablePortMode.PatchBay && target != null)
+            ? target.InverseTransformPoint(shot.landing)
+            : shot.landing;
+
+        shot.insertAxis = PortSeatAxis(port);
 
         _shots.Add(shot);
     }
@@ -151,20 +195,51 @@ public class CableInstrument : MonoBehaviour
     }
 
     /// <summary>
-    /// Whether anything is currently plugged into a port. Read per frame by the
-    /// panel to colour its indicator lights, and derived from the live cables
-    /// like the rest of occupancy, so a retiring cable frees its light in the
-    /// same instant it frees its port.
+    /// What a port is doing right now, read per frame by the panel to colour
+    /// its indicator light.
+    ///
+    /// Reserved and Occupied are deliberately different: a port is claimed the
+    /// moment a cable is fired at it, so that nothing else is allocated there,
+    /// but nothing is actually plugged in until that cable lands. Colouring
+    /// both the same made the light go green while the cable was still in the
+    /// air.
+    ///
+    /// Derived from the live cables like the rest of occupancy, so a retiring
+    /// cable frees its light in the same instant it frees its port.
     /// </summary>
-    public bool IsPortOccupied(int port)
+    public CablePortState PortState(int port)
     {
+        var state = CablePortState.Free;
+
         foreach (var s in _shots)
-            if (s.portIndex == port) return true;
-        return false;
+        {
+            if (s.portIndex != port) continue;
+
+            // Landed wins: when the bay is full two cables can share a port,
+            // and a seated plug is what the light should report.
+            if (s.SettleAge >= 0f) return CablePortState.Occupied;
+            state = CablePortState.Reserved;
+        }
+
+        return state;
     }
 
+    /// <summary>Whether a cable has actually arrived in this port.</summary>
+    public bool IsPortOccupied(int port) => PortState(port) == CablePortState.Occupied;
+
     /// <summary>How many ports the bay has.</summary>
-    public int PortCount => CablePatchBay.PortCount(parameters.patchColumns, parameters.patchRows);
+    public int PortCount => portMode == CablePortMode.Proximity
+        ? (proximityPorts != null ? proximityPorts.Count : 0)
+        : CablePatchBay.PortCount(parameters.patchColumns, parameters.patchRows);
+
+    /// <summary>
+    /// The direction a plug travels to seat in a given port. On the bay that is
+    /// the target's Z for every port; in the room it is into whatever surface
+    /// the port was found on, so each port faces its own way.
+    /// </summary>
+    public Vector3 PortSeatAxis(int port) => portMode == CablePortMode.Proximity
+        ? (proximityPorts != null ? proximityPorts.SeatAxisAt(port) : Vector3.forward)
+        : PortAxis;
 
     /// <summary>
     /// World position of a port, via the target transform. Public so a panel
@@ -173,6 +248,9 @@ public class CableInstrument : MonoBehaviour
     /// </summary>
     public Vector3 PortWorld(int port)
     {
+        if (portMode == CablePortMode.Proximity)
+            return proximityPorts != null ? proximityPorts.PointAt(port) : TargetPos;
+
         Vector3 local = CablePatchBay.PortLocal(
             port, parameters.patchColumns, parameters.patchRows,
             parameters.columnSpacing, parameters.rowSpacing);
@@ -267,8 +345,9 @@ public class CableInstrument : MonoBehaviour
             var s = _shots[i];
             s.age += dt;
 
-            // The bay may have moved or turned since this cable was fired.
-            if (target != null)
+            // The bay may have moved or turned since this cable was fired. A
+            // port found in the room stays where the room put it.
+            if (portMode == CablePortMode.PatchBay && target != null)
             {
                 s.landing = target.TransformPoint(s.landingLocal);
                 s.insertAxis = target.forward;
@@ -419,8 +498,8 @@ public class CableInstrument : MonoBehaviour
         // cable gives every plug a different angle, which reads as scattered;
         // seating them all on the target's Z axis makes the nest look plugged
         // into something, and leaves aiming them a single transform rotation.
-        Vector3 settled = headAim == CableHeadAim.TargetAxis && target != null
-            ? target.forward
+        Vector3 settled = headAim == CableHeadAim.TargetAxis && shot.insertAxis.sqrMagnitude > 1e-10f
+            ? shot.insertAxis
             : head - _nodes[Mathf.Max(0, nodeCount - 2)];
 
         Vector3 dir = CableShot.HeadDirection(travel, settled, flight01, Vector3.forward);
