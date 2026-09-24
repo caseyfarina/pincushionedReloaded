@@ -119,230 +119,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &186576646
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 186576651}
-  - component: {fileID: 186576650}
-  - component: {fileID: 186576649}
-  - component: {fileID: 186576648}
-  - component: {fileID: 186576647}
-  - component: {fileID: 186576652}
-  m_Layer: 0
-  m_Name: Cable Rig (1)
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &186576647
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 186576646}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 065917fc5eb33f746a092d18b508fdd3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AutoFireCableDriver
-  instrument: {fileID: 186576649}
-  interval: 2
-  fireOnStart: 1
---- !u!114 &186576648
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 186576646}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 084fe24ed7596e4468c853e3d2056658, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::KeyboardCableDriver
-  instrument: {fileID: 186576649}
---- !u!114 &186576649
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 186576646}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5f4627d539ae81b44a95659664e48d35, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CableInstrument
-  source: {fileID: 1818129206}
-  target: {fileID: 1633515318}
-  parameters:
-    seed: 1
-    cableSpeed: 14.57
-    deceleration: 1.5
-    pathNoise: 1.2
-    pathCurl: 5
-    insertion01: 0.04
-    insertionDepth: 2
-    slack: 0.3
-    cableNoise: 0.35
-    noiseScale: 2.5
-    driftSpeed: 0.25
-    shiverDecay: 3.5
-    shiverFreq: 14
-    thickness: 0.15
-    thicknessVariation: 1
-    headScale: 1
-    colors:
-    - {r: 0.9, g: 0.15, b: 0.15, a: 1}
-    - {r: 0.95, g: 0.55, b: 0.1, a: 1}
-    - {r: 0.95, g: 0.85, b: 0.15, a: 1}
-    - {r: 0.2, g: 0.7, b: 0.3, a: 1}
-    - {r: 0.15, g: 0.4, b: 0.85, a: 1}
-    - {r: 0.55, g: 0.25, b: 0.75, a: 1}
-    flashIntensity: 6
-    flashDecay: 5
-    flashColors:
-    - {r: 1, g: 1, b: 1, a: 1}
-    - {r: 0.4, g: 0.85, b: 1, a: 1}
-    - {r: 1, g: 0.75, b: 0.3, a: 1}
-    originShape: 1
-    originColumns: 6
-    originRows: 3
-    originColumnSpacing: 2.2
-    originRowSpacing: 2.2
-    originRadius: 5
-    patchColumns: 10
-    patchRows: 3
-    columnSpacing: 3.1
-    rowSpacing: 3.1
-    targetScatterRadius: 0
-    lifetime: 2
-    nodesPerCable: 48
-    cableCap: 64
-  library: {fileID: 11400000, guid: 60b4088f7b82bbc4d9057678e1737ef5, type: 2}
-  ribbonMaterial: {fileID: 2100000, guid: 79d75f6cce124bd45816f768e9a48938, type: 2}
-  headMaterial: {fileID: 2100000, guid: f61a83539a0a72b4e81ee8b56de34085, type: 2}
-  uvTiling: 2
-  headOrientationEuler: {x: 90, y: 0, z: 0}
-  headAim: 0
---- !u!114 &186576650
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 186576646}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3ce40300c442bcb4b9eefa895ad4ece4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CableLibrary
-  folder: Assets/proceduralCables/Meshes/Connectors
-  maxTriangles: 20000
-  portModel: {fileID: 919132149155446097, guid: 7c375b54c8518274abfb2ac427337def, type: 3}
-  connectors:
-  - name: quarterInchPlug
-    parts:
-    - name: quarterInchPlug
-      mesh: {fileID: 5860937743488226217, guid: 8ddb22033b5d26745899570010bd3d50, type: 3}
-      subMesh: 0
-      material: {fileID: 2100000, guid: a69c4701f4a310c43b7fd6ba15ef95c5, type: 2}
-      localPosition: {x: 0, y: 0, z: 0}
-      localRotation: {x: 0, y: 0, z: 0, w: 1}
-      localScale: {x: 1, y: 1, z: 1}
-    - name: quarterInchPlug
-      mesh: {fileID: 5860937743488226217, guid: 8ddb22033b5d26745899570010bd3d50, type: 3}
-      subMesh: 1
-      material: {fileID: 2100000, guid: 4712986acef2dbe43a1876f1ff9bde28, type: 2}
-      localPosition: {x: 0, y: 0, z: 0}
-      localRotation: {x: 0, y: 0, z: 0, w: 1}
-      localScale: {x: 1, y: 1, z: 1}
-    seatOffset: 0
-  - name: XLRplug
-    parts:
-    - name: XLRplug
-      mesh: {fileID: 5849979746036404207, guid: ac81beae7b407aa4dab74327eb425c0b, type: 3}
-      subMesh: 0
-      material: {fileID: 2100000, guid: b1319dca47c8cc94dbd27cf9b5af5161, type: 2}
-      localPosition: {x: 0, y: 0, z: 0}
-      localRotation: {x: 0, y: 0, z: 0, w: 1}
-      localScale: {x: 1, y: 1, z: 1}
-    - name: XLRplug
-      mesh: {fileID: 5849979746036404207, guid: ac81beae7b407aa4dab74327eb425c0b, type: 3}
-      subMesh: 1
-      material: {fileID: 2100000, guid: c71d505dbaaeea1408995d18cce5d22d, type: 2}
-      localPosition: {x: 0, y: 0, z: 0}
-      localRotation: {x: 0, y: 0, z: 0, w: 1}
-      localScale: {x: 1, y: 1, z: 1}
-    seatOffset: 0
-  port:
-    name: housing
-    parts:
-    - name: housing
-      mesh: {fileID: 3118357350476920488, guid: 7c375b54c8518274abfb2ac427337def, type: 3}
-      subMesh: 0
-      material: {fileID: 2100000, guid: 4712986acef2dbe43a1876f1ff9bde28, type: 2}
-      localPosition: {x: 0, y: -0.00000016233355, z: 0}
-      localRotation: {x: 0, y: 0, z: 0, w: 1}
-      localScale: {x: 0.99999994, y: 0.99999994, z: 0.99999994}
-    - name: light
-      mesh: {fileID: -3958770277684823056, guid: 7c375b54c8518274abfb2ac427337def, type: 3}
-      subMesh: 0
-      material: {fileID: 2100000, guid: a8e87e1d7e696cb499f79adacd417a05, type: 2}
-      localPosition: {x: 0, y: -2.9547358, z: -1.8180466}
-      localRotation: {x: 0, y: 0, z: 0, w: 1}
-      localScale: {x: 0.4835573, y: 0.4835573, z: 0.4835573}
-    - name: port
-      mesh: {fileID: 1384170444187117848, guid: 7c375b54c8518274abfb2ac427337def, type: 3}
-      subMesh: 0
-      material: {fileID: 2100000, guid: a69c4701f4a310c43b7fd6ba15ef95c5, type: 2}
-      localPosition: {x: 0, y: -2.263771, z: -0.0078003067}
-      localRotation: {x: 0, y: 0, z: 0, w: 1}
-      localScale: {x: 2.5230858, y: 2.5230858, z: 2.5230858}
-    seatOffset: 0
---- !u!4 &186576651
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 186576646}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 25.34, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &186576652
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 186576646}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 37f538de23c3c484988ad9e733132d76, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CableBayView
-  instrument: {fileID: 186576649}
-  library: {fileID: 11400000, guid: 60b4088f7b82bbc4d9057678e1737ef5, type: 2}
-  portScale: 1
-  portOrientationEuler: {x: 90, y: 0, z: 0}
-  draw: 1
-  lightPartName: light
-  freeColor: {r: 2.2, g: 0.08, b: 0.06, a: 1}
-  occupiedColor: {r: 0.1, g: 2.2, b: 0.25, a: 1}
-  connectFlashColor: {r: 3.5, g: 3.5, b: 3.5, a: 1}
 --- !u!1 &234594215
 GameObject:
   m_ObjectHideFlags: 0
@@ -638,37 +414,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 96.066, z: 0}
---- !u!1 &1633515317
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1633515318}
-  m_Layer: 0
-  m_Name: Cable Target (1)
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1633515318
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1633515317}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: 0.74353015, z: -0, w: 0.6687024}
-  m_LocalPosition: {x: 19.22, y: 33, z: 0.63}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 96.066, z: 0}
 --- !u!1 &1781433296
 GameObject:
   m_ObjectHideFlags: 0
@@ -682,6 +427,7 @@ GameObject:
   - component: {fileID: 1781433298}
   - component: {fileID: 1781433297}
   - component: {fileID: 1781433301}
+  - component: {fileID: 1781433302}
   m_Layer: 0
   m_Name: Cable Rig
   m_TagString: Untagged
@@ -746,7 +492,7 @@ MonoBehaviour:
     - {r: 1, g: 1, b: 1, a: 1}
     - {r: 0.4, g: 0.85, b: 1, a: 1}
     - {r: 1, g: 0.75, b: 0.3, a: 1}
-    originShape: 0
+    originShape: 1
     originColumns: 6
     originRows: 3
     originColumnSpacing: 1.5
@@ -760,7 +506,7 @@ MonoBehaviour:
     lifetime: 2
     nodesPerCable: 48
     cableCap: 64
-  library: {fileID: 1781433299}
+  library: {fileID: 11400000, guid: 60b4088f7b82bbc4d9057678e1737ef5, type: 2}
   ribbonMaterial: {fileID: 2100000, guid: 79d75f6cce124bd45816f768e9a48938, type: 2}
   headMaterial: {fileID: 2100000, guid: f61a83539a0a72b4e81ee8b56de34085, type: 2}
   uvTiling: 2
@@ -782,16 +528,40 @@ MonoBehaviour:
   maxTriangles: 20000
   portModel: {fileID: 0}
   connectors:
+  - name: housing
+    parts:
+    - name: housing
+      mesh: {fileID: 3118357350476920488, guid: 7c375b54c8518274abfb2ac427337def, type: 3}
+      subMesh: 0
+      material: {fileID: 2100000, guid: 4712986acef2dbe43a1876f1ff9bde28, type: 2}
+      localPosition: {x: 0, y: -0.000000081166775, z: 0}
+      localRotation: {x: 0, y: 0, z: 0, w: 1}
+      localScale: {x: 0.99999994, y: 0.99999994, z: 0.99999994}
+    - name: light
+      mesh: {fileID: -3958770277684823056, guid: 7c375b54c8518274abfb2ac427337def, type: 3}
+      subMesh: 0
+      material: {fileID: 2100000, guid: a8e87e1d7e696cb499f79adacd417a05, type: 2}
+      localPosition: {x: 0, y: -1.4773679, z: -0.9090233}
+      localRotation: {x: 0, y: 0, z: 0, w: 1}
+      localScale: {x: 0.4835573, y: 0.4835573, z: 0.4835573}
+    - name: port
+      mesh: {fileID: 1384170444187117848, guid: 7c375b54c8518274abfb2ac427337def, type: 3}
+      subMesh: 0
+      material: {fileID: 2100000, guid: a69c4701f4a310c43b7fd6ba15ef95c5, type: 2}
+      localPosition: {x: 0, y: -1.1318855, z: -0.0039001533}
+      localRotation: {x: 0, y: 0, z: 0, w: 1}
+      localScale: {x: 2.5230858, y: 2.5230858, z: 2.5230858}
+    seatOffset: 0
   - name: quarterInchPlug
     parts:
-    - name: 
+    - name: quarterInchPlug
       mesh: {fileID: 5860937743488226217, guid: 8ddb22033b5d26745899570010bd3d50, type: 3}
       subMesh: 0
       material: {fileID: 2100000, guid: a69c4701f4a310c43b7fd6ba15ef95c5, type: 2}
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
-    - name: 
+    - name: quarterInchPlug
       mesh: {fileID: 5860937743488226217, guid: 8ddb22033b5d26745899570010bd3d50, type: 3}
       subMesh: 1
       material: {fileID: 2100000, guid: 4712986acef2dbe43a1876f1ff9bde28, type: 2}
@@ -801,14 +571,14 @@ MonoBehaviour:
     seatOffset: 0
   - name: XLRplug
     parts:
-    - name: 
+    - name: XLRplug
       mesh: {fileID: 5849979746036404207, guid: ac81beae7b407aa4dab74327eb425c0b, type: 3}
       subMesh: 0
       material: {fileID: 2100000, guid: b1319dca47c8cc94dbd27cf9b5af5161, type: 2}
       localPosition: {x: 0, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0, w: 1}
       localScale: {x: 1, y: 1, z: 1}
-    - name: 
+    - name: XLRplug
       mesh: {fileID: 5849979746036404207, guid: ac81beae7b407aa4dab74327eb425c0b, type: 3}
       subMesh: 1
       material: {fileID: 2100000, guid: c71d505dbaaeea1408995d18cce5d22d, type: 2}
@@ -818,7 +588,14 @@ MonoBehaviour:
     seatOffset: 0
   port:
     name: 
-    parts: []
+    parts:
+    - name: 
+      mesh: {fileID: 0}
+      subMesh: 0
+      material: {fileID: 0}
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0, w: 0}
+      localScale: {x: 0, y: 0, z: 0}
     seatOffset: 0
 --- !u!4 &1781433300
 Transform:
@@ -850,6 +627,27 @@ MonoBehaviour:
   instrument: {fileID: 1781433298}
   interval: 2
   fireOnStart: 1
+--- !u!114 &1781433302
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1781433296}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37f538de23c3c484988ad9e733132d76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CableBayView
+  instrument: {fileID: 1781433298}
+  library: {fileID: 11400000, guid: 60b4088f7b82bbc4d9057678e1737ef5, type: 2}
+  portScale: 1
+  portOrientationEuler: {x: 90, y: 0, z: 0}
+  draw: 1
+  lightPartName: light
+  freeColor: {r: 2.2, g: 0.08, b: 0.06, a: 1}
+  occupiedColor: {r: 0.1, g: 2.2, b: 0.25, a: 1}
+  connectFlashColor: {r: 3.5, g: 3.5, b: 3.5, a: 1}
 --- !u!1 &1800804397
 GameObject:
   m_ObjectHideFlags: 0
@@ -881,37 +679,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1818129205
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1818129206}
-  m_Layer: 0
-  m_Name: Cable Source (1)
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1818129206
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1818129205}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -12, y: 33.34, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -921,6 +688,3 @@ SceneRoots:
   - {fileID: 1800804398}
   - {fileID: 907279175}
   - {fileID: 1781433300}
-  - {fileID: 1818129206}
-  - {fileID: 186576651}
-  - {fileID: 1633515318}
