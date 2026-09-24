@@ -85,7 +85,10 @@ public class BackdropInstrument : MonoBehaviour
     private int liveCount;
 
     // Model selection buffers, caller-owned so Update never allocates.
-    private readonly int[] modelSubset = new int[32];
+    private readonly int[] modelSubset = new int[64];
+    private readonly int[] wordModels = new int[64];
+    private readonly int[] wordSlot = new int[64];
+    private int wordLength;
     private readonly int[] subsetScratch = new int[64];
     private int subsetCount;
     private uint subsetBuiltFor = uint.MaxValue;
@@ -371,6 +374,7 @@ public class BackdropInstrument : MonoBehaviour
         {
             BackdropModelSelection.Single => 1,
             BackdropModelSelection.Subset => Mathf.Clamp(p.subsetSize, 1, Mathf.Max(libCount, 1)),
+            BackdropModelSelection.Word => Mathf.Max(libCount, 1),
             _ => Mathf.Max(libCount, 1),
         };
 
@@ -385,6 +389,30 @@ public class BackdropInstrument : MonoBehaviour
             {
                 modelSubset[0] = meshIndex;
                 subsetCount = 1;
+            }
+            else if (p.modelSelection == BackdropModelSelection.Word)
+            {
+                wordLength = lib != null ? lib.BuildWord(wordModels) : 0;
+
+                // The word repeats letters, so the slots are its distinct models
+                // and each position maps onto one. Otherwise every repeat would
+                // be its own draw of a mesh already being drawn.
+                subsetCount = 0;
+                for (int i = 0; i < wordLength; i++)
+                {
+                    int slot = -1;
+                    for (int k = 0; k < subsetCount; k++)
+                        if (modelSubset[k] == wordModels[i]) { slot = k; break; }
+
+                    if (slot < 0 && subsetCount < modelSubset.Length)
+                    {
+                        slot = subsetCount;
+                        modelSubset[subsetCount++] = wordModels[i];
+                    }
+                    wordSlot[i] = Mathf.Max(slot, 0);
+                }
+
+                if (subsetCount == 0) { modelSubset[0] = meshIndex; subsetCount = 1; wordLength = 0; }
             }
             else
             {
@@ -404,11 +432,21 @@ public class BackdropInstrument : MonoBehaviour
         // compare against the loop variable.
         if (subsetCount > 1 && (instanceAssignedFor != liveCount || stale))
         {
+            bool spelling = p.modelSelection == BackdropModelSelection.Word && wordLength > 0;
+
             for (int i = 0; i < liveCount; i++)
             {
-                int k = Mathf.Min((int)(BackdropLattice.Rand01(i, p.layoutSeed, 929u) * subsetCount),
-                                  subsetCount - 1);
-                instanceModel[i] = k;
+                if (spelling)
+                {
+                    int w = BackdropLattice.WordIndexForInstance(i, liveCount, p, wordLength);
+                    instanceModel[i] = wordSlot[w];
+                }
+                else
+                {
+                    instanceModel[i] = Mathf.Min(
+                        (int)(BackdropLattice.Rand01(i, p.layoutSeed, 929u) * subsetCount),
+                        subsetCount - 1);
+                }
             }
             instanceAssignedFor = liveCount;
         }

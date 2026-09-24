@@ -380,6 +380,28 @@ public static class BackdropLattice
     }
 
     /// <summary>
+    /// Which position in the word an instance takes.
+    ///
+    /// On a colonnade the letter advances per column rather than per instance,
+    /// so each band is one letter and the word reads across the frame - which is
+    /// the arrangement worth having. Every other domain advances per instance,
+    /// which tiles the word through the field.
+    /// </summary>
+    public static int WordIndexForInstance(int id, int count, in BackdropParameters p, int wordLength)
+    {
+        if (wordLength <= 0) return 0;
+
+        if (p.domain == BackdropDomain.Colonnade)
+        {
+            int cols = Mathf.Clamp(p.colonnadeCount, 1, 24);
+            int perCol = Mathf.Max(1, Mathf.CeilToInt((float)Mathf.Max(count, 1) / cols));
+            return (id / perCol) % wordLength;
+        }
+
+        return id % wordLength;
+    }
+
+    /// <summary>
     /// Which model an instance draws, as an index into <paramref name="subset"/>.
     ///
     /// Its own hash stream, so the assignment holds still while position, scale

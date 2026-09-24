@@ -49,6 +49,13 @@ public enum BackdropModelSelection
     Subset = 1,
     /// <summary>Instances draw from the whole library.</summary>
     All = 2,
+
+    /// <summary>
+    /// Instances spell the library's word, in order and repeating. On a
+    /// colonnade the letter advances per column rather than per instance, so
+    /// each band is one letter and the word reads across the frame.
+    /// </summary>
+    Word = 3,
 }
 
 /// <summary>How instances move between their lattice point and wherever they are now.</summary>

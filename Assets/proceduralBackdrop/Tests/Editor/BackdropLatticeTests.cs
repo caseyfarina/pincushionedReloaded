@@ -586,6 +586,62 @@ public class BackdropLatticeTests
     }
 
     [Test]
+    public void WordIndex_AdvancesPerInstanceOnMostDomains()
+    {
+        var p = BackdropParameters.Default;
+        p.domain = BackdropDomain.Plane;
+
+        for (int i = 0; i < 40; i++)
+            Assert.AreEqual(i % 12, BackdropLattice.WordIndexForInstance(i, 100, p, 12), $"instance {i}");
+    }
+
+    [Test]
+    public void WordIndex_AdvancesPerColumnOnAColonnade()
+    {
+        // One letter per band is the arrangement worth having: the word reads
+        // across the frame instead of tiling through it.
+        var p = BackdropParameters.Default;
+        p.domain = BackdropDomain.Colonnade;
+        p.colonnadeCount = 6;
+
+        const int count = 60;          // 10 instances per column
+        int perCol = Mathf.CeilToInt((float)count / 6);
+
+        for (int col = 0; col < 6; col++)
+        {
+            int expected = col % 12;
+            for (int k = 0; k < perCol; k++)
+            {
+                int id = col * perCol + k;
+                if (id >= count) break;
+                Assert.AreEqual(expected, BackdropLattice.WordIndexForInstance(id, count, p, 12),
+                    $"column {col} instance {k} should share the column's letter");
+            }
+        }
+    }
+
+    [Test]
+    public void WordIndex_WrapsRatherThanRunningOff()
+    {
+        var p = BackdropParameters.Default;
+        p.domain = BackdropDomain.Plane;
+
+        for (int i = 0; i < 500; i++)
+        {
+            int w = BackdropLattice.WordIndexForInstance(i, 500, p, 12);
+            Assert.GreaterOrEqual(w, 0, $"instance {i}");
+            Assert.Less(w, 12, $"instance {i}");
+        }
+    }
+
+    [Test]
+    public void WordIndex_HandlesAnEmptyWord()
+    {
+        var p = BackdropParameters.Default;
+        Assert.AreEqual(0, BackdropLattice.WordIndexForInstance(7, 100, p, 0));
+    }
+
+    [Test]
     public void ModelSubset_PicksDistinctIndicesInRange()
     {
         // Repeats would waste a slot and silently reduce the variety asked for.

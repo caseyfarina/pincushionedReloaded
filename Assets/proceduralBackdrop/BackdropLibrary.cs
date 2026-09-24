@@ -101,9 +101,55 @@ public class BackdropLibrary : ScriptableObject
     [Tooltip("Rotation applied to every model in this library before it is instanced. The backdrop faces the camera, which means looking at a model's -Z side - fine for a symmetric shape, and mirrored for anything with handedness. Letters need (0, 180, 0) to read the right way round.")]
     public Vector3 modelRotationEuler;
 
+    [Tooltip("Spelled out by the Word selection mode. Characters with no matching model are skipped, so a word can be changed without re-authoring the set.")]
+    public string word = "pincushioned";
+
     public List<BackdropModel> models = new List<BackdropModel>();
 
     public int Count => models.Count;
+
+    /// <summary>
+    /// The model whose name ends in the given letter, or -1. Matches on the last
+    /// letter of the name so letter_C, C and Glyph_C all resolve, without
+    /// depending on a prefix convention.
+    /// </summary>
+    public int IndexOfLetter(char c)
+    {
+        char want = char.ToUpperInvariant(c);
+        for (int i = 0; i < models.Count; i++)
+        {
+            var m = models[i];
+            if (m == null || string.IsNullOrEmpty(m.name)) continue;
+
+            for (int k = m.name.Length - 1; k >= 0; k--)
+            {
+                if (!char.IsLetter(m.name[k])) continue;
+                if (char.ToUpperInvariant(m.name[k]) == want) return i;
+                break;   // only the final letter counts
+            }
+        }
+        return -1;
+    }
+
+    /// <summary>
+    /// Resolves <see cref="word"/> into model indices, writing one entry per
+    /// character that has a model and returning how many were written. Letters
+    /// with no model are dropped rather than substituted, so a missing glyph
+    /// shortens the word instead of spelling it wrong.
+    /// </summary>
+    public int BuildWord(int[] dst)
+    {
+        if (dst == null || string.IsNullOrEmpty(word)) return 0;
+
+        int n = 0;
+        for (int i = 0; i < word.Length && n < dst.Length; i++)
+        {
+            if (!char.IsLetter(word[i])) continue;
+            int idx = IndexOfLetter(word[i]);
+            if (idx >= 0) dst[n++] = idx;
+        }
+        return n;
+    }
 
     /// <summary>Index-safe, null-safe fetch. Out of range returns null rather than throwing, because the index comes from a pad press.</summary>
     public BackdropModel Get(int index)
