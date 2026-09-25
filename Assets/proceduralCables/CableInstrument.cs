@@ -68,6 +68,13 @@ public class CableInstrument : MonoBehaviour
     [Tooltip("Jacket repeats per world unit along the cable.")]
     public float uvTiling = 2f;
 
+    [Header("Shadows")]
+    [Tooltip("Cables and plugs cast shadows. RenderParams defaults this off, because ShadowCastingMode.Off is the enum's zero value - so an instanced draw is shadowless unless it says otherwise.")]
+    public bool castShadows = true;
+
+    [Tooltip("Cables and plugs receive shadows.")]
+    public bool receiveShadows = true;
+
     [Tooltip("Local rotation applied to the connector mesh before it is aimed. The head is aimed along its Z axis, so a plug modelled pointing up its Y axis needs (90, 0, 0) here.")]
     public Vector3 headOrientationEuler = Vector3.zero;
 
@@ -506,6 +513,19 @@ public class CableInstrument : MonoBehaviour
         return best;
     }
 
+    /// <summary>
+    /// Draw settings shared by every submission here. RenderParams zero-inits,
+    /// and ShadowCastingMode.Off is zero, so shadows have to be asked for
+    /// explicitly or nothing rendered this way casts one.
+    /// </summary>
+    private RenderParams Params(Material m) => new RenderParams(m)
+    {
+        shadowCastingMode = castShadows
+            ? UnityEngine.Rendering.ShadowCastingMode.On
+            : UnityEngine.Rendering.ShadowCastingMode.Off,
+        receiveShadows = receiveShadows,
+    };
+
     private Matrix4x4 HeadMatrix(in CableShot shot, Vector3 head, float flight01, int nodeCount)
     {
         // Travel is sampled over a short step rather than differenced against
@@ -537,7 +557,7 @@ public class CableInstrument : MonoBehaviour
         if (ribbonMaterial != null && _mesh != null && _positions.Count > 0)
         {
             ribbonMaterial.SetFloat("_HalfWidth", parameters.thickness);
-            Graphics.RenderMesh(new RenderParams(ribbonMaterial), _mesh, 0, Matrix4x4.identity);
+            Graphics.RenderMesh(Params(ribbonMaterial), _mesh, 0, Matrix4x4.identity);
         }
 
         var lib = ResolvedLibrary;
@@ -577,7 +597,7 @@ public class CableInstrument : MonoBehaviour
                 for (int i = 0; i < _batch.Count; i++)
                     _partBatch.Add(_batch[i] * part.Local);
 
-                Graphics.RenderMeshInstanced(new RenderParams(mat), part.mesh, part.subMesh, _partBatch);
+                Graphics.RenderMeshInstanced(Params(mat), part.mesh, part.subMesh, _partBatch);
             }
         }
     }

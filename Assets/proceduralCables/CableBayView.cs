@@ -32,6 +32,12 @@ public class CableBayView : MonoBehaviour
     [Tooltip("Turn the panel off without unassigning anything.")]
     public bool draw = true;
 
+    [Tooltip("Ports cast shadows. Off by default in RenderParams, since ShadowCastingMode.Off is the enum's zero value.")]
+    public bool castShadows = true;
+
+    [Tooltip("Ports receive shadows.")]
+    public bool receiveShadows = true;
+
     [Header("Indicator light")]
     [Tooltip("Parts whose name contains this are drawn as the port's indicator light, coloured by whether anything is plugged in.")]
     public string lightPartName = "light";
@@ -75,6 +81,15 @@ public class CableBayView : MonoBehaviour
 
     /// <summary>Falls back to whatever the instrument is drawing plugs from, so the panel and the plugs cannot disagree about which library is in play.</summary>
     private CableLibrary Lib => library != null ? library : (Inst != null ? Inst.library : null);
+
+    private RenderParams Params(Material m, MaterialPropertyBlock block = null) => new RenderParams(m)
+    {
+        matProps = block,
+        shadowCastingMode = castShadows
+            ? UnityEngine.Rendering.ShadowCastingMode.On
+            : UnityEngine.Rendering.ShadowCastingMode.Off,
+        receiveShadows = receiveShadows,
+    };
 
     private static readonly int EmissionId = Shader.PropertyToID("_EmissionColor");
     private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
@@ -141,7 +156,7 @@ public class CableBayView : MonoBehaviour
             {
                 _partBatch.Clear();
                 for (int i = 0; i < _batch.Count; i++) _partBatch.Add(_batch[i] * part.Local);
-                Graphics.RenderMeshInstanced(new RenderParams(part.material), part.mesh, part.subMesh, _partBatch);
+                Graphics.RenderMeshInstanced(Params(part.material), part.mesh, part.subMesh, _partBatch);
                 continue;
             }
 
@@ -171,15 +186,15 @@ public class CableBayView : MonoBehaviour
 
             if (_freeBatch.Count > 0)
                 Graphics.RenderMeshInstanced(
-                    new RenderParams(part.material) { matProps = _freeBlock }, part.mesh, part.subMesh, _freeBatch);
+                    Params(part.material, _freeBlock), part.mesh, part.subMesh, _freeBatch);
 
             if (_heldBatch.Count > 0)
                 Graphics.RenderMeshInstanced(
-                    new RenderParams(part.material) { matProps = _heldBlock }, part.mesh, part.subMesh, _heldBatch);
+                    Params(part.material, _heldBlock), part.mesh, part.subMesh, _heldBatch);
 
             if (_busyBatch.Count > 0)
                 Graphics.RenderMeshInstanced(
-                    new RenderParams(part.material) { matProps = _busyBlock }, part.mesh, part.subMesh, _busyBatch);
+                    Params(part.material, _busyBlock), part.mesh, part.subMesh, _busyBatch);
 
             if (_flashBatch.Count > 0)
             {
@@ -194,7 +209,7 @@ public class CableBayView : MonoBehaviour
                 _flashBlock.SetColor(BaseColorId, lit * 0.25f);
 
                 Graphics.RenderMeshInstanced(
-                    new RenderParams(part.material) { matProps = _flashBlock }, part.mesh, part.subMesh, _flashBatch);
+                    Params(part.material, _flashBlock), part.mesh, part.subMesh, _flashBatch);
             }
         }
     }

@@ -209,6 +209,13 @@ seconds apart that is almost always a single port.
   fires constantly, and a big winding cable vanishing mid-socket is conspicuous.
   The fix, if wanted, is a per-vertex width scale — contained to the builder and
   the shader.
+- **`RenderParams` zero-inits, and `ShadowCastingMode.Off` is the enum's zero
+  value.** So `new RenderParams(mat)` casts no shadow and receives none, and
+  everything drawn this way is silently unlit by the scene's shadows until it
+  says otherwise. Cables, plugs and ports all shipped shadowless for this
+  reason. `Cast Shadows` / `Receive Shadows` on `CableInstrument` and
+  `CableBayView` now default on; measured cost at 24 cables and 17 ports is
+  **+16 draw calls, +16 shadow casters, +103k triangles**.
 - **Emission needs Bloom in the volume** to glow rather than merely brighten.
 - **`[ExecuteAlways]` needs the editor focused.** Cables, ports and the
   calibrator all draw from `Update()` via `Graphics.RenderMesh*`, so an
