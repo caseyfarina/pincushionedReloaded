@@ -42,6 +42,7 @@ Assets/
     Samples/Resources/                   ScriptableObject assets (build-safe)
   proceduralPincushioning/               GPU-instanced pin scatter system (see its CLAUDE.md)
   proceduralBackdrop/                    Instanced generative backdrop (see its CLAUDE.md)
+  proceduralCables/                      Cable instrument: patch bay + proximity ports (see its CLAUDE.md)
   ScatterData/                           Baked SurfaceSampleData assets (79; stays flat)
   ScatterPrefabs/                        Batch-tool output prefabs (41; the importer writes _Pinned directly)
   pinnedMeshes/<Category>/               *_Pinned prefabs, same 9 categories
@@ -1073,12 +1074,44 @@ MonoBehaviours are compile-verified only.
 **Nothing has run against MIDI hardware**, same standing gap as the rest of the
 project.
 
+## Cable instrument (`Assets/proceduralCables/`)
+
+Cables that fly from a source, land in a port and stay — hanging with slack and
+never quite still — tipped with connector meshes that seat into a patch bay.
+Built 2026-09-20 to 2026-09-24. **227 EditMode tests.**
+
+**Full detail is in its own CLAUDE.md.** What matters from outside:
+
+**A cable is a closed-form function of `(t, seed, time)`** — no solver, nothing
+integrated. Flight and settle are the same expression, so there is no handoff at
+impact, and the cable's body is literally the head's own flight path resampled,
+which is why a landed cable keeps the route it flew.
+
+**Two port modes.** A grid on a target transform, or ports found by raycasting
+the room near the source. Proximity mode probes **only when a cable fires**, so
+it costs a few dozen rays every couple of seconds — but it can only find
+surfaces that carry **colliders**, which the pinned artifacts do not have by
+default. That is the same limitation that forced `PointOfInterestFinder` to go
+renderer-bounds-first.
+
+**Anything that follows a transform stores its position local to it** —
+`landingLocal` for the bay, `sourceLocal` for the emitter — the same pattern in
+both places rather than two mechanisms.
+
+**Seat depths are calibrated, not guessed.** `cableCalibration.unity` measures
+how far each plug type sinks into the universal port; quarter-inch and XLR
+differ by 0.26 units, which no bounding box would have recovered.
+
+**Nothing here has run against MIDI hardware**, and nothing has been measured in
+a build — the standing gap across this project.
+
 ## Subsystem Docs
 
 Each major subsystem has its own CLAUDE.md with detailed docs:
 - `Packages/com.caseyfarina.midifighter64/CLAUDE.md` — MIDI package API, event flow, grid/note layouts, LED palette, gotchas
 - `Assets/proceduralPincushioning/CLAUDE.md` — GPU scatter system, bake pipeline, render pass
 - `Assets/proceduralBackdrop/CLAUDE.md` — generative backdrop: lattice math, camera fit, randomiser, MIDI Mix layout, why it is not VFX Graph
+- `Assets/proceduralCables/CLAUDE.md` — cable instrument: the closed-form cable, vertex layout, patch bay vs proximity ports, plug calibration
 - `FEATURE-pose-instrument-play-freeze.md` — pose instrument design, Mixamo import chain, measured acceptance results
 - `3DObjectProcessing/CLAUDE.md` — Python mesh processing, Smithsonian API, Blender bridge (source is tracked; its ~750 MB of scan output is gitignored)
 
