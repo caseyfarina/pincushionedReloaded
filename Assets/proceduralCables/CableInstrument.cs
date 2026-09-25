@@ -155,9 +155,14 @@ public class CableInstrument : MonoBehaviour
         var connector = lib != null ? lib.Get(shot.meshIndex) : null;
         if (connector != null && connector.seatOffset != 0f)
         {
-            Vector3 seat = target != null
+            // Along THIS port's seating axis, not the target's. On the bay every
+            // port shares the target's Z, but a port found on a wall faces its
+            // own way - measuring the depth down the target's axis instead put
+            // every plug the same distance sideways from its hole.
+            Vector3 seat = portMode == CablePortMode.PatchBay && target != null
                 ? target.TransformVector(Vector3.forward * connector.seatOffset)
-                : PortAxis * connector.seatOffset;
+                : PortSeatAxis(port).normalized * connector.seatOffset;
+
             shot.landing += seat;
         }
 

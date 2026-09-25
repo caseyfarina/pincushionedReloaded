@@ -754,7 +754,7 @@ MonoBehaviour:
     patchRows: 3
     columnSpacing: 1.5
     rowSpacing: 1.2
-    targetScatterRadius: 1.5
+    targetScatterRadius: 0
     lifetime: 6
     nodesPerCable: 24
     cableCap: 64
