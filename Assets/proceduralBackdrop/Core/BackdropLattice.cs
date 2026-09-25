@@ -50,6 +50,18 @@ public static class BackdropLattice
     /// edge the way rejection sampling does.
     /// </summary>
     /// <summary>
+    /// Whether a domain lives in world space rather than being sized and placed
+    /// against the camera each frame.
+    ///
+    /// The camera-fitted domains are backdrops in the literal sense: they sit
+    /// behind whatever is on screen and follow the lens. These two are scenery -
+    /// the camera moves through them, and a dome that repositioned itself every
+    /// frame could never be looked around.
+    /// </summary>
+    public static bool IsWorldAnchored(BackdropDomain domain)
+        => domain == BackdropDomain.WorldDome || domain == BackdropDomain.SurfaceMesh;
+
+    /// <summary>
     /// Overload kept for the domains that need no extra parameters. Region
     /// shapes route through the <see cref="BackdropParameters"/> overload.
     /// </summary>
@@ -64,6 +76,22 @@ public static class BackdropLattice
 
         switch (domain)
         {
+            case BackdropDomain.WorldDome:
+            {
+                // Fibonacci cap again, but the pole runs along Y rather than
+                // facing the camera, because this one is scenery in the world
+                // rather than a plane behind the lens.
+                float y = 1f - t;
+                float rr = Mathf.Sqrt(Mathf.Clamp01(1f - y * y));
+                float th = id * 2.399963229728653f;
+
+                if (p.domeInverted) y = -y;
+
+                return new Vector3(Mathf.Cos(th) * rr * size.x * 0.5f,
+                                   y * size.y * 0.5f + p.worldHeightOffset,
+                                   Mathf.Sin(th) * rr * size.z * 0.5f);
+            }
+
             case BackdropDomain.Arch:
             {
                 // Annulus in the screen plane. Radius goes through a square root
@@ -310,8 +338,19 @@ public static class BackdropLattice
     /// Only the curved and shelled domains have an orientation worth deriving.
     /// The flat and box-like ones return identity, which reads as axis-aligned.
     /// </summary>
-    public static Quaternion ShapeAlignment(int id, int count, in BackdropParameters p)
+    public static Quaternion ShapeAlignment(int id, int count, in BackdropParameters p,
+                                            BackdropSurface surface = null)
     {
+        // On a sampled surface the normal is already known and is far better
+        // than anything derivable from the position alone.
+        if (p.domain == BackdropDomain.SurfaceMesh && surface != null && surface.IsValid)
+        {
+            Vector3 n = surface.normals[id % surface.count];
+            return n.sqrMagnitude < 1e-8f
+                ? Quaternion.identity
+                : Quaternion.FromToRotation(Vector3.up, n.normalized);
+        }
+
         Vector3 pos = Position(id, count, p.domain, p.domainSize, p.solidFill, p);
         Vector3 outward;
 
@@ -323,6 +362,7 @@ public static class BackdropLattice
                 break;
 
             case BackdropDomain.Hemisphere:
+            case BackdropDomain.WorldDome:
                 outward = pos;
                 break;
 
@@ -467,6 +507,15 @@ public static class BackdropLattice
 
     public static int Fill(in BackdropParameters p, float time, float flashTime,
                            Matrix4x4[] matrices, float[] flash)
+        => Fill(p, time, flashTime, matrices, flash, null);
+
+    /// <summary>
+    /// <paramref name="surface"/> supplies the positions for the SurfaceMesh
+    /// domain and is ignored by every other one. A mesh cannot be sampled from
+    /// inside Position, which is a pure function of an index.
+    /// </summary>
+    public static int Fill(in BackdropParameters p, float time, float flashTime,
+                           Matrix4x4[] matrices, float[] flash, BackdropSurface surface)
     {
         int count = Mathf.Clamp(p.spawnCount, 0, Mathf.Min(matrices.Length, flash.Length));
         if (count == 0) return 0;
@@ -488,7 +537,22 @@ public static class BackdropLattice
 
             float idNorm = (float)i / count;
 
-            Vector3 pos = Position(i, count, p.domain, p.domainSize, p.solidFill, p);
+            Vector3 pos;
+            if (p.domain == BackdropDomain.SurfaceMesh)
+            {
+                // Fall back to the dome rather than collapsing every instance on
+                // the origin, so a missing or unreadable mesh still shows
+                // something recognisable instead of one solid lump.
+                if (surface != null && surface.IsValid)
+                    pos = surface.positions[i % surface.count]
+                        + Vector3.up * p.worldHeightOffset;
+                else
+                    pos = Position(i, count, BackdropDomain.WorldDome, p.domainSize, p.solidFill, p);
+            }
+            else
+            {
+                pos = Position(i, count, p.domain, p.domainSize, p.solidFill, p);
+            }
             Vector3 jitter = Rand3(i, p.layoutSeed, 11u) * 2f - Vector3.one;
             pos += Vector3.Scale(jitter, p.offsetJitter);
 
@@ -526,7 +590,7 @@ public static class BackdropLattice
             // Shape alignment is the base orientation, jitter perturbs it, spin
             // rides on top. Jitter applied before alignment would rotate the
             // instance out of the surface it is supposed to be sitting on.
-            Quaternion align = p.alignToShape ? ShapeAlignment(i, count, p) : Quaternion.identity;
+            Quaternion align = p.alignToShape ? ShapeAlignment(i, count, p, surface) : Quaternion.identity;
             Quaternion q = Quaternion.AngleAxis(rate * time, spinAxis) * align * Quaternion.Euler(rot);
 
             matrices[write] = Matrix4x4.TRS(pos, q, scale);
@@ -659,7 +723,7 @@ public static class BackdropLattice
     /// that is too large can never be culled at all, which is what cost this
     /// project 3.6x in MeshSurfaceScatter.
     /// </summary>
-    public static Bounds LocalBounds(in BackdropParameters p)
+    public static Bounds LocalBounds(in BackdropParameters p, BackdropSurface surface = null)
     {
         // Accented instances are the largest thing in the field, so the bounds
         // have to assume one sits on an edge - otherwise the biggest objects are
@@ -671,6 +735,18 @@ public static class BackdropLattice
                     + Mathf.Max(p.scaleRange.y, 0f) * accent * Mathf.Max(p.scaleAxisBias.x,
                           Mathf.Max(p.scaleAxisBias.y, p.scaleAxisBias.z));
 
-        return new Bounds(Vector3.zero, p.domainSize + Vector3.one * (reach * 2f));
+        if (p.domain == BackdropDomain.SurfaceMesh && surface != null && surface.IsValid)
+        {
+            var b = surface.bounds;
+            b.center += Vector3.up * p.worldHeightOffset;
+            b.Expand(reach * 2f);
+            return b;
+        }
+
+        var size = p.domainSize + Vector3.one * (reach * 2f);
+        var centre = BackdropLattice.IsWorldAnchored(p.domain)
+            ? Vector3.up * p.worldHeightOffset
+            : Vector3.zero;
+        return new Bounds(centre, size);
     }
 }

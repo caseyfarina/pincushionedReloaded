@@ -586,6 +586,107 @@ public class BackdropLatticeTests
     }
 
     [Test]
+    public void WorldAnchored_IsOnlyTheSceneryDomains()
+    {
+        Assert.IsTrue(BackdropLattice.IsWorldAnchored(BackdropDomain.WorldDome));
+        Assert.IsTrue(BackdropLattice.IsWorldAnchored(BackdropDomain.SurfaceMesh));
+
+        foreach (var d in new[] { BackdropDomain.Plane, BackdropDomain.Hemisphere,
+                                  BackdropDomain.Cube, BackdropDomain.Arch,
+                                  BackdropDomain.Colonnade, BackdropDomain.Skyline,
+                                  BackdropDomain.Corridor })
+            Assert.IsFalse(BackdropLattice.IsWorldAnchored(d), $"{d} should follow the camera");
+    }
+
+    [Test]
+    public void WorldAnchored_IgnoresTheCameraFitEntirely()
+    {
+        // The whole point: a dome that re-sized itself to the frame every time
+        // the camera turned could never be looked around.
+        var p = BackdropParameters.Default;
+        p.domain = BackdropDomain.WorldDome;
+        p.fitToCamera = true;
+        p.domainSize = new Vector3(240f, 240f, 240f);
+
+        var fitted = BackdropLattice.FitToFrame(p, 60f, 32f / 9f, false, 0f);
+        Assert.AreEqual(new Vector3(240f, 240f, 240f), fitted.domainSize,
+            "a world-anchored domain must keep the size it was authored with");
+    }
+
+    [Test]
+    public void WorldDome_SitsOnTheUpperHalfAndSpansItsRadius()
+    {
+        var p = BackdropParameters.Default;
+        p.domain = BackdropDomain.WorldDome;
+        p.domainSize = new Vector3(200f, 200f, 200f);
+        p.domeInverted = false;
+        p.worldHeightOffset = 0f;
+
+        float highest = float.MinValue, widest = 0f;
+        for (int i = 0; i < 600; i++)
+        {
+            var v = BackdropLattice.Position(i, 600, BackdropDomain.WorldDome, p.domainSize, false, p);
+            Assert.GreaterOrEqual(v.y, -1e-3f, $"instance {i} fell below the equator");
+            highest = Mathf.Max(highest, v.y);
+            widest = Mathf.Max(widest, new Vector2(v.x, v.z).magnitude);
+        }
+
+        Assert.Greater(highest, 90f, "the dome never reaches its apex");
+        Assert.Greater(widest, 90f, "the dome never reaches its rim");
+    }
+
+    [Test]
+    public void WorldDome_InvertsIntoABowl()
+    {
+        var p = BackdropParameters.Default;
+        p.domain = BackdropDomain.WorldDome;
+        p.domainSize = new Vector3(200f, 200f, 200f);
+        p.domeInverted = true;
+
+        for (int i = 0; i < 300; i++)
+            Assert.LessOrEqual(
+                BackdropLattice.Position(i, 300, BackdropDomain.WorldDome, p.domainSize, false, p).y,
+                1e-3f, $"instance {i} should hang below the equator when inverted");
+    }
+
+    [Test]
+    public void WorldDome_HeightOffsetLiftsTheWholeDome()
+    {
+        var p = BackdropParameters.Default;
+        p.domain = BackdropDomain.WorldDome;
+        p.domainSize = new Vector3(100f, 100f, 100f);
+
+        p.worldHeightOffset = 0f;
+        float a = BackdropLattice.Position(5, 100, BackdropDomain.WorldDome, p.domainSize, false, p).y;
+
+        p.worldHeightOffset = 30f;
+        float b = BackdropLattice.Position(5, 100, BackdropDomain.WorldDome, p.domainSize, false, p).y;
+
+        Assert.AreEqual(30f, b - a, 1e-3f);
+    }
+
+    [Test]
+    public void SurfaceMesh_FallsBackToTheDomeRatherThanCollapsing()
+    {
+        // An unreadable or missing mesh must not pile every instance on the
+        // origin, which reads as one solid lump rather than as a mistake.
+        var p = BackdropParameters.Default;
+        p.domain = BackdropDomain.SurfaceMesh;
+        p.domainSize = new Vector3(120f, 120f, 120f);
+        p.spawnCount = 200;
+        p.offsetJitter = Vector3.zero;
+        p.waveAmplitude = 0f;
+
+        var m = new Matrix4x4[256]; var f = new float[256];
+        int n = BackdropLattice.Fill(p, 0f, -1000f, m, f, null);
+
+        var seen = new System.Collections.Generic.HashSet<Vector3>();
+        for (int i = 0; i < n; i++) seen.Add(m[i].GetColumn(3));
+
+        Assert.Greater(seen.Count, n / 2, "instances collapsed instead of falling back to the dome");
+    }
+
+    [Test]
     public void WordIndex_AdvancesPerInstanceOnMostDomains()
     {
         var p = BackdropParameters.Default;

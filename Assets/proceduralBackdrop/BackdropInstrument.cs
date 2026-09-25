@@ -35,6 +35,9 @@ public class BackdropInstrument : MonoBehaviour
     [Tooltip("Material for every instance. Must have Enable GPU Instancing ticked.")]
     [SerializeField] private Material material;
 
+    [Tooltip("SurfaceMesh domain only: the mesh instances are scattered over. Needs Read/Write enabled on its import settings, or the vertices cannot be reached from script.")]
+    [SerializeField] private Mesh surfaceMesh;
+
     [Tooltip("Material for the spherical part of a multi-part model. Empty falls back to the main material. Each part is already its own draw, so a second material costs nothing beyond the material switch.")]
     [SerializeField] private Material sphereMaterial;
 
@@ -95,6 +98,8 @@ public class BackdropInstrument : MonoBehaviour
     private int subsetBuiltSize = -1;
     private int subsetBuiltLibrary = -1;
     private int subsetBuiltMode = -1;
+
+    private readonly BackdropSurface surface = new BackdropSurface();
 
     private ShuffleBag shadingBag;
     private ShuffleBag meshBag;
@@ -237,6 +242,11 @@ public class BackdropInstrument : MonoBehaviour
     /// </summary>
     private BackdropParameters FitToCamera(BackdropParameters p)
     {
+        // World-anchored domains are scenery, not a backdrop: they keep the
+        // transform they were placed at and the size they were authored with,
+        // so the camera can move through and around them.
+        if (BackdropLattice.IsWorldAnchored(p.domain)) return p;
+
         var cam = ResolveCamera();
         if (cam == null || !p.fitToCamera) return p;
 
@@ -269,7 +279,18 @@ public class BackdropInstrument : MonoBehaviour
         // which the explorer would read as an endless stream of edits.
         var effective = FitToCamera(parameters);
 
-        liveCount = BackdropLattice.Fill(effective, NowTime, flashTime, matrices, flashValues);
+        if (effective.domain == BackdropDomain.SurfaceMesh
+            && surfaceMesh != null
+            && !surface.Matches(surfaceMesh, effective.spawnCount, effective.layoutSeed))
+        {
+            if (!surface.Rebuild(surfaceMesh, effective.spawnCount, effective.layoutSeed))
+                Debug.LogWarning(
+                    $"[BackdropInstrument] '{name}' could not sample '{surfaceMesh.name}'. " +
+                    "Tick Read/Write on its import settings - vertex data is unreachable otherwise. " +
+                    "Falling back to the world dome.", this);
+        }
+
+        liveCount = BackdropLattice.Fill(effective, NowTime, flashTime, matrices, flashValues, surface);
         if (liveCount == 0) return;
 
         if (!rpValid) RebuildRenderParams(effective);
@@ -488,7 +509,7 @@ public class BackdropInstrument : MonoBehaviour
     /// </summary>
     private Bounds TransformedBounds(in BackdropParameters p)
     {
-        var local = BackdropLattice.LocalBounds(p);
+        var local = BackdropLattice.LocalBounds(p, surface);
         var b = new Bounds(transform.TransformPoint(local.center), Vector3.zero);
         Vector3 e = local.extents;
         for (int i = 0; i < 8; i++)

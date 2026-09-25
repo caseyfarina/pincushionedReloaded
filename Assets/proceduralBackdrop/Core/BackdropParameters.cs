@@ -23,6 +23,20 @@ public enum BackdropDomain
     Skyline = 5,
     /// <summary>The cube shell minus its front and back faces, so every edge is a perspective line.</summary>
     Corridor = 6,
+
+    /// <summary>
+    /// A dome over the world, anchored in world space rather than to the camera.
+    /// The camera can move through and around it, which is the whole point -
+    /// every other domain repositions itself each frame and so can never be
+    /// looked around.
+    /// </summary>
+    WorldDome = 7,
+
+    /// <summary>
+    /// Scattered over the surface of a supplied mesh, area-weighted. Also world
+    /// anchored.
+    /// </summary>
+    SurfaceMesh = 8,
 }
 
 /// <summary>
@@ -93,6 +107,13 @@ public struct BackdropParameters
     [Min(0)] public int spawnCount;
     public BackdropDomain domain;
     public Vector3 domainSize;
+
+    [Header("World-anchored domains")]
+    [Tooltip("WorldDome only: flips the dome into a bowl. Off is a canopy overhead - the pole at +Y, curving down to the equator at y=0.")]
+    public bool domeInverted;
+
+    [Tooltip("WorldDome and SurfaceMesh only: how far below the anchor the equator sits, in world units. Lifts the dome off the floor so the performers are inside it rather than under its rim.")]
+    public float worldHeightOffset;
 
     [Header("Camera fit")]
     [Tooltip("Size the field to the camera's view instead of to absolute units, and sit it in front of the camera facing back. A backdrop's job is to fill the frame, and the frame is what changes when the aspect or the lens does.")]
@@ -211,6 +232,9 @@ public struct BackdropParameters
 
         occupancy           = 1f,
         occupancyNoiseScale = 0f,
+
+        domeInverted    = false,
+        worldHeightOffset = 0f,
 
         fitToCamera     = true,
         fitMargin       = new Vector2(1.1f, 1.1f),
