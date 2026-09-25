@@ -212,8 +212,10 @@ seconds apart that is almost always a single port.
 - **Emission needs Bloom in the volume** to glow rather than merely brighten.
 - **`[ExecuteAlways]` needs the editor focused.** Cables, ports and the
   calibrator all draw from `Update()` via `Graphics.RenderMesh*`, so an
-  unfocused editor renders none of them. A capture artifact, not a bug — the
-  same trap `MeshSurfaceScatter` has.
+  unfocused editor renders none of them, and nothing ages. Run
+  **`unity command editor_focus`** before judging anything here — a whole
+  session was lost reading this as broken geometry. Same trap
+  `MeshSurfaceScatter` has.
 
 ## Layout
 

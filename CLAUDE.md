@@ -608,10 +608,41 @@ its floor, which stops `Update` mid-blend and unsubscribes the pads.
 Drive the **already-open editor** via the global `unity` CLI. Never batch mode
 while the editor holds the project lock.
 
+#### Read this first: use the built-in commands, not `eval`
+
+**`unity list` shows 142 commands. Check it before hand-rolling anything through
+`eval`.** Repeated sessions have lost hours re-implementing commands that already
+exist, and every one of those detours also skipped the import or focus step the
+real command does for you.
+
 ```bash
-unity command recompile && unity command recompile_status   # CS errors surface here
-unity command get_console_logs                              # or `console` for level filtering
+unity command editor_focus        # ALWAYS DO THIS FIRST
+unity command recompile && unity command recompile_status
+unity command run_tests --mode EditMode && unity command test_status
+unity command console --level Error --tail 20
 ```
+
+**`editor_focus` is the single most important command here.** An unfocused
+editor does not tick, so `eval`, `run_tests` and anything `[ExecuteAlways]`
+silently stop working while `unity status` still reports `ready`. The symptom is
+a 30-second timeout, or a capture with no procedural geometry in it, or values
+that never change between polls. It is not a hang and not a bug — the editor is
+simply not running. Call `editor_focus` at the start of a session and after
+anything that could steal focus.
+
+| Instead of `eval` with… | Use |
+|---|---|
+| `EditorApplication.EnterPlaymode()` | `editor_play`, `editor_stop`, `editor_pause` |
+| `AssetDatabase.Refresh()` after writing a file | `write_text_file` — writes **and** imports |
+| `EditorSceneManager.OpenScene / SaveScene` | `open_scene`, `save_scene` |
+| copying a file in then importing | `import_asset` |
+| reading a project file | `read_text_file` |
+| digging through `get_console_logs` | `console --level Error --tail N` |
+
+Other flags worth knowing: **`--timeout <seconds>`** on `unity command` defaults
+to 30, so raise it rather than letting a slow call fail; **`--detach`** submits a
+long job and `unity job` polls it; `unity doctor` and `unity diagnose` report on
+the environment itself.
 
 Traps that cost real time:
 
@@ -627,10 +658,13 @@ Traps that cost real time:
   `build` also requires `--confirm true`.
 - **`recompile` does NOT refresh the AssetDatabase.** Auto Refresh is off here, so
   new files on disk are never imported — nothing compiles and no `.meta` appears.
-  Use `eval_file` calling `AssetDatabase.Refresh(...)`, or **`write_text_file`,
-  which writes *and* imports** (the right tool for creating scripts).
+  Prefer **`write_text_file`, which writes *and* imports**. If you must use
+  `eval_file`, its parameter is **`--file`**, not `--path`.
 - **An unfocused editor does not tick**, so main-thread commands time out even
-  though `unity status` says ready. Foreground the window first.
+  though `unity status` says ready. **Fix it with `unity command editor_focus`** —
+  do not ask the user to click into Unity. This is the most common failure mode
+  against this project by a wide margin, and it masquerades as broken code:
+  cables and pins render nothing, ages never advance, tests time out.
 - **Console "Error Pause" will pause Play mode on a loop and look like broken
   input.** This project ships orphaned editor windows that log
   `Invalid editor window of type: ArtifactImportWindow` in bursts on repaint and
