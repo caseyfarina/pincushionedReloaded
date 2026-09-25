@@ -232,6 +232,14 @@ public class CableInstrument : MonoBehaviour
     /// <summary>Whether a cable has actually arrived in this port.</summary>
     public bool IsPortOccupied(int port) => PortState(port) == CablePortState.Occupied;
 
+    /// <summary>
+    /// How big a port should be drawn. Discovered ports pop in and shrink away
+    /// once their cable has gone; a bay's grid is permanent, so it stays at 1.
+    /// </summary>
+    public float PortScale01(int port) => portMode == CablePortMode.Proximity
+        ? (proximityPorts != null ? proximityPorts.Scale01(port) : 0f)
+        : 1f;
+
     /// <summary>How many ports the bay has.</summary>
     public int PortCount => portMode == CablePortMode.Proximity
         ? (proximityPorts != null ? proximityPorts.Count : 0)
@@ -360,6 +368,14 @@ public class CableInstrument : MonoBehaviour
 
             if (s.IsExpired(parameters.lifetime)) _shots.RemoveAt(i);
             else _shots[i] = s;
+        }
+
+        // Ports age on the same clock as the cables, so they behave identically
+        // in edit mode, where Time.deltaTime does not advance.
+        if (portMode == CablePortMode.Proximity && proximityPorts != null)
+        {
+            int n = proximityPorts.Count;
+            proximityPorts.RefreshLifetimes(dt, Occupancy(n), n);
         }
 
         BuildMesh();

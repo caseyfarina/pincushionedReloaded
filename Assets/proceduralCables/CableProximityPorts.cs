@@ -37,8 +37,25 @@ public class CableProximityPorts : MonoBehaviour
     [Tooltip("Ports kept before the oldest is recycled.")]
     [Min(1)] public int portCap = 64;
 
+    [Header("Lifetime")]
+    [Tooltip("Seconds a port hangs around after its last cable has gone.")]
+    public float linger = 1f;
+
+    [Tooltip("Seconds a port takes to pop into being. Uses DOTween's OutBack curve, so it overshoots slightly.")]
+    public float growTime = 0.25f;
+
+    [Tooltip("Seconds a port takes to shrink away at the end of its linger.")]
+    public float shrinkTime = 0.25f;
+
     private readonly List<Vector3> _points = new List<Vector3>();
     private readonly List<Vector3> _normals = new List<Vector3>();
+    private readonly List<float> _born = new List<float>();
+
+    // Negative while something is plugged in or on its way. Set to the clock
+    // the moment a port's last cable leaves.
+    private readonly List<float> _freedAt = new List<float>();
+
+    private float _clock;
 
     public int Count => _points.Count;
     public Vector3 PointAt(int i) => (i >= 0 && i < _points.Count) ? _points[i] : Vector3.zero;
@@ -46,7 +63,40 @@ public class CableProximityPorts : MonoBehaviour
     /// <summary>The direction a plug travels to seat here: into the surface.</summary>
     public Vector3 SeatAxisAt(int i) => (i >= 0 && i < _normals.Count) ? -_normals[i] : Vector3.forward;
 
-    public void Clear() { _points.Clear(); _normals.Clear(); }
+    public void Clear() { _points.Clear(); _normals.Clear(); _born.Clear(); _freedAt.Clear(); }
+
+    /// <summary>How big a port should be drawn right now. 0 means do not draw it.</summary>
+    public float Scale01(int i)
+    {
+        if (i < 0 || i >= _points.Count) return 0f;
+
+        float sinceFreed = _freedAt[i] < 0f ? -1f : _clock - _freedAt[i];
+        return CablePortLife.Scale01(_clock - _born[i], sinceFreed, linger, growTime, shrinkTime);
+    }
+
+    /// <summary>
+    /// Advance the clock and note which ports still have a cable on them.
+    ///
+    /// Dead slots are tombstoned rather than removed: a port's index is written
+    /// into every cable that uses it, so compacting the list would re-point live
+    /// cables at the wrong holes. A dead slot is reused by the next discovery
+    /// instead.
+    /// </summary>
+    public void RefreshLifetimes(float deltaTime, bool[] inUse, int count)
+    {
+        _clock += deltaTime;
+
+        for (int i = 0; i < _points.Count; i++)
+        {
+            bool used = inUse != null && i < count && i < inUse.Length && inUse[i];
+
+            if (used) _freedAt[i] = -1f;
+            else if (_freedAt[i] < 0f) _freedAt[i] = _clock;
+        }
+    }
+
+    private bool IsSlotDead(int i) =>
+        _freedAt[i] >= 0f && CablePortLife.IsDead(_clock - _freedAt[i], linger);
 
     /// <summary>
     /// Find a port near the source, reusing one already discovered there if the
@@ -76,7 +126,7 @@ public class CableProximityPorts : MonoBehaviour
             // port rather than growing without bound. Retiring an old port
             // instead would shift every index and re-point live cables at the
             // wrong holes.
-            if (_points.Count >= Mathf.Max(1, portCap))
+            if (LiveCount() >= Mathf.Max(1, portCap))
                 return ClosestPort(hit.point);
 
             return AddPort(hit.point, hit.normal);
@@ -92,9 +142,16 @@ public class CableProximityPorts : MonoBehaviour
 
         float sqr = minPortSpacing * minPortSpacing;
         for (int i = 0; i < _points.Count; i++)
-            if ((_points[i] - point).sqrMagnitude < sqr) return i;
+            if (!IsSlotDead(i) && (_points[i] - point).sqrMagnitude < sqr) return i;
 
         return -1;
+    }
+
+    private int LiveCount()
+    {
+        int n = 0;
+        for (int i = 0; i < _points.Count; i++) if (!IsSlotDead(i)) n++;
+        return n;
     }
 
     /// <summary>The nearest discovered port at any distance, or -1 if there are none.</summary>
@@ -114,8 +171,25 @@ public class CableProximityPorts : MonoBehaviour
 
     private int AddPort(Vector3 point, Vector3 normal)
     {
+        Vector3 n = normal.sqrMagnitude > 1e-10f ? normal.normalized : Vector3.up;
+
+        // Reuse a tombstoned slot before growing the list, so a source moving
+        // through a room does not accumulate indices for ever.
+        for (int i = 0; i < _points.Count; i++)
+        {
+            if (!IsSlotDead(i)) continue;
+
+            _points[i] = point;
+            _normals[i] = n;
+            _born[i] = _clock;
+            _freedAt[i] = -1f;
+            return i;
+        }
+
         _points.Add(point);
-        _normals.Add(normal.sqrMagnitude > 1e-10f ? normal.normalized : Vector3.up);
+        _normals.Add(n);
+        _born.Add(_clock);
+        _freedAt.Add(-1f);
         return _points.Count - 1;
     }
 
@@ -124,6 +198,7 @@ public class CableProximityPorts : MonoBehaviour
         Gizmos.color = new Color(0.4f, 1f, 0.6f, 0.8f);
         for (int i = 0; i < _points.Count; i++)
         {
+            if (IsSlotDead(i)) continue;
             Gizmos.DrawWireSphere(_points[i], 0.15f);
             Gizmos.DrawLine(_points[i], _points[i] + _normals[i] * 0.6f);
         }

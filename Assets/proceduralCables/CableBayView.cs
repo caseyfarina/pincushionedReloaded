@@ -49,6 +49,7 @@ public class CableBayView : MonoBehaviour
     [ColorUsage(false, true)] public Color connectFlashColor = new Color(3.5f, 3.5f, 3.5f);
 
     private readonly List<Matrix4x4> _batch = new List<Matrix4x4>();
+    private readonly List<int> _drawn = new List<int>();
     private readonly List<Matrix4x4> _partBatch = new List<Matrix4x4>();
     private readonly List<Matrix4x4> _freeBatch = new List<Matrix4x4>();
     private readonly List<Matrix4x4> _busyBatch = new List<Matrix4x4>();
@@ -98,14 +99,25 @@ public class CableBayView : MonoBehaviour
         var tweak = Quaternion.Euler(portOrientationEuler);
 
         _batch.Clear();
+        _drawn.Clear();
         for (int i = 0; i < count; i++)
         {
+            // A port that has shrunk away contributes nothing, and must not be
+            // submitted as a zero-scale matrix - a degenerate transform is
+            // still a draw, and still shadows.
+            float life = inst.PortScale01(i);
+            if (life <= 0.001f) continue;
+
             Vector3 axis = inst.PortSeatAxis(i);
             if (axis.sqrMagnitude < 1e-10f) axis = Vector3.forward;
 
             Vector3 up = Mathf.Abs(Vector3.Dot(axis.normalized, Vector3.up)) > 0.99f ? Vector3.forward : Vector3.up;
-            _batch.Add(Matrix4x4.TRS(inst.PortWorld(i), Quaternion.LookRotation(axis, up) * tweak, Vector3.one * portScale));
+            _batch.Add(Matrix4x4.TRS(inst.PortWorld(i), Quaternion.LookRotation(axis, up) * tweak,
+                                     Vector3.one * (portScale * life)));
+            _drawn.Add(i);
         }
+
+        if (_batch.Count == 0) return;
 
         EnsureBlocks();
 
@@ -141,9 +153,10 @@ public class CableBayView : MonoBehaviour
             _flashBatch.Clear();
             float flashSum = 0f;
 
-            for (int i = 0; i < _batch.Count; i++)
+            for (int b = 0; b < _batch.Count; b++)
             {
-                var m = _batch[i] * part.Local;
+                var m = _batch[b] * part.Local;
+                int i = _drawn[b];   // _batch is compacted, so map back to the port
 
                 float f = inst.PortFlash01(i);
                 if (f > 0.01f) { _flashBatch.Add(m); flashSum += f; continue; }
