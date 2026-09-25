@@ -703,7 +703,11 @@ public static class BackdropLattice
     public static BackdropParameters FitToFrame(BackdropParameters p, float verticalFovDeg, float aspect,
                                                 bool orthographic, float orthoSize)
     {
-        if (!p.fitToCamera) return p;
+        // World-anchored domains keep the size they were authored with, whatever
+        // fitToCamera says. The instrument skips this call for them anyway, but
+        // the rule belongs here too: a pure function that quietly disagrees with
+        // its only caller is a trap for the next one.
+        if (!p.fitToCamera || IsWorldAnchored(p.domain)) return p;
 
         float far = p.fitDistance + Mathf.Max(p.domainSize.z, 0f);
         var frame = FrameSizeAt(verticalFovDeg, aspect, far, orthographic, orthoSize);
