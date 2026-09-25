@@ -23,7 +23,7 @@ RenderSettings:
   m_AmbientSkyColor: {r: 0.212, g: 0.227, b: 0.259, a: 1}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
-  m_AmbientIntensity: 1
+  m_AmbientIntensity: 0
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
   m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
@@ -35,7 +35,7 @@ RenderSettings:
   m_DefaultReflectionMode: 0
   m_DefaultReflectionResolution: 128
   m_ReflectionBounces: 1
-  m_ReflectionIntensity: 1
+  m_ReflectionIntensity: 0.262
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
   m_UseRadianceAmbientProbe: 0
@@ -653,7 +653,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AutoFireCableDriver
   instrument: {fileID: 966797067}
-  interval: 1.2
+  interval: 0.05
   fireOnStart: 1
 --- !u!114 &966797065
 MonoBehaviour:
@@ -672,11 +672,13 @@ MonoBehaviour:
   portScale: 1
   portOrientationEuler: {x: 90, y: 0, z: 0}
   draw: 1
+  castShadows: 1
+  receiveShadows: 1
   lightPartName: light
   freeColor: {r: 2.2, g: 0.08, b: 0.06, a: 1}
   reservedColor: {r: 2.2, g: 1.6, b: 0.1, a: 1}
-  occupiedColor: {r: 0.1, g: 2.2, b: 0.25, a: 1}
-  connectFlashColor: {r: 3.5, g: 3.5, b: 3.5, a: 1}
+  occupiedColor: {r: 0.1361854, g: 2.9960787, b: 0.34046346, a: 1}
+  connectFlashColor: {r: 0.98833734, g: 0.98833734, b: 0.98833734, a: 1}
 --- !u!114 &966797066
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -698,6 +700,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   portCap: 64
+  linger: 1
+  growTime: 0.25
+  shrinkTime: 0.25
 --- !u!114 &966797067
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -738,8 +743,8 @@ MonoBehaviour:
     - {r: 0.2, g: 0.7, b: 0.3, a: 1}
     - {r: 0.15, g: 0.4, b: 0.85, a: 1}
     - {r: 0.55, g: 0.25, b: 0.75, a: 1}
-    flashIntensity: 0
-    flashDecay: 6
+    flashIntensity: 4.26
+    flashDecay: 10.22
     flashColors:
     - {r: 1, g: 1, b: 1, a: 1}
     - {r: 0.4, g: 0.85, b: 1, a: 1}
@@ -762,6 +767,8 @@ MonoBehaviour:
   ribbonMaterial: {fileID: 2100000, guid: 79d75f6cce124bd45816f768e9a48938, type: 2}
   headMaterial: {fileID: 2100000, guid: f61a83539a0a72b4e81ee8b56de34085, type: 2}
   uvTiling: 2
+  castShadows: 1
+  receiveShadows: 1
   headOrientationEuler: {x: 90, y: 0, z: 0}
   headAim: 0
 --- !u!4 &966797068
@@ -790,6 +797,7 @@ GameObject:
   - component: {fileID: 1110887497}
   - component: {fileID: 1110887496}
   - component: {fileID: 1110887495}
+  - component: {fileID: 1110887498}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -814,8 +822,8 @@ Camera:
   m_GameObject: {fileID: 1110887494}
   m_Enabled: 1
   serializedVersion: 2
-  m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_ClearFlags: 2
+  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -864,8 +872,102 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1110887494}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.16585223, y: 0, z: 0, w: 0.9861506}
-  m_LocalPosition: {x: 0, y: 12, z: -26}
+  m_LocalRotation: {x: 0.16962731, y: 0.8302161, z: -0.3841753, w: 0.36657482}
+  m_LocalPosition: {x: -15.498025, y: 28.880198, z: 14.593404}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1110887498
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1110887494}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalCameraData
+  m_RenderShadows: 1
+  m_RequiresDepthTextureOption: 2
+  m_RequiresOpaqueTextureOption: 2
+  m_CameraType: 0
+  m_Cameras: []
+  m_RendererIndex: -1
+  m_VolumeLayerMask:
+    serializedVersion: 2
+    m_Bits: 1
+  m_VolumeTrigger: {fileID: 0}
+  m_VolumeFrameworkUpdateModeOption: 2
+  m_RenderPostProcessing: 1
+  m_Antialiasing: 3
+  m_AntialiasingQuality: 2
+  m_StopNaN: 0
+  m_Dithering: 0
+  m_ClearDepth: 1
+  m_AllowXRRendering: 1
+  m_AllowHDROutput: 1
+  m_UseScreenCoordOverride: 0
+  m_ScreenSizeOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
+  m_RequiresDepthTexture: 0
+  m_RequiresColorTexture: 0
+  m_TaaSettings:
+    m_Quality: 3
+    m_FrameInfluence: 0.100000024
+    m_JitterScale: 1
+    m_MipBias: 0
+    m_VarianceClampScale: 0.9
+    m_ContrastAdaptiveSharpening: 0
+  m_Version: 2
+--- !u!1 &1188480394
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1188480396}
+  - component: {fileID: 1188480395}
+  m_Layer: 0
+  m_Name: FPS Display
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1188480395
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1188480394}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 567d05f23c6fc1747ae8f83ca162796e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Pincushioned.Diagnostics.FpsDisplay
+  window: 0.5
+  corner: 0
+  fontSize: 22
+  toggleKey: 282
+  showWorst: 1
+  visible: 1
+--- !u!4 &1188480396
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1188480394}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1359,3 +1461,4 @@ SceneRoots:
   - {fileID: 43793297}
   - {fileID: 1333629794}
   - {fileID: 966797068}
+  - {fileID: 1188480396}

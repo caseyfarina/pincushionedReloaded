@@ -414,6 +414,56 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 96.066, z: 0}
+--- !u!1 &1188480394
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1188480396}
+  - component: {fileID: 1188480395}
+  m_Layer: 0
+  m_Name: FPS Display
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1188480395
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1188480394}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 567d05f23c6fc1747ae8f83ca162796e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Pincushioned.Diagnostics.FpsDisplay
+  window: 0.5
+  corner: 0
+  fontSize: 22
+  toggleKey: 282
+  showWorst: 1
+  visible: 1
+--- !u!4 &1188480396
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1188480394}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1781433296
 GameObject:
   m_ObjectHideFlags: 0
@@ -513,6 +563,8 @@ MonoBehaviour:
   ribbonMaterial: {fileID: 2100000, guid: 79d75f6cce124bd45816f768e9a48938, type: 2}
   headMaterial: {fileID: 2100000, guid: f61a83539a0a72b4e81ee8b56de34085, type: 2}
   uvTiling: 2
+  castShadows: 1
+  receiveShadows: 1
   headOrientationEuler: {x: 90, y: 0, z: 0}
   headAim: 0
 --- !u!114 &1781433299
@@ -647,6 +699,8 @@ MonoBehaviour:
   portScale: 1
   portOrientationEuler: {x: 90, y: 0, z: 0}
   draw: 1
+  castShadows: 1
+  receiveShadows: 1
   lightPartName: light
   freeColor: {r: 2.2, g: 0.08, b: 0.06, a: 1}
   reservedColor: {r: 2.2, g: 1.6, b: 0.1, a: 1}
@@ -673,6 +727,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   portCap: 64
+  linger: 1
+  growTime: 0.25
+  shrinkTime: 0.25
 --- !u!1 &1800804397
 GameObject:
   m_ObjectHideFlags: 0
@@ -713,3 +770,4 @@ SceneRoots:
   - {fileID: 1800804398}
   - {fileID: 907279175}
   - {fileID: 1781433300}
+  - {fileID: 1188480396}

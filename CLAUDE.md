@@ -685,6 +685,21 @@ Traps that cost real time:
   harness. While profiling also set `QualitySettings.vSyncCount = 0`, or every
   config reads 16.67 ms and the sweep tells you nothing.
 
+#### Builds always get an on-screen FPS readout
+
+**Standing preference: every build of this project shows frame rate on screen.**
+Drop `Pincushioned.Diagnostics.FpsDisplay` (`Assets/SplitScreen/FpsDisplay.cs`)
+onto any object in the scene being built. It shows average fps, frame
+milliseconds and the worst frame in the window, draws through OnGUI so it needs
+no Canvas or font asset, and toggles with F1.
+
+This is not the same job as `ProfilerProbe`, which attributes cost but reports to
+the player log — unreadable while the thing is running in front of you. Use both:
+the probe for the breakdown, the display for the number you watch live.
+
+Editor frame times on this project are inflated 5.2x, so the readout only means
+something in a build.
+
 `eval_file` is effectively capped at 5 s of main-thread time — keep eval scripts
 cheap. For screenshots, `capture_game_view` only renders one camera; use
 `ScreenCapture.CaptureScreenshot` via `eval_file` to get the composited frame.
